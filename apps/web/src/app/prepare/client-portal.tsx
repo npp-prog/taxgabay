@@ -34,6 +34,7 @@ import {
   type PrepClient,
 } from "@/lib/workspace";
 import { PERIOD_STATUS_LABEL, quarterPeriod } from "@/lib/workspace-core";
+import { BooksSection } from "./books-section";
 import { CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
 
 interface Data {
@@ -178,6 +179,8 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
           </details>
         )}
       </section>
+
+      <BooksSection client={{ name: data.client.name, profile: data.client.profile, corporate: data.client.corporate }} records={data.records} period={period} />
 
       <ReleasedPackets client={data.client} packets={data.packets} />
 

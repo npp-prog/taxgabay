@@ -37,6 +37,7 @@ import {
   type PrepClient,
 } from "@/lib/workspace";
 import { PERIOD_STATUS_LABEL } from "@/lib/workspace-core";
+import { BooksSection } from "../prepare/books-section";
 import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs } from "../prepare/parts";
 
 const PACKET_STATUS: Record<PacketRow["status"], string> = { prepared: "Prepared — not reviewed", reviewed: "Reviewed", released: "Released to client" };
@@ -372,6 +373,8 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
               ))}
             </ul>
           </section>
+
+          <BooksSection client={{ name: client.name, profile, corporate }} records={d.records} period={period} />
 
           <section className="space-y-4">
             <h3 className="font-semibold">Packets</h3>

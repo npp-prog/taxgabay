@@ -10,6 +10,7 @@ import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { type TemplateKind } from "@/lib/prepare-csv";
 import { usePrepare } from "@/lib/prepare-store";
 import { todayPH } from "@/lib/utils";
+import { BooksSection } from "./books-section";
 import { CorporateFields, CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
 
 const EXAMPLE: ClientRecord[] = [
@@ -175,6 +176,8 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
 
         <PacketResults packet={packet} status={<Badge variant="warning">Draft — not yet reviewed by {REVIEWER}</Badge>} />
       </section>
+
+      <BooksSection client={{ ...client, name: client.name || "Taxpayer" }} records={records} period={period} />
     </div>
   );
 }

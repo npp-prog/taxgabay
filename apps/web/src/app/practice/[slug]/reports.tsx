@@ -230,7 +230,12 @@ function SectionRows({ s }: { s: StatementSection }) {
 
 export function StatementsView({ ctx, entries }: { ctx: PracticeContext; entries: JournalEntry[] }) {
   const { set, chart } = ctx;
-  const fs = financialStatements(entries, chart, set.period.to, set.earningsAccount);
+  return <FinancialStatementsView chart={chart} entries={entries} periodEnd={set.period.to} periodLabel={set.period.label} earningsAccount={set.earningsAccount} corporate={set.business.form === "corporation"} />;
+}
+
+/** Income statement, statement of changes in equity and balance sheet from any set of entries. */
+export function FinancialStatementsView({ chart, entries, periodEnd, periodLabel, earningsAccount, corporate }: { chart: Chart; entries: JournalEntry[]; periodEnd: string; periodLabel: string; earningsAccount: string; corporate: boolean }) {
+  const fs = financialStatements(entries, chart, periodEnd, earningsAccount);
   const is = fs.incomeStatement;
   const bs = fs.balanceSheet;
   const total = (label: string, v: string, strong = false) => (
@@ -241,7 +246,7 @@ export function StatementsView({ ctx, entries }: { ctx: PracticeContext; entries
   );
   return (
     <div className="grid gap-4 lg:grid-cols-2" data-testid="statements">
-      <Panel title="Income statement" note={set.period.label}>
+      <Panel title="Income statement" note={periodLabel}>
         <table className="w-full text-sm">
           <tbody>
             <SectionRows s={is.revenue} />
@@ -264,7 +269,7 @@ export function StatementsView({ ctx, entries }: { ctx: PracticeContext; entries
         </table>
       </Panel>
       <div className="space-y-4">
-        <Panel title={set.business.form === "corporation" ? "Statement of changes in equity" : "Statement of changes in owner's equity"}>
+        <Panel title={corporate ? "Statement of changes in equity" : "Statement of changes in owner's equity"}>
           <table className="w-full text-sm">
             <tbody>
               {fs.changesInEquity.opening.map((l) => (
@@ -293,7 +298,7 @@ export function StatementsView({ ctx, entries }: { ctx: PracticeContext; entries
             </tbody>
           </table>
         </Panel>
-        <Panel title="Balance sheet" note={`As of ${formatDatePH(set.period.to)}`}>
+        <Panel title="Balance sheet" note={`As of ${formatDatePH(periodEnd)}`}>
           <table className="w-full text-sm">
             <tbody>
               <SectionRows s={bs.currentAssets} />

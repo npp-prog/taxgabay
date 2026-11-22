@@ -212,7 +212,8 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 - Second batch done: VAT-registered individuals — 2550Q (vatable, zero-rated and exempt sales; input tax by capital goods, goods and services; excess input tax carried over), summary lists of sales and purchases, 1701Q/1701A on sales net of VAT; the 8% option is refused for VAT clients.
 - Third batch done: payroll — payroll records per employee per month, monthly 1601C with the December year-end adjustment, SSS/PhilHealth/Pag-IBIG contributions summary, 1604C with the alphalist of employees, and a 2316 per employee.
 - Fourth batch done: corporations, OPCs and partnerships on a calendar year — cumulative 1702Q and 1702-RT (higher of regular rate, reduced 20% when eligible, and MCIT from the 4th year), plus the same percentage tax/VAT, withholding and payroll returns.
-- Next batches: books of accounts and financial statements, monthly packets.
+- Fifth batch done: books of accounts posted from the records (cash receipts, cash disbursements, general journal), general ledger, trial balance and financial statements for the quarter or year to date, with a books PDF.
+- Next batches: opening balances and manual journal entries, depreciation, books of accounts and financial statements, monthly packets.
 - Known limitation: packets are quarterly, but 0619E is monthly and falls due before the quarter ends. The firm can prepare a quarter's packet early (e.g. in February for January's 0619E); later batches should add monthly packets.
 
 ## Out of scope for Phase 6

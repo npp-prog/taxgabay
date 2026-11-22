@@ -92,3 +92,18 @@ test("a corporation gets the 1702Q with the higher of regular tax and MCIT", asy
   await expect(q).toContainText("₱200,000.00"); // 20% reduced rate on ₱1,000,000
   await expect(q).toContainText("₱20,000.00"); // MCIT 2% of gross income
 });
+
+test("records are posted to books, trial balance and statements", async ({ page }) => {
+  await page.goto("/prepare");
+  await page.getByRole("button", { name: "Load an example" }).click();
+  const books = page.getByTestId("books-section");
+  await expect(books).toContainText("Cash receipts book");
+  await books.getByRole("tab", { name: "Trial balance" }).click();
+  // Cash ₱88,000 + creditable withholding ₱3,500 + rent ₱30,000 = sales ₱120,000 + EWT payable ₱1,500.
+  await expect(page.getByTestId("trial-balance")).toContainText("₱121,500.00");
+  await books.getByRole("tab", { name: "Statements" }).click();
+  await expect(page.getByTestId("statements")).toContainText("₱90,000.00"); // net income before income tax
+  const download = page.waitForEvent("download");
+  await books.getByRole("button", { name: "Books (PDF)" }).click();
+  expect((await download).suggestedFilename()).toBe("taxgabay-books-2026-01-01-2026-03-31.pdf");
+});
