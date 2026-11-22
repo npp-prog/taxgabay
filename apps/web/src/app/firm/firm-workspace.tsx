@@ -308,6 +308,10 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
             </select>
           </div>
           <label className="flex items-end gap-2 pb-2 text-sm">
+            <input type="checkbox" checked={profile.has_employees} onChange={(e) => setProfile({ ...profile, has_employees: e.target.checked })} />
+            Has employees
+          </label>
+          <label className="flex items-end gap-2 pb-2 text-sm">
             <input type="checkbox" checked={profile.withholds_expanded} onChange={(e) => setProfile({ ...profile, withholds_expanded: e.target.checked })} />
             Withholding agent (expanded)
           </label>

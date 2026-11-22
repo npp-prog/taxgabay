@@ -9,7 +9,7 @@ describe("prepare CSV import", () => {
     expect(parseCsv('a,"b, c","d ""e"""\r\n1,2,3\n\n')).toEqual([["a", "b, c", 'd "e"'], ["1", "2", "3"]]);
   });
   it("round-trips every template", () => {
-    for (const k of ["sale", "expense", "form_2307_received"] as const) {
+    for (const k of ["sale", "expense", "form_2307_received", "payroll"] as const) {
       const r = importCsv(k, templateCsv(k), id);
       expect(r.errors).toEqual([]);
       expect(r.records).toHaveLength(1);
@@ -34,6 +34,11 @@ describe("prepare CSV import", () => {
     expect(e.records[0]).toMatchObject({ category: "rent", withholding: { atc: "WI100" }, supplier_vat_registered: false });
     const c = importCsv("form_2307_received", "date_received,payor_name,period_from,period_to,atc,income_payment,tax_withheld\n2026-04-01,A,2026-01-01,bad,WI010,1,1\n2026-04-01,A,2026-01-01,2026-03-31,WI010,x,1\n2026-04-01,,2026-01-01,2026-03-31,WI010,1,1\n", id);
     expect(c.errors).toHaveLength(3);
+  });
+  it("validates payroll rows", () => {
+    const r = importCsv("payroll", "month_end,employee_name,basic_pay,benefits,minimum_wage_earner\n2026-01-31,Ana,30000,,no\n2026-02-28,,30000,,\n2026-03-31,Ana,x,,\n2026-04-30,Ana,100,abc,\n2026-05-31,Ben,15000,1000,yes\n", id);
+    expect(r.errors).toHaveLength(3);
+    expect(r.records[1]).toMatchObject({ employee: { name: "Ben" }, benefits: "1000", minimum_wage_earner: true });
   });
   it("rejects empty files and missing columns", () => {
     expect(importCsv("sale", "", id).errors[0]).toMatch(/empty/);

@@ -42,7 +42,7 @@ export function withoutTins(s: PrepareState): PrepareState {
   return {
     ...s,
     client: strip(s.client),
-    records: s.records.map((r) => (r.kind === "sale" ? { ...r, customer: strip(r.customer) } : r.kind === "expense" ? { ...r, supplier: strip(r.supplier) } : { ...r, payor: strip(r.payor) })),
+    records: s.records.map((r) => (r.kind === "sale" ? { ...r, customer: strip(r.customer) } : r.kind === "expense" ? { ...r, supplier: strip(r.supplier) } : r.kind === "payroll" ? { ...r, employee: strip(r.employee) } : { ...r, payor: strip(r.payor) })),
   };
 }
 

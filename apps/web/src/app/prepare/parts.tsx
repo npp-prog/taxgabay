@@ -19,6 +19,7 @@ const TABS: { kind: TemplateKind; label: string }[] = [
   { kind: "sale", label: "Sales" },
   { kind: "expense", label: "Expenses" },
   { kind: "form_2307_received", label: "2307s received" },
+  { kind: "payroll", label: "Payroll" },
 ];
 
 function download(name: string, text: string) {
@@ -100,8 +101,8 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
             <thead className="border-b border-border text-left">
               <tr className="form-label">
                 <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : "Customer who withheld"}</th>
-                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : "Amount"}</th>
+                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : tab === "payroll" ? "Employee" : "Customer who withheld"}</th>
+                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : tab === "payroll" ? "Basic pay" : "Amount"}</th>
                 {receipts && <th className="py-2 pr-3">Receipt</th>}
                 <th className="w-10" />
               </tr>
@@ -130,13 +131,20 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                         {r.withholding && <Badge variant="muted" className="ml-2">{r.withholding.atc}</Badge>}
                       </>
                     )}
+                    {r.kind === "payroll" && (
+                      <>
+                        {r.employee.name}
+                        {r.benefits && Number(r.benefits) > 0 && <span className="text-muted-foreground"> · benefits {peso(r.benefits)}</span>}
+                        {r.minimum_wage_earner && <Badge variant="muted" className="ml-2">MWE</Badge>}
+                      </>
+                    )}
                     {r.kind === "form_2307_received" && (
                       <>
                         {r.payor.name} <span className="text-muted-foreground">· {r.atc} · {formatDatePH(r.period_from, { month: "short", day: "numeric" })}–{formatDatePH(r.period_to)}</span>
                       </>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : peso(r.amount)}</td>
+                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : r.kind === "payroll" ? peso(r.basic_pay) : peso(r.amount)}</td>
                   {receipts && (
                     <td className="py-2 pr-3 text-sm">
                       {receipts.attachments.get(r.id) ? (
@@ -326,6 +334,10 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: Tem
     } else if (kind === "expense") {
       if (!v("name") || !ok(v("amount"))) return setError("Enter the supplier and an amount.");
       onAdd({ kind: "expense", id: newId(), date: v("date"), document_no: v("no") || undefined, supplier: { name: v("name"), tin: tin("tin") }, category: (v("category") || "other") as ExpenseCategory, amount: amt(v("amount")), supplier_vat_registered: v("vat") === "yes", withholding: v("atc") ? { atc: v("atc") } : null });
+    } else if (kind === "payroll") {
+      if (!v("name") || !ok(v("basic"))) return setError("Enter the employee and the basic pay.");
+      if ((v("benefits") && !ok(v("benefits"))) || (v("demin") && !ok(v("demin")))) return setError("Benefits and de minimis must be amounts.");
+      onAdd({ kind: "payroll", id: newId(), date: v("date"), employee: { name: v("name"), tin: tin("tin") }, basic_pay: amt(v("basic")), ...(v("benefits") ? { benefits: amt(v("benefits")) } : {}), ...(v("demin") ? { de_minimis: amt(v("demin")) } : {}), minimum_wage_earner: v("mwe") === "yes" });
     } else {
       if (!v("name") || !v("atc") || !ok(v("income")) || !ok(v("tax")) || !v("from") || !v("to")) return setError("Fill in every field of the certificate.");
       onAdd({ kind: "form_2307_received", id: newId(), date: v("date"), payor: { name: v("name"), tin: tin("tin") }, period_from: v("from"), period_to: v("to"), atc: v("atc").toUpperCase(), income_payment: amt(v("income")), tax_withheld: amt(v("tax")) });
@@ -345,7 +357,24 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: Tem
 
   return (
     <form onSubmit={submit} className="grid gap-3 rounded-md bg-lavender p-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Add a record">
-      {field("date", kind === "form_2307_received" ? "Date received" : "Date", { type: "date" })}
+      {field("date", kind === "form_2307_received" ? "Date received" : kind === "payroll" ? "Month's last payday" : "Date", { type: "date" })}
+      {kind === "payroll" && (
+        <>
+          {field("name", "Employee")}
+          {field("basic", "Basic pay for the month (₱)", { inputMode: "decimal" })}
+          {field("benefits", "13th month / bonus paid (₱, optional)", { inputMode: "decimal" })}
+          {field("demin", "De minimis benefits (₱, optional)", { inputMode: "decimal" })}
+          <div>
+            <label className={label} htmlFor="rf-mwe">
+              Minimum wage earner?
+            </label>
+            <select id="rf-mwe" className={input} value={v("mwe")} onChange={set("mwe")}>
+              <option value="">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </>
+      )}
       {kind === "sale" && (
         <>
           {field("no", "Invoice no.")}
@@ -418,10 +447,10 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: Tem
           {field("tax", "Tax withheld (₱)", { inputMode: "decimal" })}
         </>
       )}
-      {tinConsent && field("tin", kind === "sale" ? "Customer TIN (optional)" : kind === "expense" ? "Supplier TIN" : "Customer TIN")}
+      {tinConsent && field("tin", kind === "sale" ? "Customer TIN (optional)" : kind === "expense" ? "Supplier TIN" : kind === "payroll" ? "Employee TIN" : "Customer TIN")}
       <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-4">
         <Button type="submit" size="sm">
-          Add {kind === "sale" ? "sale" : kind === "expense" ? "expense" : "certificate"}
+          Add {kind === "sale" ? "sale" : kind === "expense" ? "expense" : kind === "payroll" ? "payroll" : "certificate"}
         </Button>
         {error && (
           <span role="alert" className="text-sm text-destructive">

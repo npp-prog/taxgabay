@@ -13,6 +13,11 @@ export const TEMPLATES = {
     columns: ["date_received", "payor_name", "payor_tin", "period_from", "period_to", "atc", "income_payment", "tax_withheld"],
     example: ["2026-04-05", "Kape Co., Inc.", "201-111-222-000", "2026-01-01", "2026-03-31", "WI010", "70000.00", "3500.00"],
   },
+  payroll: {
+    file: "taxgabay-payroll.csv",
+    columns: ["month_end", "employee_name", "employee_tin", "basic_pay", "benefits", "de_minimis", "minimum_wage_earner"],
+    example: ["2026-01-31", "Ana Santos", "401-222-333-000", "30000.00", "", "", "no"],
+  },
 } as const;
 
 export type TemplateKind = keyof typeof TEMPLATES;
@@ -90,14 +95,15 @@ export function importCsv(kind: TemplateKind, text: string, makeId: () => string
   if (!rows.length) return { records, errors: ["The file is empty."] };
   const header = rows[0]!.map((h) => h.trim().toLowerCase());
   const cols = TEMPLATES[kind].columns;
-  const missing = cols.filter((c) => !header.includes(c) && !c.endsWith("_tin") && c !== "document_no" && c !== "supplier_vat_registered" && c !== "atc" && c !== "vat_treatment");
+  const optional = new Set(["document_no", "supplier_vat_registered", "atc", "vat_treatment", "benefits", "de_minimis", "minimum_wage_earner"]);
+  const missing = cols.filter((c) => !header.includes(c) && !c.endsWith("_tin") && !optional.has(c));
   if (missing.length) return { records, errors: [`Missing column(s): ${missing.join(", ")}. Download the template to see the expected columns.`] };
   const get = (r: string[], c: string) => (r[header.indexOf(c)] ?? "").trim();
 
   rows.slice(1).forEach((r, i) => {
     const line = i + 2;
     const bad = (msg: string) => errors.push(`Line ${line}: ${msg}`);
-    const dateCol = kind === "form_2307_received" ? "date_received" : "date";
+    const dateCol = kind === "form_2307_received" ? "date_received" : kind === "payroll" ? "month_end" : "date";
     const date = get(r, dateCol);
     if (!ISO.test(date)) return bad(`"${date}" is not a date in YYYY-MM-DD format.`);
     if (kind === "sale") {
@@ -124,6 +130,23 @@ export function importCsv(kind: TemplateKind, text: string, makeId: () => string
         amount,
         supplier_vat_registered: /^(yes|y|true|1)$/i.test(get(r, "supplier_vat_registered")),
         withholding: atc ? { atc } : null,
+      });
+    } else if (kind === "payroll") {
+      const basic = cleanAmount(get(r, "basic_pay"));
+      const benefits = cleanAmount(get(r, "benefits"));
+      const deMin = cleanAmount(get(r, "de_minimis"));
+      if (!AMOUNT.test(basic)) return bad(`basic_pay "${get(r, "basic_pay")}" is not a peso amount.`);
+      if ((benefits && !AMOUNT.test(benefits)) || (deMin && !AMOUNT.test(deMin))) return bad("benefits and de_minimis must be peso amounts or blank.");
+      if (!get(r, "employee_name")) return bad("employee_name is required.");
+      records.push({
+        kind: "payroll",
+        id: makeId(),
+        date,
+        employee: { name: get(r, "employee_name"), tin: get(r, "employee_tin") || null },
+        basic_pay: basic,
+        ...(benefits ? { benefits } : {}),
+        ...(deMin ? { de_minimis: deMin } : {}),
+        minimum_wage_earner: /^(yes|y|true|1)$/i.test(get(r, "minimum_wage_earner")),
       });
     } else {
       const from = get(r, "period_from");

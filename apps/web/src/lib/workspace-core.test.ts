@@ -25,7 +25,11 @@ describe("workspace mapping", () => {
     expect(back).toMatchObject({ id: "db1", kind: "expense", date: "2026-01-31", supplier: { name: "Jose  Cruz", tin: "•••6000" } });
     expect(rowToRecord({ id: "s", ...recordToRow(sale, "c") })!).toMatchObject({ customer: { tin: null } });
     expect(rowToRecord({ id: "c", ...recordToRow(cert, "c") })!.kind).toBe("form_2307_received");
-    expect(rowToRecord({ id: "x", prep_client_id: "c", record_date: "2026-01-01", kind: "payroll", data: {} })).toBeNull();
+    expect(rowToRecord({ id: "x", prep_client_id: "c", record_date: "2026-01-01", kind: "asset", data: {} })).toBeNull();
+    const payroll: ClientRecord = { kind: "payroll", id: "p", date: "2026-01-31", employee: { name: "Ana", tin: "401" }, basic_pay: "30000.00" };
+    expect(JSON.stringify(recordToRow(payroll, "c"))).not.toMatch(/tin/);
+    expect(recordTin(payroll)).toEqual({ subject: "employee", ref: "ana", tin: "401" });
+    expect(rowToRecord({ id: "p", ...recordToRow(payroll, "c") }, new Map([["employee|ana", "0001"]]))).toMatchObject({ employee: { tin: "•••0001" } });
   });
   it("finds and fills the TINs a packet needs", () => {
     const profile = { ...DEFAULT_PROFILE, taxpayer_type: "self_employed" as const, income_tax_option: "eight_percent" as const, withholds_expanded: true };

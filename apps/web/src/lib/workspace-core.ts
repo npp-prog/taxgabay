@@ -10,7 +10,7 @@ export interface RecordRow {
   data: Record<string, unknown>;
 }
 
-export type TinSubject = "client" | "supplier" | "customer" | "payor";
+export type TinSubject = "client" | "supplier" | "customer" | "payor" | "employee";
 
 /** How a TIN is keyed in public.tins: by kind of party and the party's normalized name. */
 export const tinRef = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -19,7 +19,7 @@ const noTin = (p: Party): Party => ({ name: p.name, ...(p.address ? { address: p
 
 /** The TIN to save separately (encrypted) for a record, if one was typed in. */
 export function recordTin(r: ClientRecord): { subject: TinSubject; ref: string; tin: string } | null {
-  const [subject, party]: [TinSubject, Party] = r.kind === "sale" ? ["customer", r.customer] : r.kind === "expense" ? ["supplier", r.supplier] : ["payor", r.payor];
+  const [subject, party]: [TinSubject, Party] = r.kind === "sale" ? ["customer", r.customer] : r.kind === "expense" ? ["supplier", r.supplier] : r.kind === "payroll" ? ["employee", r.employee] : ["payor", r.payor];
   return party.tin ? { subject, ref: tinRef(party.name), tin: party.tin } : null;
 }
 
@@ -31,6 +31,7 @@ export function recordToRow(r: ClientRecord, prepClientId: string): Omit<RecordR
   if (r.kind === "sale") data.customer = noTin(r.customer);
   if (r.kind === "expense") data.supplier = noTin(r.supplier);
   if (r.kind === "form_2307_received") data.payor = noTin(r.payor);
+  if (r.kind === "payroll") data.employee = noTin(r.employee);
   return { prep_client_id: prepClientId, record_date: date, kind, data };
 }
 
@@ -39,7 +40,7 @@ export function recordToRow(r: ClientRecord, prepClientId: string): Omit<RecordR
  * checks do not ask for a TIN that is already on file.
  */
 export function rowToRecord(row: RecordRow, tinsOnFile: ReadonlyMap<string, string> = new Map()): ClientRecord | null {
-  if (row.kind !== "sale" && row.kind !== "expense" && row.kind !== "form_2307_received") return null;
+  if (row.kind !== "sale" && row.kind !== "expense" && row.kind !== "form_2307_received" && row.kind !== "payroll") return null;
   const r = { ...row.data, id: row.id, kind: row.kind, date: row.record_date } as unknown as ClientRecord;
   const mark = (subject: TinSubject, p: Party): Party => {
     const last4 = tinsOnFile.get(`${subject}|${tinRef(p.name)}`);
@@ -47,6 +48,7 @@ export function rowToRecord(row: RecordRow, tinsOnFile: ReadonlyMap<string, stri
   };
   if (r.kind === "sale") return { ...r, customer: mark("customer", r.customer) };
   if (r.kind === "expense") return { ...r, supplier: mark("supplier", r.supplier) };
+  if (r.kind === "payroll") return { ...r, employee: mark("employee", r.employee) };
   return { ...r, payor: mark("payor", r.payor) };
 }
 
@@ -57,7 +59,8 @@ export function packetTinNeeds(packet: Packet): { subject: TinSubject; ref: stri
   const out = new Map<string, { subject: TinSubject; ref: string }>();
   const add = (subject: TinSubject, name: string) => out.set(tinKey(subject, tinRef(name)), { subject, ref: tinRef(name) });
   for (const d of packet.documents) {
-    if (d.recipient) add("supplier", d.recipient.name);
+    if (d.recipient) add(d.form === "2316" ? "employee" : "supplier", d.recipient.name);
+    if (d.form === "1604C") d.schedule?.rows.forEach((r) => add("employee", r.name ?? ""));
     if (d.form === "QAP") d.schedule?.rows.forEach((r) => add("supplier", r.name ?? ""));
     if (d.form === "SAWT") d.schedule?.rows.forEach((r) => add("payor", r.name ?? ""));
   }
@@ -71,9 +74,9 @@ export function fillTins(packet: Packet, tins: ReadonlyMap<string, string>): Pac
     ...packet,
     documents: packet.documents.map((d) => ({
       ...d,
-      recipient: d.recipient ? { ...d.recipient, tin: get("supplier", d.recipient.name) } : undefined,
+      recipient: d.recipient ? { ...d.recipient, tin: get(d.form === "2316" ? "employee" : "supplier", d.recipient.name) } : undefined,
       schedule: d.schedule
-        ? { ...d.schedule, rows: d.schedule.rows.map((r) => (d.form === "QAP" ? { ...r, tin: get("supplier", r.name ?? "") ?? "" } : d.form === "SAWT" ? { ...r, tin: get("payor", r.name ?? "") ?? "" } : r)) }
+        ? { ...d.schedule, rows: d.schedule.rows.map((r) => (d.form === "QAP" ? { ...r, tin: get("supplier", r.name ?? "") ?? "" } : d.form === "SAWT" ? { ...r, tin: get("payor", r.name ?? "") ?? "" } : d.form === "1604C" ? { ...r, tin: get("employee", r.name ?? "") ?? "" } : r)) }
         : undefined,
     })),
   };

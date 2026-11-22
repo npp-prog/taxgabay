@@ -57,3 +57,19 @@ test("a VAT-registered client gets the 2550Q and summary lists instead of the 25
   await expect(docs.filter({ hasText: "Summary list of sales" })).toContainText("Kape Co.");
   await expect(docs.filter({ hasText: "Quarterly percentage tax return" })).toHaveCount(0);
 });
+
+test("payroll records produce the monthly 1601C and the contributions summary", async ({ page }) => {
+  await page.goto("/prepare");
+  await page.getByLabel(/I have employees/).check();
+  await page.getByRole("tab", { name: /Payroll/ }).click();
+  await page.getByLabel("Month's last payday").fill("2026-01-31");
+  await page.getByLabel("Employee", { exact: true }).fill("Ana Santos");
+  await page.getByLabel("Basic pay for the month (₱)").fill("30000");
+  await page.getByRole("button", { name: "Add payroll" }).click();
+  await expect(page.getByTestId("records-table")).toContainText("Ana Santos");
+
+  const docs = page.getByTestId("prepared-doc");
+  // ₱30,000 less ₱2,450 employee contributions = ₱27,550; 15% of the excess over ₱20,833 = ₱1,007.55.
+  await expect(docs.filter({ hasText: "January 2026" }).filter({ hasText: "compensation" })).toContainText("₱1,007.55");
+  await expect(docs.filter({ hasText: "Contributions to remit" })).toContainText("₱6,400.00");
+});
