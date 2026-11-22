@@ -4,3 +4,5 @@ export * from "./journal";
 export * from "./ledger";
 export * from "./statements";
 export * from "./check";
+export * from "./practice";
+export * from "./sets";
