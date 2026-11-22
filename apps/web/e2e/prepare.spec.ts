@@ -142,3 +142,16 @@ test("journal entries complete the books, and a monthly packet holds the month's
   await expect(docs).toHaveCount(1);
   await expect(docs.first()).toContainText("January 2026");
 });
+
+test("schedules download as CSV", async ({ page }) => {
+  await page.goto("/prepare");
+  await page.getByRole("button", { name: "Load an example" }).click();
+  const qap = page.getByTestId("prepared-doc").filter({ hasText: "Quarterly alphalist of payees" });
+  const download = page.waitForEvent("download");
+  await qap.getByRole("button", { name: "Download this list as CSV" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("taxgabay-qap-2026-03-31.csv");
+  const text = Buffer.concat(await (await file.createReadStream()).toArray()).toString("utf8");
+  expect(text.split("\n")[0]).toBe("TIN,Payee,ATC,Income payment,Rate,Tax withheld");
+  expect(text).toContain("Jose Cruz,WI100,30000.00,5%,1500.00");
+});

@@ -6,7 +6,7 @@ import * as React from "react";
 import { StepsTable } from "@/components/steps-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, importCsv, templateCsv, TEMPLATES, type TemplateKind } from "@/lib/prepare-csv";
+import { CATEGORIES, importCsv, scheduleCsv, templateCsv, TEMPLATES, type TemplateKind } from "@/lib/prepare-csv";
 import { cn, formatDatePH } from "@/lib/utils";
 
 /** Pieces shared by the browser-only preparer, the client portal and the firm workspace. */
@@ -330,6 +330,11 @@ export function DocumentCard({ d }: { d: PreparedDocument }) {
               </tbody>
             </table>
           </div>
+        )}
+        {d.schedule && d.schedule.rows.length > 0 && (
+          <button type="button" className="text-sm font-medium text-primary underline" onClick={() => download(`taxgabay-${d.form.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${d.period_end}.csv`, scheduleCsv(d.schedule!))}>
+            Download this list as CSV
+          </button>
         )}
         <details>
           <summary className="cursor-pointer text-sm font-medium text-primary">How this was computed</summary>

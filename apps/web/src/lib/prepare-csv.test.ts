@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { importCsv, parseCsv, templateCsv } from "./prepare-csv";
+import { importCsv, parseCsv, scheduleCsv, templateCsv } from "./prepare-csv";
 
 let n = 0;
 const id = () => `r${++n}`;
@@ -39,6 +39,10 @@ describe("prepare CSV import", () => {
     const r = importCsv("payroll", "month_end,employee_name,basic_pay,benefits,minimum_wage_earner\n2026-01-31,Ana,30000,,no\n2026-02-28,,30000,,\n2026-03-31,Ana,x,,\n2026-04-30,Ana,100,abc,\n2026-05-31,Ben,15000,1000,yes\n", id);
     expect(r.errors).toHaveLength(3);
     expect(r.records[1]).toMatchObject({ employee: { name: "Ben" }, benefits: "1000", minimum_wage_earner: true });
+  });
+  it("exports a schedule as CSV that parses back", () => {
+    const csv = scheduleCsv({ columns: [{ key: "name", label: "Payee" }, { key: "ewt", label: "Tax withheld" }], rows: [{ name: "Cruz, Jose", ewt: "1500.00" }, { name: 'A "B"', ewt: "" }] });
+    expect(parseCsv(csv)).toEqual([["Payee", "Tax withheld"], ["Cruz, Jose", "1500.00"], ['A "B"', ""]]);
   });
   it("rejects empty files and missing columns", () => {
     expect(importCsv("sale", "", id).errors[0]).toMatch(/empty/);

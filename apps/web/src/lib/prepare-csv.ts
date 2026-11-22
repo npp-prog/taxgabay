@@ -161,3 +161,13 @@ export function importCsv(kind: TemplateKind, text: string, makeId: () => string
   });
   return { records, errors };
 }
+
+/**
+ * A prepared schedule (SAWT, QAP, summary lists, alphalist, contributions) as CSV, with plain
+ * numbers (no peso sign or thousands separators) so it opens cleanly in a spreadsheet.
+ */
+export function scheduleCsv(schedule: { columns: { key: string; label: string }[]; rows: Record<string, string>[] }): string {
+  const lines = [schedule.columns.map((c) => csvCell(c.label)).join(",")];
+  for (const r of schedule.rows) lines.push(schedule.columns.map((c) => csvCell(r[c.key] ?? "")).join(","));
+  return lines.join("\n") + "\n";
+}
