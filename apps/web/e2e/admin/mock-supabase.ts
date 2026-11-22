@@ -11,7 +11,11 @@ type Row = Record<string, unknown>;
 export interface MockDb {
   tables: Record<string, Row[]>;
   requests: { method: string; table: string; body: unknown }[];
+  /** TINs as the encrypted store would return them, keyed "client|subject|ref". */
+  tins: Map<string, string>;
 }
+
+export const MOCK_USER_ID = "00000000-0000-0000-0000-00000000a001";
 
 const ADMIN_USER = { id: "00000000-0000-0000-0000-00000000a001", aud: "authenticated", role: "authenticated", email: "admin@example.test", app_metadata: { role: "admin" }, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" };
 
@@ -108,6 +112,7 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
   const db: MockDb = {
     tables: { issuances: [], issuance_links: [], deadline_extensions: [], holidays: [], admin_audit_log: [], profiles: [], user_obligations: [], user_roadmap_progress: [], user_checklist_progress: [], reminder_settings: [], ...(opts.tables ?? {}) },
     requests: [],
+    tins: new Map(),
   };
   const session = sessionFor(opts.role === undefined ? "admin" : opts.role);
   await page.addInitScript((s) => localStorage.setItem("sb-supabase-auth-token", JSON.stringify(s)), session);
@@ -123,6 +128,33 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
     const req = route.request();
     const url = new URL(req.url());
     const table = url.pathname.split("/").pop()!;
+    if (url.pathname.includes("/rpc/")) {
+      const args = (req.postData() ? JSON.parse(req.postData()!) : {}) as Record<string, string>;
+      db.requests.push({ method: "RPC", table, body: args });
+      const key = (a: Record<string, string>) => `${a.cid}|${a.subj}|${a.ref ?? ""}`;
+      switch (table) {
+        case "claim_client": {
+          const c = (db.tables.prep_clients ?? []).find((r) => r.invite_code === String(args.code).toUpperCase().replace(/[^A-Z0-9]/g, ""));
+          if (!c) return route.fulfill({ status: 400, json: { message: "That invite code is not valid. Check it with your CPA.", code: "P0001" } });
+          (db.tables.client_users ??= []).push({ prep_client_id: c.id, user_id: ADMIN_USER.id });
+          return route.fulfill({ json: c.id });
+        }
+        case "reset_invite_code": {
+          const c = (db.tables.prep_clients ?? []).find((r) => r.id === args.cid)!;
+          c.invite_code = "NEWCODE234";
+          return route.fulfill({ json: c.invite_code });
+        }
+        case "set_tin":
+          db.tins.set(key(args), String(args.tin).replace(/\D/g, ""));
+          return route.fulfill({ status: 204, body: "" });
+        case "get_tin":
+          return route.fulfill({ json: db.tins.get(key(args)) ?? null });
+        case "list_tins":
+          return route.fulfill({ json: [...db.tins].filter(([k]) => k.startsWith(`${args.cid}|`)).map(([k, v]) => ({ subject: k.split("|")[1], subject_ref: k.split("|")[2], last4: v.slice(-4) })) });
+        default:
+          return route.fulfill({ status: 404, json: { message: `no mock for rpc ${table}` } });
+      }
+    }
     const rows = (db.tables[table] ??= []);
     const filters = parseFilters(url.searchParams);
     const match = (r: Row) => filters.every((f) => f(r));
@@ -159,7 +191,7 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
           rows.push(r);
           inserted.push(r);
         } else {
-          const r = { id: uuid(), ...it };
+          const r: Row = { id: uuid(), ...(table === "prep_clients" ? { invite_code: `CODE${seq}ABCD`.slice(0, 10), archived: false, profile: {} } : {}), ...(table === "packets" ? { prepared_at: new Date().toISOString(), reviewed_by: null, reviewed_at: null, released_at: null } : {}), ...it };
           rows.push(r);
           inserted.push(r);
         }
@@ -174,7 +206,11 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
         if (table === "issuances") {
           const err = applyIssuanceUpdate(t, { ...(body as Row) });
           if (err) return route.fulfill({ status: 400, json: { message: err, code: "P0001" } });
-        } else Object.assign(t, body);
+        } else {
+          Object.assign(t, body);
+          if (table === "packets" && (body as Row).status === "reviewed") Object.assign(t, { reviewed_by: ADMIN_USER.id, reviewed_at: new Date().toISOString() });
+          if (table === "packets" && (body as Row).status === "released") t.released_at = new Date().toISOString();
+        }
         db.tables.admin_audit_log!.unshift({ id: seq++, table_name: table, row_pk: String(t.id), action: "UPDATE", old_row: before, new_row: { ...t }, actor: ADMIN_USER.id, at: new Date().toISOString() });
       }
       return respond(targets);
