@@ -101,3 +101,27 @@ Approved by the product owner ("Next") on 2026-11-22.
 | 7 | Site search | `/search` across all content. |
 | 8 | PDF exports | Roadmap, calculator results, calendar; tests. |
 | 9 | Tests, docs | Unit + e2e; README, VERIFY.md. |
+
+---
+
+# Phase 4 Plan
+
+Approved by the product owner ("Next") on 2026-11-22. No CPA verification has happened yet, which shapes the assistant (assumption 1).
+
+## Assumptions
+
+1. **AI assistant** answers only from TaxGabay's own content: rule rows (with legal basis), filing guides, hub articles, glossary, FAQs, life events and issuances. One Claude API request per question (Claude Opus 5.5, server-side refusal fallback on), with the retrieved passages sent as documents with **citations enabled**. The app shows each claim's source. It refuses — without calling the model — when retrieval finds nothing relevant, and replaces any answer that comes back without citations with a refusal. **Only verified content is used by default**; `ASSISTANT_ALLOW_UNVERIFIED=1` (for previews) also uses unverified content and labels the answer as unverified. Each question is answered on its own (no chat memory), which keeps every answer grounded. Needs `ANTHROPIC_API_KEY`; without it the page offers site search instead. A simple per-instance rate limit applies.
+2. **Multi-client mode** (bookkeepers): an account or browser can hold several taxpayer profiles ("clients"), switch between them, and see a combined calendar across clients. Progress (obligations, checklists, roadmap) is kept per client. The single-profile experience stays the default.
+3. **Filipino**: an i18n layer with English and Filipino UI text for the app shell and core flows (navigation, home, profile questionnaire, summary, calendar, checklists, assistant). Tax content (guides, articles, rule descriptions) stays in English for now; translating it needs a native speaker plus CPA review. The Filipino UI text is flagged for native-speaker review.
+4. **Mobile app**: an Expo (React Native) app in `apps/mobile` reusing `@taxgabay/tax-engine` directly: profile, calendar and the four Phase 1 calculators, with data on the device. It is typechecked and unit-tested here; running it on a phone (Expo Go) is a manual step for the owner.
+
+## Tasks
+
+| # | Task | Acceptance criteria |
+|---|------|---------------------|
+| 1 | Assistant core | Chunking, retrieval, verification gate, citation mapping, refusal rules — unit-tested. |
+| 2 | Assistant API + page | `/api/assistant` and `/assistant`; e2e against a mock Claude API server. |
+| 3 | Multi-client | Client switcher, per-client data, combined calendar, DB migration; e2e. |
+| 4 | Filipino | Locale switch persisted; dictionaries; core pages translated; e2e. |
+| 5 | Mobile | Expo app with calendar and calculators on tax-engine; typecheck + tests. |
+| 6 | Docs | README, VERIFY.md (Filipino text review), PLAN. |

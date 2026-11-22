@@ -14,6 +14,7 @@
     "test:e2e:admin": "playwright test --config playwright.admin.config.ts --trace off"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.12.0",
     "@supabase/supabase-js": "2.119.2",
     "@taxgabay/content": "workspace:*",
     "@taxgabay/tax-engine": "workspace:*",
