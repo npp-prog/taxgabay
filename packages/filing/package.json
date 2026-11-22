@@ -5,14 +5,17 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@taxgabay/tax-engine": "workspace:*"
+    "@taxgabay/tax-engine": "workspace:*",
+    "@taxgabay/accounting": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

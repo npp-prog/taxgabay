@@ -231,6 +231,9 @@ importers:
 
   packages/filing:
     dependencies:
+      '@taxgabay/accounting':
+        specifier: workspace:*
+        version: link:../accounting
       '@taxgabay/tax-engine':
         specifier: workspace:*
         version: link:../tax-engine

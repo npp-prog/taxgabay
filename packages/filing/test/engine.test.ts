@@ -1,6 +1,6 @@
 import { DEFAULT_PROFILE, type Profile } from "@taxgabay/tax-engine";
 import { describe, expect, it } from "vitest";
-import { checkRecords, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
+import { buildBooks, checkRecords, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
 
 const profile = (p: Partial<Profile>): Profile => ({ ...DEFAULT_PROFILE, taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", ...p });
 const sale = (id: string, date: string, amount: string, no = id, name = "Client A"): ClientRecord => ({ kind: "sale", id, date, document_no: no, customer: { name }, amount });
@@ -240,5 +240,27 @@ describe("corporations", () => {
     const rt = p.documents.find((d) => d.form === "1702-RT")!;
     expect(rt.due_date).toBe("2027-04-15");
     expect(p.issues.map((i) => i.code)).toContain("partnership_type");
+  });
+});
+
+describe("books", () => {
+  it("books VAT, withholding, equipment and payroll refunds, with warnings", async () => {
+    const { post, trialBalance } = await import("@taxgabay/accounting");
+    const recs: ClientRecord[] = [
+      { kind: "expense", id: "e1", date: "2026-01-10", supplier: { name: "Contractor Inc." }, category: "contractors", amount: "11200.00", supplier_vat_registered: true, withholding: { atc: "WC120" } },
+      { kind: "expense", id: "e2", date: "2026-01-11", supplier: { name: "X" }, category: "other", amount: "100.00", withholding: { atc: "NOPE" } },
+      { kind: "expense", id: "e3", date: "2026-01-12", supplier: { name: "Shop" }, category: "equipment", amount: "5000.00" },
+      { kind: "form_2307_received", id: "c1", date: "2026-04-01", payor: { name: "Late" }, period_from: "2025-10-01", period_to: "2025-12-31", atc: "WI010", income_payment: "1000", tax_withheld: "50" },
+      { kind: "payroll", id: "p1", date: "2026-01-31", employee: { name: "Ben" }, basic_pay: "200000" },
+      { kind: "payroll", id: "p2", date: "2026-12-31", employee: { name: "Ben" }, basic_pay: "0.01" },
+    ];
+    const b = buildBooks({ client: { name: "V", profile: profile({ vat_status: "vat", taxpayer_type: "corporation" }) }, records: recs, from: "2026-01-01", to: "2026-12-31" });
+    expect(b.chart.get("301")!.name).toBe("Retained earnings");
+    expect(b.entries.map((e) => e.id)).toEqual(["e1", "e2", "e3", "p1", "p2"]);
+    const e1 = b.entries[0]!;
+    expect(e1.lines).toEqual([{ account: "603", debit: "10000.00" }, { account: "112", debit: "1200.00" }, { account: "202", credit: "200.00" }, { account: "101", credit: "11000.00" }]);
+    expect(b.entries.find((e) => e.id === "p2")!.lines.some((l) => l.account === "203" && l.debit)).toBe(true);
+    expect(b.warnings.join(" ")).toMatch(/NOPE.*depreciation/s);
+    expect(trialBalance(post(b.entries, b.chart)).balanced).toBe(true);
   });
 });
