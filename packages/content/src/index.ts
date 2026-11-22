@@ -40,16 +40,16 @@ export function parseGuide(source: string, file = "guide"): Guide {
 }
 
 export function listGuides(dir = guidesDir()): GuideFrontmatter[] {
-  return readdirSync(dir)
+  return readdirSync(/*turbopackIgnore: true*/ dir)
     .filter((f) => f.endsWith(".mdx"))
-    .map((f) => parseGuide(readFileSync(join(dir, f), "utf8"), f).frontmatter)
+    .map((f) => parseGuide(readFileSync(/*turbopackIgnore: true*/ join(dir, f), "utf8"), f).frontmatter)
     .sort((a, b) => a.form.localeCompare(b.form));
 }
 
 export function getGuide(slug: string, dir = guidesDir()): Guide | null {
   if (!/^[a-z0-9-]+$/.test(slug)) return null;
   try {
-    return parseGuide(readFileSync(join(dir, `${slug}.mdx`), "utf8"), `${slug}.mdx`);
+    return parseGuide(readFileSync(/*turbopackIgnore: true*/ join(dir, `${slug}.mdx`), "utf8"), `${slug}.mdx`);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw e;
