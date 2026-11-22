@@ -1,0 +1,18 @@
+{
+  "name": "taxgabay",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "turbo run dev --filter=@taxgabay/web",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @taxgabay/web test:e2e",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:seed-sql": "pnpm --filter @taxgabay/tax-engine seed-sql"
+  },
+  "devDependencies": {
+    "turbo": "2.11.13",
+    "typescript": "~5.9.3"
+  }
+}
