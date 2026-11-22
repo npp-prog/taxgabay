@@ -330,3 +330,20 @@ describe("monthly packets", () => {
     expect(() => preparePacket({ client: { name: "A", profile: prof }, records: [], period: { year: 2026, quarter: 1 }, month: 5 })).toThrow(/not in Q1/);
   });
 });
+
+describe("mixed-income earners", () => {
+  const mixed = (p: Partial<Profile> = {}) => profile({ taxpayer_type: "mixed_income", ...p });
+  const sales: ClientRecord[] = [1, 2, 3].map((m) => ({ kind: "sale", id: `s${m}`, date: `2026-0${m}-20`, document_no: String(m), customer: { name: "X" }, amount: "100000.00" }));
+  it("taxes the business alone on the 1701Q at 8% without the ₱250,000 reduction", () => {
+    const p = preparePacket({ client: { name: "M", profile: mixed() }, records: sales, period: { year: 2026, quarter: 1 } });
+    const f = Object.fromEntries(p.documents.find((d) => d.form === "1701Q")!.fields.map((x) => [x.key, x.value]));
+    expect(f).toMatchObject({ gross_cumulative: "300000.00", deductions: "0.00", tax_due: "24000.00" });
+  });
+  it("uses graduated rates on business income on the 1701Q (flagged) and warns when the 2316 is missing", () => {
+    const p = preparePacket({ client: { name: "M", profile: mixed({ income_tax_option: "graduated_osd" }) }, records: sales, period: { year: 2026, quarter: 1 } });
+    expect(p.documents.find((d) => d.form === "1701Q")!.warnings.some((w) => w.includes("Mixed-income"))).toBe(true);
+    const q4 = preparePacket({ client: { name: "M", profile: mixed({ income_tax_option: "graduated_osd" }) }, records: sales, period: { year: 2026, quarter: 4 } });
+    expect(q4.documents.map((d) => d.form)).toContain("1701");
+    expect(q4.issues.map((i) => i.code)).toContain("missing_2316");
+  });
+});

@@ -101,7 +101,21 @@ export interface JournalRecord {
   lines: { account: string; debit?: string; credit?: string }[];
 }
 
-export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received | PayrollRecord | JournalRecord;
+/** A BIR Form 2316 from an employer (mixed-income individuals: salary on top of a business). */
+export interface Form2316Received {
+  kind: "form_2316_received";
+  id: string;
+  /** Date the certificate was received. */
+  date: ISODate;
+  employer: Party;
+  /** Calendar year the compensation was earned. */
+  year: number;
+  /** Taxable compensation shown on the 2316 (after non-taxable benefits and contributions). */
+  taxable_compensation: string;
+  tax_withheld: string;
+}
+
+export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received | PayrollRecord | JournalRecord | Form2316Received;
 
 export interface ClientInfo {
   name: string;

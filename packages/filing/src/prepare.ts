@@ -27,7 +27,7 @@ import { checkRecords } from "./checks";
 import { employeeKey, linesInMonth, payrollIn, payrollYear } from "./payroll";
 import { linesFor } from "./data/form-lines";
 import { inRange, monthLabel, quarterLabel, quarterMonths, quarterRange, yearRange, type Range } from "./periods";
-import type { ClientInfo, ClientRecord, ExpenseRecord, Form2307Received, Issue, Packet, Party, PreparedDocument, PreparedField, QuarterRef, SaleRecord } from "./types";
+import type { ClientInfo, ClientRecord, ExpenseRecord, Form2307Received, Form2316Received, Issue, Packet, Party, PreparedDocument, PreparedField, QuarterRef, SaleRecord } from "./types";
 
 export interface PrepareInput {
   client: ClientInfo;
@@ -653,7 +653,11 @@ interface ItComputation {
   warnings: string[];
 }
 
-function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): ItComputation | null {
+/**
+ * Income tax to date. Mixed-income earners: the 1701Q covers business income only (8% with no
+ * ₱250,000 reduction); the annual 1701 adds the compensation from Forms 2316 (`withCompensation`).
+ */
+function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption, withCompensation = false): ItComputation | null {
   const r: Range = { start: `${year}-01-01`, end };
   const gross = sum(salesIn(ctx.input.records, r).map((s) => saleNet(ctx, s)));
   const payrollCost = () => {
@@ -664,7 +668,22 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): It
   if (gross.isZero()) {
     return { gross, deduction: dec(0), taxable: dec(0), tax: dec(0), steps: [step("Gross sales/receipts to date", "No sales recorded yet", "0")], rules_used: [], warnings: ["No sales are recorded for the year so far."] };
   }
-  const calc = computeIndividualIncomeTax({ taxable_year: year, gross_sales_receipts: money(gross), itemized_deductions: itemized, vat_registered: isVatClient(ctx) }, ctx.rules);
+  const mixed = isMixed(ctx);
+  if (mixed && option === "eight_percent" && !withCompensation) {
+    const rule = findRule<{ rate: string }>(ctx.rules, "income_tax.individual.eight_percent", `${year}-12-31`, { category: "individual" });
+    const tax = round2(gross.times(rule.value.rate));
+    return {
+      gross,
+      deduction: dec(0),
+      taxable: gross,
+      tax,
+      steps: [step("Gross sales/receipts to date", "Total of sales records", gross), step("Income tax at 8% (no ₱250,000 reduction for mixed-income earners)", `${dec(rule.value.rate).times(100).toString()}% × ${peso(gross)}`, tax, rule.legal_basis)],
+      rules_used: [rule.id],
+      warnings: [],
+    };
+  }
+  const comp = withCompensation && mixed ? sum(certs2316(ctx, year).map((c) => c.taxable_compensation)) : dec(0);
+  const calc = computeIndividualIncomeTax({ taxable_year: year, compensation_income: money(comp), gross_sales_receipts: money(gross), itemized_deductions: itemized, vat_registered: isVatClient(ctx) }, ctx.rules);
   const opt = calc.result.options.find((o) => o.key === option)!;
   if (!opt.eligible) {
     ctx.issues.push({ code: "option_ineligible", severity: "error", message: `The income tax option on the profile cannot be used: ${opt.ineligible_reasons.join(" ")}` });
@@ -673,7 +692,7 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): It
   let taxable: Dec;
   if (option === "eight_percent") {
     const rule = findRule<{ purely_self_employed_deduction: string }>(ctx.rules, "income_tax.individual.eight_percent", `${year}-12-31`, { category: "individual" });
-    taxable = max0(gross.minus(rule.value.purely_self_employed_deduction));
+    taxable = mixed ? gross : max0(gross.minus(rule.value.purely_self_employed_deduction));
   } else {
     taxable = dec(opt.steps.find((s) => s.label === "Taxable income from business")!.amount);
   }
@@ -684,9 +703,12 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): It
     tax: dec(opt.income_tax),
     steps: opt.steps.filter((s) => !/^Percentage tax|^Total tax$/.test(s.label)),
     rules_used: calc.rules_used,
-    warnings: calc.warnings,
+    warnings: mixed && !withCompensation ? [...calc.warnings, "Mixed-income earner on graduated rates: the 1701Q here taxes business income alone on the graduated table; compensation is added in the annual 1701 (method to confirm with Neil Priolo, CPA)."] : calc.warnings,
   };
 }
+
+const isMixed = (ctx: Ctx) => ctx.input.client.profile.taxpayer_type === "mixed_income";
+const certs2316 = (ctx: Ctx, year: number) => ctx.input.records.filter((r): r is Form2316Received => r.kind === "form_2316_received" && r.year === year);
 
 const cwtTo = (ctx: Ctx, year: number, end: ISODate) => sum(certsIn(ctx.input.records, { start: `${year}-01-01`, end }).map((c) => c.tax_withheld));
 
@@ -737,20 +759,26 @@ function prepare1701Q(ctx: Ctx, q: QuarterRef, range: Range, option: ItOption): 
 
 function prepare1701A(ctx: Ctx, year: number, option: ItOption): PreparedDocument | null {
   const yr = yearRange(year);
-  const it = incomeTaxTo(ctx, year, yr.end, option);
+  const mixed = isMixed(ctx);
+  const it = incomeTaxTo(ctx, year, yr.end, option, true);
   if (!it) return null;
   const quarterly = priorQuarterPayments(ctx, year, 4, option);
   const cwt = cwtTo(ctx, year, yr.end);
-  const payable = round2(it.tax.minus(quarterly).minus(cwt));
-  const itemized = option === "graduated_itemized";
+  const c2316 = mixed ? certs2316(ctx, year) : [];
+  const comp = sum(c2316.map((c) => c.taxable_compensation));
+  const compWithheld = sum(c2316.map((c) => c.tax_withheld));
+  const payable = round2(it.tax.minus(compWithheld).minus(quarterly).minus(cwt));
+  const itemized = option === "graduated_itemized" || mixed;
+  if (mixed && !c2316.length) ctx.issues.push({ code: "missing_2316", severity: "warning", message: `No Form 2316 is recorded for ${year}. Add the 2316 from each employer so the annual return includes the compensation income.` });
   return doc(ctx, {
     id: `${itemized ? "1701" : "1701A"}-${year}`,
     form: itemized ? "1701" : "1701A",
-    title: itemized ? "Annual income tax return (individuals, itemized deductions)" : "Annual income tax return (purely business or profession, 8% or OSD)",
+    title: mixed ? "Annual income tax return (mixed income: compensation and business)" : itemized ? "Annual income tax return (individuals, itemized deductions)" : "Annual income tax return (purely business or profession, 8% or OSD)",
     period_label: `Taxable year ${year}`,
     period_start: yr.start,
     period_end: yr.end,
     values: {
+      ...(mixed ? { taxable_compensation: money(comp), compensation_withheld: money(compWithheld) } : {}),
       gross: money(it.gross),
       deductions: money(it.deduction),
       taxable_income: money(it.taxable),
@@ -761,9 +789,10 @@ function prepare1701A(ctx: Ctx, year: number, option: ItOption): PreparedDocumen
     },
     steps: [
       ...it.steps,
+      ...(mixed ? [step("Less: tax withheld on compensation (Forms 2316)", c2316.map((c) => `${c.employer.name} ${peso(c.tax_withheld)}`).join(" + ") || "None recorded", compWithheld, "NIRC Sec. 79")] : []),
       step("Less: tax paid with the 1701Q returns", "As prepared by TaxGabay for Q1–Q3", quarterly, "NIRC Sec. 74"),
       step("Less: creditable tax withheld (Forms 2307 for the year)", "Total of Forms 2307 received", cwt, "NIRC Sec. 58; RR 2-98"),
-      step(payable.isNegative() ? "Overpayment (choose refund, tax credit certificate or carry-over on the return)" : "Income tax payable", `${peso(it.tax)} − ${peso(quarterly)} − ${peso(cwt)}`, payable.abs()),
+      step(payable.isNegative() ? "Overpayment (choose refund, tax credit certificate or carry-over on the return)" : "Income tax payable", `${peso(it.tax)}${mixed ? ` − ${peso(compWithheld)}` : ""} − ${peso(quarterly)} − ${peso(cwt)}`, payable.abs()),
     ],
     amount_payable: money(max0(payable)),
     warnings: itemized ? [...it.warnings, "Attach the financial statements (audited where gross sales exceed the threshold), and the schedule of itemized deductions."] : it.warnings,
@@ -907,12 +936,12 @@ export function preparePacket(input: PrepareInput): Packet {
   const documents: PreparedDocument[] = [];
   const notSupported: Packet["not_supported"] = [];
 
-  const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship";
+  const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship" || profile.taxpayer_type === "mixed_income";
   const corporate = CORPORATE_TYPES.has(profile.taxpayer_type) && profile.fiscal_year_end_month === 12;
   if (!individual && !corporate) {
     notSupported.push({
       form: "—",
-      reason: CORPORATE_TYPES.has(profile.taxpayer_type) ? "Corporations with a fiscal year (not ending in December) are planned for a later batch." : "Supported: self-employed individuals, sole proprietors, and corporations, OPCs and partnerships on a calendar year.",
+      reason: CORPORATE_TYPES.has(profile.taxpayer_type) ? "Corporations with a fiscal year (not ending in December) are planned for a later batch." : "Supported: self-employed individuals, sole proprietors, mixed-income earners, and corporations, OPCs and partnerships on a calendar year.",
     });
   }
   if (corporate && profile.taxpayer_type === "partnership") issues.push({ code: "partnership_type", severity: "warning", message: "General professional partnerships are not subject to income tax (partners are taxed instead). These returns assume a taxable partnership — confirm with Neil Priolo, CPA." });

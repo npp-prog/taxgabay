@@ -31,7 +31,7 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
       if (problem) issues.push({ code: "invalid_journal", severity: "error", message: `Journal entry "${r.memo}" (${r.date}): ${problem}`, record_id: r.id });
       continue;
     }
-    const amount = r.kind === "form_2307_received" ? r.income_payment : r.kind === "payroll" ? r.basic_pay : r.amount;
+    const amount = r.kind === "form_2307_received" ? r.income_payment : r.kind === "payroll" ? r.basic_pay : r.kind === "form_2316_received" ? r.taxable_compensation : r.amount;
     let ok: boolean;
     try {
       ok = dec(amount).greaterThan(0);

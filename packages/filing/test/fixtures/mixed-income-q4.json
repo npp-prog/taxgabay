@@ -1,0 +1,177 @@
+{
+  "description": "Mixed-income earner (employee with an online business on the side), non-VAT, 8% option on the business, Q4 2026. The 1701Q returns tax business sales at 8% with no ₱250,000 reduction (₱14,400 paid for Q1–Q3); the annual 1701 adds the ₱400,000 taxable compensation from the employer's 2316 (₱22,500 tax at graduated rates, all withheld) to 8% of ₱240,000 sales (₱19,200).",
+  "client": {
+    "name": "Paolo Mendoza",
+    "profile": {
+      "taxpayer_type": "mixed_income",
+      "vat_status": "non_vat",
+      "income_tax_option": "eight_percent",
+      "has_employees": false,
+      "withholds_expanded": false,
+      "filing_channel": "ebirforms",
+      "efps_group": null,
+      "fiscal_year_end_month": 12,
+      "rdo_code": null,
+      "taxpayer_size": "micro",
+      "line_of_business": "Online selling"
+    }
+  },
+  "period": {
+    "year": 2026,
+    "quarter": 4
+  },
+  "records": [
+    {
+      "kind": "sale",
+      "id": "s01",
+      "date": "2026-01-31",
+      "document_no": "OR-001",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s02",
+      "date": "2026-02-28",
+      "document_no": "OR-002",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s03",
+      "date": "2026-03-31",
+      "document_no": "OR-003",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s04",
+      "date": "2026-04-30",
+      "document_no": "OR-004",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s05",
+      "date": "2026-05-31",
+      "document_no": "OR-005",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s06",
+      "date": "2026-06-30",
+      "document_no": "OR-006",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s07",
+      "date": "2026-07-31",
+      "document_no": "OR-007",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s08",
+      "date": "2026-08-31",
+      "document_no": "OR-008",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s09",
+      "date": "2026-09-30",
+      "document_no": "OR-009",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s10",
+      "date": "2026-10-31",
+      "document_no": "OR-010",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s11",
+      "date": "2026-11-30",
+      "document_no": "OR-011",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s12",
+      "date": "2026-12-31",
+      "document_no": "OR-012",
+      "customer": {
+        "name": "Online clients"
+      },
+      "amount": "20000.00"
+    },
+    {
+      "kind": "form_2316_received",
+      "id": "w1",
+      "date": "2027-01-20",
+      "employer": {
+        "name": "Acme Philippines, Inc.",
+        "tin": "200-111-000-000"
+      },
+      "year": 2026,
+      "taxable_compensation": "400000.00",
+      "tax_withheld": "22500.00"
+    }
+  ],
+  "expected": {
+    "forms": [
+      "1701"
+    ],
+    "issue_codes": [],
+    "values": {
+      "1701-2026": {
+        "taxable_compensation": "400000.00",
+        "compensation_withheld": "22500.00",
+        "gross": "240000.00",
+        "deductions": "0.00",
+        "taxable_income": "240000.00",
+        "tax_due": "41700.00",
+        "quarterly_payments": "14400.00",
+        "cwt": "0.00",
+        "payable": "4800.00"
+      }
+    },
+    "total_payable": "4800.00"
+  }
+}

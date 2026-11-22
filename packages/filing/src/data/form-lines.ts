@@ -82,10 +82,12 @@ export const formLines: FormLine[] = [
   line("1701A", "cwt", "Less: creditable tax withheld per BIR Form 2307 for the year", IT),
   line("1701A", "payable", "Tax payable / (overpayment)", IT),
 
+  line("1701", "taxable_compensation", "Taxable compensation income (from Forms 2316)", IT),
   line("1701", "gross", "Total gross sales/receipts/fees from business or profession for the year", IT),
   line("1701", "deductions", "Less: allowable itemized deductions", IT),
   line("1701", "taxable_income", "Taxable income from business or profession", IT),
   line("1701", "tax_due", "Income tax due (graduated rates)", IT),
+  line("1701", "compensation_withheld", "Less: tax withheld on compensation (Forms 2316)", IT),
   line("1701", "quarterly_payments", "Less: tax paid in the 1701Q returns for the year", IT),
   line("1701", "cwt", "Less: creditable tax withheld per BIR Form 2307 for the year", IT),
   line("1701", "payable", "Tax payable / (overpayment)", IT),
