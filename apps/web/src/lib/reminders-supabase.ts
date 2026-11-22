@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { DEFAULT_PROFILE, normalizeProfile, type Profile } from "@taxgabay/tax-engine";
+import { DEFAULT_PROFILE, normalizeProfile, type DeadlineExtension, type Holiday, type Profile } from "@taxgabay/tax-engine";
+import { mergeCalendarData } from "./calendar-merge";
 import { sendNotification, setVapidDetails } from "web-push";
 import type { ReminderDeps, ReminderUser } from "./reminders-job";
 
@@ -75,6 +76,15 @@ export function supabaseReminderDeps(): ReminderDeps {
           }
         }
       : null,
+    async loadCalendar() {
+      const [h, e] = await Promise.all([
+        sb.from("holidays").select("date,name,type,year,legal_basis,needs_verification"),
+        sb.from("deadline_extensions").select("form_code,original_date,new_date,issuance_ref"),
+      ]);
+      if (h.error) throw h.error;
+      if (e.error) throw e.error;
+      return mergeCalendarData((h.data ?? []) as Holiday[], (e.data ?? []) as DeadlineExtension[]);
+    },
     async removeSubscription(id) {
       await sb.from("push_subscriptions").delete().eq("id", id);
     },

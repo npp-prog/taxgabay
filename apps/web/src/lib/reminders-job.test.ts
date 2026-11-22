@@ -76,3 +76,17 @@ describe("runReminderJob", () => {
     expect(s.planned).toBe(1);
   });
 });
+
+describe("calendar data in the reminder job", () => {
+  it("uses admin-entered extensions when provided", async () => {
+    const d = deps([user()], {
+      loadCalendar: async () => ({
+        holidays: [],
+        extensions: [{ form_code: "1701Q", original_date: "2026-05-15", new_date: "2026-05-22", issuance_ref: "RMC test" }],
+      }),
+    });
+    // With the extension, the Q1 1701Q is due 22 May, so 8 May is no longer 7 days before.
+    expect((await runReminderJob(TODAY, d)).planned).toBe(0);
+    expect((await runReminderJob("2026-05-15", d)).planned).toBe(1);
+  });
+});

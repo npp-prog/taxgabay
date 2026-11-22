@@ -4,6 +4,8 @@ import {
   holidays,
   planReminders,
   reminderMessage,
+  type DeadlineExtension,
+  type Holiday,
   type PlannedReminder,
   type Profile,
   type ReminderSettings,
@@ -28,6 +30,8 @@ export interface ReminderDeps {
   sendPush: ((sub: ReminderUser["push_subscriptions"][number], payload: string) => Promise<"ok" | "gone">) | null;
   removeSubscription: (id: string) => Promise<void>;
   logSent: (user_id: string, key: string, channel: "email" | "push") => Promise<void>;
+  /** Admin-entered holidays and BIR extensions merged with the bundled ones. */
+  loadCalendar?: () => Promise<{ holidays: Holiday[]; extensions: DeadlineExtension[] }>;
 }
 
 export interface ReminderJobSummary {
@@ -43,6 +47,7 @@ export interface ReminderJobSummary {
 export async function runReminderJob(today: string, deps: ReminderDeps): Promise<ReminderJobSummary> {
   const summary: ReminderJobSummary = { today, users: 0, planned: 0, sent: { email: 0, push: 0 }, skipped: { email: 0, push: 0 }, errors: [] };
   const users = await deps.loadUsers();
+  const calendar = deps.loadCalendar ? await deps.loadCalendar() : { holidays, extensions: deadlineExtensions };
   summary.users = users.length;
   for (const u of users) {
     let planned: PlannedReminder[];
@@ -54,8 +59,8 @@ export async function runReminderJob(today: string, deps: ReminderDeps): Promise
         already_sent: u.already_sent,
         today,
         rules: deadlineRules,
-        holidays,
-        extensions: deadlineExtensions,
+        holidays: calendar.holidays,
+        extensions: calendar.extensions,
       });
     } catch (e) {
       summary.errors.push(`${u.user_id}: ${(e as Error).message}`);

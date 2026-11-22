@@ -4,14 +4,13 @@ import {
   addDays,
   addMonths,
   daysInMonth,
-  deadlineExtensions,
   deadlineRules,
   generateObligations,
-  holidays,
   obligationsToICS,
   parseISO,
   toISO,
   weekday,
+  type Holiday,
   type Obligation,
 } from "@taxgabay/tax-engine";
 import Link from "next/link";
@@ -21,7 +20,7 @@ import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { HOLIDAY_YEARS } from "@/lib/rules";
+import { useCalendarData } from "@/lib/calendar-data";
 import { useUserData, type ObligationStatus } from "@/lib/user-data";
 import { cn, formatDatePH, todayPH } from "@/lib/utils";
 
@@ -71,7 +70,7 @@ function ObligationRow({
   );
 }
 
-function MonthGrid({ month, obligations }: { month: string; obligations: Obligation[] }) {
+function MonthGrid({ month, obligations, holidays }: { month: string; obligations: Obligation[]; holidays: readonly Holiday[] }) {
   const { y, m } = parseISO(`${month}-01`);
   const first = toISO(y, m, 1);
   const lead = weekday(first);
@@ -129,12 +128,10 @@ export function CalendarView() {
   const from = `${today.slice(0, 7)}-01`;
   const to = addDays(addMonths(today, 12), -1);
 
+  const { holidays, extensions } = useCalendarData();
   const obligations = React.useMemo(
-    () =>
-      data.profile
-        ? generateObligations(data.profile, { from, to, rules: deadlineRules, holidays, extensions: deadlineExtensions })
-        : [],
-    [data.profile, from, to],
+    () => (data.profile ? generateObligations(data.profile, { from, to, rules: deadlineRules, holidays, extensions }) : []),
+    [data.profile, from, to, holidays, extensions],
   );
 
   if (!ready) return <p>Loading…</p>;
@@ -154,7 +151,7 @@ export function CalendarView() {
   const toggle = (o: Obligation) =>
     void setObligation(o.id, o.rule_id, o.period_label, o.due_date, statusOf(o) === "pending" ? "filed_and_paid" : "pending");
 
-  const lastHolidayYear = HOLIDAY_YEARS.at(-1) ?? 0;
+  const lastHolidayYear = holidays.reduce((y, h) => Math.max(y, h.year), 0);
   const beyondHolidays = Number(to.slice(0, 4)) > lastHolidayYear;
 
   function downloadICS() {
@@ -266,7 +263,7 @@ export function CalendarView() {
                   Next →
                 </Button>
               </div>
-              <MonthGrid month={month} obligations={monthObligations} />
+              <MonthGrid month={month} obligations={monthObligations} holidays={holidays} />
               <ul className="divide-y divide-border">
                 {monthObligations.map((o) => (
                   <ObligationRow key={o.id} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} />
