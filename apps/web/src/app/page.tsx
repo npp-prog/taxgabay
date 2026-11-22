@@ -9,6 +9,8 @@ const FEATURES = [
   { href: "/calculators", title: "Compute with the legal basis shown", body: "Income tax (8% vs graduated), corporate, VAT, percentage, withholding, estate, donor's, capital gains, DST and penalties — every line explained." },
   { href: "/guides", title: "Step-by-step filing guides", body: "Who files, when, where, what to attach and common mistakes for the most-used BIR forms." },
   { href: "/roadmap", title: "Starting a business?", body: "Registration roadmaps for sole proprietorships (DTI), companies (SEC) and cooperatives (CDA), with progress saved." },
+  { href: "/learn", title: "Learn the basics", body: "Plain-language articles, a Taglish-friendly glossary and answers to common questions." },
+  { href: "/issuances", title: "BIR issuances, explained", body: "Revenue regulations, memorandum orders and circulars with plain-language summaries and links to the official text." },
   { href: "/life-events", title: "Big life events", body: "Hiring, closing a business, settling an estate, selling or donating property, moving RDO — step by step." },
 ];
 
