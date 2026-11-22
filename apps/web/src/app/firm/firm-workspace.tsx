@@ -37,7 +37,7 @@ import {
   type PrepClient,
 } from "@/lib/workspace";
 import { PERIOD_STATUS_LABEL } from "@/lib/workspace-core";
-import { input, label, PacketResults, RecordsTable, RecordTabs } from "../prepare/parts";
+import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs } from "../prepare/parts";
 
 const PACKET_STATUS: Record<PacketRow["status"], string> = { prepared: "Prepared — not reviewed", reviewed: "Reviewed", released: "Released to client" };
 const defaultProfile = (): Profile => ({ taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", has_employees: false, withholds_expanded: false, filing_channel: "ebirforms", efps_group: null, fiscal_year_end_month: 12, rdo_code: null, taxpayer_size: "micro", line_of_business: null });
@@ -232,6 +232,8 @@ interface Detail {
 function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClient; role: NonNullable<Membership["firmRole"]>; onChanged: () => void; onDeleted: () => void }) {
   const [d, setD] = React.useState<Detail | null>(null);
   const [profile, setProfile] = React.useState<Profile>(client.profile);
+  const [corporate, setCorporate] = React.useState(client.corporate);
+  const isCorp = ["corporation", "opc", "partnership"].includes(profile.taxpayer_type);
   const [code, setCode] = React.useState(client.invite_code);
   const [tab, setTab] = React.useState<TemplateKind>("sale");
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
@@ -286,8 +288,16 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
             <select id="f-type" className={input} value={profile.taxpayer_type} onChange={(e) => setProfile({ ...profile, taxpayer_type: e.target.value as TaxpayerType })}>
               <option value="self_employed">Self-employed / professional</option>
               <option value="sole_proprietorship">Sole proprietor</option>
+              <option value="corporation">Corporation</option>
+              <option value="opc">One-person corporation (OPC)</option>
+              <option value="partnership">Partnership</option>
             </select>
           </div>
+          {isCorp ? (
+            <div className="md:col-span-2">
+              <CorporateFields value={corporate} onChange={setCorporate} idPrefix="f" />
+            </div>
+          ) : (
           <div>
             <label className={label} htmlFor="f-option">
               Income tax option
@@ -298,6 +308,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
               <option value="graduated_itemized">Graduated, itemized</option>
             </select>
           </div>
+          )}
           <div>
             <label className={label} htmlFor="f-vat">
               VAT registration
@@ -317,7 +328,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
           </label>
         </div>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => run(async () => {
-          await updateClientProfile(client.id, profile);
+          await updateClientProfile(client.id, profile, isCorp ? corporate : undefined);
           onChanged();
         })}>
           Save profile
@@ -349,7 +360,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
                   </option>
                 ))}
               </select>
-              <Button disabled={busy} onClick={() => run(() => createPacket({ ...client, profile }, period))}>
+              <Button disabled={busy} onClick={() => run(() => createPacket({ ...client, profile, corporate }, period))}>
                 Prepare {quarterLabel(period)} packet
               </Button>
             </div>
@@ -366,7 +377,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
             <h3 className="font-semibold">Packets</h3>
             {d.packets.length === 0 && <p className="text-sm text-muted-foreground">None yet.</p>}
             {d.packets.map((p) => (
-              <PacketCard key={p.id} client={{ ...client, profile }} packet={p} canReview={canReview} busy={busy} onStatus={(s) => run(() => setPacketStatus(p, s))} />
+              <PacketCard key={p.id} client={{ ...client, profile, corporate }} packet={p} canReview={canReview} busy={busy} onStatus={(s) => run(() => setPacketStatus(p, s))} />
             ))}
           </section>
           {role === "admin" && (

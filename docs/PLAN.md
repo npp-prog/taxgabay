@@ -211,7 +211,8 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 - Done after that: receipt uploads (photos/PDF, 10 MB, private bucket, signed links), "what the firm needs next" for clients with records due 10 days before each deadline (`RECORDS_LEAD_DAYS`, a firm rule, not a BIR rule), email reminders 5, 1 and 0 days before the records date (daily cron), firm overview sorted by next deadline with late records flagged, client data download (JSON) and firm-admin deletion of a client with all data.
 - Second batch done: VAT-registered individuals — 2550Q (vatable, zero-rated and exempt sales; input tax by capital goods, goods and services; excess input tax carried over), summary lists of sales and purchases, 1701Q/1701A on sales net of VAT; the 8% option is refused for VAT clients.
 - Third batch done: payroll — payroll records per employee per month, monthly 1601C with the December year-end adjustment, SSS/PhilHealth/Pag-IBIG contributions summary, 1604C with the alphalist of employees, and a 2316 per employee.
-- Next batches: corporations (1702Q, 1702-RT), books of accounts and financial statements, monthly packets.
+- Fourth batch done: corporations, OPCs and partnerships on a calendar year — cumulative 1702Q and 1702-RT (higher of regular rate, reduced 20% when eligible, and MCIT from the 4th year), plus the same percentage tax/VAT, withholding and payroll returns.
+- Next batches: books of accounts and financial statements, monthly packets.
 - Known limitation: packets are quarterly, but 0619E is monthly and falls due before the quarter ends. The firm can prepare a quarter's packet early (e.g. in February for January's 0619E); later batches should add monthly packets.
 
 ## Out of scope for Phase 6

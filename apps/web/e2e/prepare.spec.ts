@@ -73,3 +73,22 @@ test("payroll records produce the monthly 1601C and the contributions summary", 
   await expect(docs.filter({ hasText: "January 2026" }).filter({ hasText: "compensation" })).toContainText("₱1,007.55");
   await expect(docs.filter({ hasText: "Contributions to remit" })).toContainText("₱6,400.00");
 });
+
+test("a corporation gets the 1702Q with the higher of regular tax and MCIT", async ({ page }) => {
+  await page.goto("/prepare");
+  // Retry until the page is interactive (a choice made before hydration is lost).
+  await expect(async () => {
+    await page.getByLabel("You are a").selectOption("corporation");
+    await expect(page.getByLabel("Year operations began")).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await page.getByLabel("Year operations began").fill("2021");
+  await page.getByLabel("Total assets excl. land (₱)").fill("5000000");
+  await page.getByLabel("Date", { exact: true }).fill("2026-02-10");
+  await page.getByLabel("Invoice no.").fill("1");
+  await page.getByLabel("Customer", { exact: true }).fill("Client");
+  await page.getByLabel("Amount (₱)").fill("1000000");
+  await page.getByRole("button", { name: "Add sale" }).click();
+  const q = page.getByTestId("prepared-doc").filter({ hasText: "Quarterly income tax return (corporations" });
+  await expect(q).toContainText("₱200,000.00"); // 20% reduced rate on ₱1,000,000
+  await expect(q).toContainText("₱20,000.00"); // MCIT 2% of gross income
+});

@@ -82,7 +82,7 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
     }
   }
 
-  const packet = React.useMemo(() => (data ? preparePacket({ client: { name: data.client.name, profile: data.client.profile }, records: data.records, period }) : null), [data, period]);
+  const packet = React.useMemo(() => (data ? preparePacket({ client: { name: data.client.name, profile: data.client.profile, corporate: data.client.corporate }, records: data.records, period }) : null), [data, period]);
 
   if (!data) return error ? <p role="alert" className="text-destructive">{error}</p> : <p className="text-muted-foreground">Loading your records…</p>;
   if (!data.consents.records_storage) return <ConsentCard client={data.client} onAccept={(tin) => run(async () => {

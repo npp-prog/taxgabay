@@ -31,6 +31,28 @@ function download(name: string, text: string) {
   a.remove();
 }
 
+export type CorporateInfo = { year_commenced?: number | null; total_assets_excl_land?: string | null } | undefined;
+
+/** Year operations began and total assets excluding land (corporations, OPCs, partnerships). */
+export function CorporateFields({ value, onChange, idPrefix }: { value: CorporateInfo; onChange: (v: NonNullable<CorporateInfo>) => void; idPrefix: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className={label} htmlFor={`${idPrefix}-commenced`}>
+          Year operations began
+        </label>
+        <input id={`${idPrefix}-commenced`} className={input} inputMode="numeric" value={value?.year_commenced ?? ""} onChange={(e) => onChange({ ...value, year_commenced: e.target.value ? Number(e.target.value.replace(/\D/g, "")) || null : null })} placeholder="e.g. 2021" />
+      </div>
+      <div>
+        <label className={label} htmlFor={`${idPrefix}-assets`}>
+          Total assets excl. land (₱)
+        </label>
+        <input id={`${idPrefix}-assets`} className={input} inputMode="decimal" value={value?.total_assets_excl_land ?? ""} onChange={(e) => onChange({ ...value, total_assets_excl_land: e.target.value.replace(/[₱,\s]/g, "") || null })} placeholder="For the reduced rate" />
+      </div>
+    </div>
+  );
+}
+
 export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRecord[]; tab: TemplateKind; onTab: (t: TemplateKind) => void }) {
   return (
         <div role="tablist" className="flex gap-1 border-b border-border">

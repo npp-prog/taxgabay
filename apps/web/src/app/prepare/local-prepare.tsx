@@ -10,7 +10,7 @@ import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { type TemplateKind } from "@/lib/prepare-csv";
 import { usePrepare } from "@/lib/prepare-store";
 import { todayPH } from "@/lib/utils";
-import { CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
+import { CorporateFields, CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
 
 const EXAMPLE: ClientRecord[] = [
   { kind: "sale", id: "x1", date: "2026-01-10", document_no: "SI-0001", customer: { name: "Kape Co., Inc." }, amount: "30000.00" },
@@ -28,6 +28,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
   const { client, records, tinConsent } = state;
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
   const [tab, setTab] = React.useState<TemplateKind>("sale");
+  const isCorp = ["corporation", "opc", "partnership"].includes(client.profile.taxpayer_type);
   const packet = React.useMemo(() => preparePacket({ client, records, period }), [client, records, period]);
   const setProfile = (patch: Partial<typeof client.profile>) => update((s) => ({ ...s, client: { ...s.client, profile: { ...s.client.profile, ...patch } } }));
   const addRecord = (r: ClientRecord) => update((s) => ({ ...s, records: [...s.records, r] }));
@@ -37,7 +38,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
     <div className="space-y-8">
       {banner}
       <div className="rounded-lg border border-sun bg-sun-soft p-4 text-sm leading-relaxed text-sun-foreground dark:text-sun">
-        <strong>For now, everything stays in this browser.</strong> Clients of {REVIEWER}&apos;s firm will get a secure account where records are saved and each packet is reviewed before release. It supports self-employed individuals and sole proprietors, VAT-registered or not, with or without employees.
+        <strong>For now, everything stays in this browser.</strong> Clients of {REVIEWER}&apos;s firm will get a secure account where records are saved and each packet is reviewed before release. It supports self-employed individuals, sole proprietors, and corporations, OPCs and partnerships on a calendar year — VAT-registered or not, with or without employees.
       </div>
 
       {/* 1. Details */}
@@ -65,8 +66,14 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             <select id="p-type" className={input} value={client.profile.taxpayer_type} onChange={(e) => setProfile({ taxpayer_type: e.target.value as TaxpayerType })}>
               <option value="self_employed">Self-employed professional or freelancer</option>
               <option value="sole_proprietorship">Sole proprietor (DTI-registered business)</option>
+              <option value="corporation">Corporation</option>
+              <option value="opc">One-person corporation (OPC)</option>
+              <option value="partnership">Partnership</option>
             </select>
           </div>
+          {isCorp ? (
+            <CorporateFields value={client.corporate} onChange={(corporate) => update((s) => ({ ...s, client: { ...s.client, corporate } }))} idPrefix="p" />
+          ) : (
           <div>
             <label className={label} htmlFor="p-option">
               Income tax option chosen for the year
@@ -77,6 +84,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
               <option value="graduated_itemized">Graduated rates with itemized deductions</option>
             </select>
           </div>
+          )}
         </div>
         <div className="max-w-md">
           <label className={label} htmlFor="p-vat">

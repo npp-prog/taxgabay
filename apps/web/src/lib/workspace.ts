@@ -14,6 +14,8 @@ export interface PrepClient {
   id: string;
   name: string;
   profile: Profile;
+  /** Stored inside prep_clients.profile under the "corporate" key. */
+  corporate?: ClientInfo["corporate"];
   invite_code: string | null;
   archived: boolean;
 }
@@ -57,13 +59,17 @@ function check<T>(r: { data: T; error: { message: string } | null }): T {
   return r.data;
 }
 
-const asClient = (row: Record<string, unknown>): PrepClient => ({
+const asClient = (row: Record<string, unknown>): PrepClient => {
+  const { corporate, ...prof } = ((row.profile as Partial<Profile> & { corporate?: ClientInfo["corporate"] }) ?? {});
+  return {
   id: String(row.id),
   name: String(row.name),
-  profile: { ...DEFAULT_PROFILE, taxpayer_type: "self_employed", vat_status: "non_vat", ...((row.profile as Partial<Profile>) ?? {}) },
+  profile: { ...DEFAULT_PROFILE, taxpayer_type: "self_employed", vat_status: "non_vat", ...prof },
+  corporate,
   invite_code: (row.invite_code as string | null) ?? null,
   archived: !!row.archived,
-});
+  };
+};
 
 export async function loadMembership(userId: string): Promise<Membership> {
   const fm = check(await sb().from("firm_members").select("user_id,role,display_name").eq("user_id", userId)) as { role: Membership["firmRole"]; display_name: string | null }[];
@@ -91,8 +97,8 @@ export async function createClient(name: string, profile: Profile): Promise<Prep
   return asClient(rows[0]!);
 }
 
-export async function updateClientProfile(id: string, profile: Profile): Promise<void> {
-  check(await sb().from("prep_clients").update({ profile }).eq("id", id));
+export async function updateClientProfile(id: string, profile: Profile, corporate?: ClientInfo["corporate"]): Promise<void> {
+  check(await sb().from("prep_clients").update({ profile: corporate ? { ...profile, corporate } : profile }).eq("id", id));
 }
 
 export async function resetInviteCode(id: string): Promise<string> {
@@ -172,7 +178,7 @@ async function tinsFor(cid: string, packet: Packet): Promise<{ map: Map<string, 
 /** A stored packet with TINs put back in, ready to print. */
 export async function printablePacket(cid: string, client: PrepClient, packet: Packet): Promise<{ client: ClientInfo; packet: Packet }> {
   const t = await tinsFor(cid, packet);
-  return { client: { name: client.name, profile: client.profile, tin: t.client }, packet: fillTins(packet, t.map) };
+  return { client: { name: client.name, profile: client.profile, corporate: client.corporate, tin: t.client }, packet: fillTins(packet, t.map) };
 }
 
 // ---------- Periods and packets ----------
@@ -199,7 +205,7 @@ export async function loadPackets(cid: string): Promise<PacketRow[]> {
 /** Firm: prepares the packet for a quarter from the client's stored records and saves it (without TINs). */
 export async function createPacket(client: PrepClient, q: QuarterRef): Promise<PacketRow> {
   const records = await loadRecords(client.id);
-  const packet = preparePacket({ client: { name: client.name, profile: client.profile }, records, period: q });
+  const packet = preparePacket({ client: { name: client.name, profile: client.profile, corporate: client.corporate }, records, period: q });
   const period = await setPeriodStatus(client.id, q, "prepared");
   const rows = check(await sb().from("packets").insert({ period_id: period.id, prep_client_id: client.id, payload: redactTins(packet), status: "prepared" }).select("id,period_id,prep_client_id,payload,status,prepared_at,reviewed_by,reviewed_at,released_at")) as PacketRow[];
   return rows[0]!;
