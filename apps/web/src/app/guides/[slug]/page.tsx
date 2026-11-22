@@ -33,7 +33,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       </nav>
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{fm.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        {fm.status !== "published" && <Badge variant="warning">Draft — being completed by our CPA</Badge>}
+        {fm.status !== "published" && <Badge variant="warning">Draft — being completed by Neil Priolo, CPA</Badge>}
         {fm.tax_types.map((t) => (
           <Badge key={t} variant="outline">
             {t.replace(/_/g, " ")}

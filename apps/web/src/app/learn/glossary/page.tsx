@@ -16,7 +16,7 @@ export default function GlossaryPage() {
       </nav>
       <PageHeader title="Glossary" description="BIR and tax terms in plain language, with the Filipino or Taglish names you may hear." />
       <GlossaryList />
-      <p className="mt-8 text-sm text-muted-foreground">For guidance only. Verify with BIR issuances or consult a CPA. Definitions are pending CPA review.</p>
+      <p className="mt-8 text-sm text-muted-foreground">For guidance only. Verify with BIR issuances or consult a CPA. Definitions are pending review by Neil Priolo, CPA.</p>
     </div>
   );
 }

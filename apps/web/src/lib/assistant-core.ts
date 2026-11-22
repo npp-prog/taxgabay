@@ -146,7 +146,7 @@ export function buildRequest(question: string, chunks: readonly Chunk[]): Pick<A
     type: "document",
     source: { type: "text", media_type: "text/plain", data: c.text },
     title: c.title,
-    context: c.verified ? "Verified by TaxGabay's CPA." : "Not yet verified by TaxGabay's CPA.",
+    context: c.verified ? "Verified by Neil Priolo, CPA." : "Not yet verified by Neil Priolo, CPA.",
     citations: { enabled: true },
   }));
   return {

@@ -156,6 +156,8 @@ Requested by the product owner on 2026-11-22: "a complete guide for business and
 
 # Phase 6 Plan — Client records in, prepared documents out (DRAFT, awaiting approval)
 
+Reviewing CPA: **Neil Priolo, CPA**.
+
 Requested by the product owner on 2026-11-22: clients put in all their records, TaxGabay **automatically prepares** the returns and supporting documents, and the client sends or files them. TaxGabay only prepares; it never files or pays on the client's behalf.
 
 ## How it works (one period, one client)
@@ -168,7 +170,7 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
    - **Schedules**: SAWT (creditable taxes withheld from you), QAP (taxes you withheld), summary list of sales and purchases (VAT), alphalist of employees and of payees.
    - **Certificates to give out**: Form 2307 to each supplier you withheld from; Form 2316 to each employee.
    - **Books and statements**: printed books of accounts for the period, financial statements, payroll register and SSS/PhilHealth/Pag-IBIG contribution summaries.
-5. **The firm reviews (optional)**: a preparer at the accounting firm checks the package and marks it *Reviewed*. Nothing reaches the client as final until it is released.
+5. **The CPA reviews**: Neil Priolo, CPA (or a preparer he assigns) checks the package and marks it *Reviewed*. Nothing reaches the client as final until it is released. Released packets carry "Prepared by TaxGabay · Reviewed by Neil Priolo, CPA" with the review date; packets not yet reviewed are watermarked *Draft — not reviewed*.
 6. **The client receives a filing packet**: one PDF per document, plus data files where BIR needs them, and a cover checklist: what to file, where (eBIRForms/eFPS/RDO), the deadline, how much to pay and where to pay, and what to keep. The client (or the firm, outside TaxGabay) files and pays.
 
 ## Assumptions

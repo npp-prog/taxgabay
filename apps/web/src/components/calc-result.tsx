@@ -42,7 +42,7 @@ export function CalcResultPanel({
     blocks.push(
       { kind: "heading", text: "Disclaimer" },
       { kind: "paragraph", text: DISCLAIMER_TEXT },
-      { kind: "paragraph", text: v.lastVerified ? `Last verified: ${v.lastVerified}.` : "Last verified: not yet — the rates and dates are seed data awaiting CPA review." },
+      { kind: "paragraph", text: v.lastVerified ? `Verified by Neil Priolo, CPA on ${v.lastVerified}.` : "Not yet verified — the rates and dates are seed data awaiting review by Neil Priolo, CPA." },
     );
     return { title: pdfTitle!, subtitle: `Computed on ${today}`, generatedOn: today, blocks };
   };

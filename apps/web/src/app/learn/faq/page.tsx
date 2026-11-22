@@ -42,7 +42,7 @@ export default function FaqPage() {
           </section>
         ))}
       </div>
-      <p className="mt-8 text-sm text-muted-foreground">For guidance only. Verify with BIR issuances or consult a CPA. Answers are pending CPA review.</p>
+      <p className="mt-8 text-sm text-muted-foreground">For guidance only. Verify with BIR issuances or consult a CPA. Answers are pending review by Neil Priolo, CPA.</p>
     </div>
   );
 }

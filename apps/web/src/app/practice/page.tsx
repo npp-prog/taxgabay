@@ -60,7 +60,7 @@ export default function PracticePage() {
         </ul>
       </section>
       <p className="max-w-[80ch] border-l-2 border-sun pl-4 text-sm leading-relaxed text-muted-foreground">
-        The businesses are fictional. Tax amounts in the practice sets are computed with TaxGabay&apos;s rule tables, which are still being verified by a CPA. New to bookkeeping? Start with the{" "}
+        The businesses are fictional. Tax amounts in the practice sets are computed with TaxGabay&apos;s rule tables, which are still being verified by Neil Priolo, CPA. New to bookkeeping? Start with the{" "}
         <Link href="/business-guide" className="text-primary underline">
           business guide
         </Link>

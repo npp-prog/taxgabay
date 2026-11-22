@@ -1,6 +1,6 @@
 # TaxGabay — conventions for Claude Code
 
-Philippine BIR tax guide web app (PWA). Product owner is a CPA who verifies all tax content. Full spec: `docs/SPEC.md`. Current phase plan: `docs/PLAN.md`. Values awaiting CPA review: `docs/VERIFY.md`.
+Philippine BIR tax guide web app (PWA). Product owner and reviewing CPA: **Neil Priolo, CPA**, who verifies all tax content (named on disclaimers, guides and prepared documents). Full spec: `docs/SPEC.md`. Current phase plan: `docs/PLAN.md`. Values awaiting CPA review: `docs/VERIFY.md`.
 
 ## Layout
 - `apps/web` — Next.js (App Router) + TypeScript strict + Tailwind v4; shadcn-style components in `src/components/ui`.

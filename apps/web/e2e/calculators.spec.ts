@@ -13,7 +13,7 @@ test("income tax calculator shows comparison and breakdown with legal basis", as
   await expect(steps).toContainText("Income tax on business at 8%");
   await expect(steps).toContainText("RR 8-2018");
   await expect(result.getByTestId("disclaimer")).toContainText("For guidance only. Verify with BIR issuances or consult a CPA.");
-  await expect(result.getByTestId("disclaimer")).toContainText("Last verified: not yet");
+  await expect(result.getByTestId("disclaimer")).toContainText("Not yet verified");
 });
 
 test("income tax calculator rejects bad input", async ({ page }) => {

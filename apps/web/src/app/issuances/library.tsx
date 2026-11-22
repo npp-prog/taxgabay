@@ -36,7 +36,7 @@ export function IssuanceLibrary() {
       />
       {lib.source === "bundled" && (
         <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-          Showing a starter list of key issuances. Summaries are being reviewed by our CPA; always read the official text.
+          Showing a starter list of key issuances. Summaries are being reviewed by Neil Priolo, CPA; always read the official text.
         </p>
       )}
       <Card>

@@ -81,7 +81,7 @@ export function RoadmapView() {
                     note: `${s.agency} · ${s.where} · ${s.fees_note} Bring: ${s.requirements.join("; ")}. Basis: ${s.legal_basis}`,
                   })),
                 },
-                { kind: "paragraph", text: "For guidance only. Verify with BIR issuances or consult a CPA. Steps and fees are pending CPA verification." },
+                { kind: "paragraph", text: "For guidance only. Verify with BIR issuances or consult a CPA. Steps and fees are pending verification by Neil Priolo, CPA." },
               ],
             })}
           />
