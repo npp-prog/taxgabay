@@ -125,3 +125,29 @@ Approved by the product owner ("Next") on 2026-11-22. No CPA verification has ha
 | 4 | Filipino | Locale switch persisted; dictionaries; core pages translated; e2e. |
 | 5 | Mobile | Expo app with calendar and calculators on tax-engine; typecheck + tests. |
 | 6 | Docs | README, VERIFY.md (Filipino text review), PLAN. |
+
+---
+
+# Phase 5 Plan — Business guide and accounting practice sets
+
+Requested by the product owner on 2026-11-22: "a complete guide for business and sample practice set for accounting records of the business". Choices made: both tracks (business owners and accounting students), both interactive exercises and worked examples, four sample businesses, and four new guide areas.
+
+## Assumptions
+
+1. **Accounting engine** (`packages/accounting`, pure TS, decimal money from tax-engine): chart of accounts, journal entries, books (general journal, cash receipts, cash disbursements, sales, purchases), posting to the ledger, trial balance, adjusting entries, 10-column worksheet, closing entries, financial statements (income statement, statement of changes in equity, balance sheet). Everything shown is **computed from the entries**, so the statements always agree with the books.
+2. **Checking answers**: a learner's entry is compared with the answer key regardless of line order; feedback names the problem (not balanced, wrong account, wrong side, wrong amount, missing or extra line) without revealing the answer until asked.
+3. **Four practice sets** (fictional businesses, one month or one quarter each): a non-VAT freelance service business, a merchandising sari-sari store, a VAT-registered business, and a small corporation with employees. Each has a profile, opening balances, dated transactions written as source documents (invoices, receipts, payroll), the answer key with explanations, period-end adjustments, and **tax returns computed from the books** with the existing tax engine (percentage tax / 8% vs graduated, VAT, withholding on compensation, expanded withholding, corporate income tax).
+4. **Two tracks on the same sets**: the **owner track** keeps the BIR-required books and fills in returns, in plain language; the **student track** runs the full accounting cycle including the worksheet and closing entries.
+5. **Worked examples** show every book filled in, and **printable blank forms** (journal, ledger, cash books) download as PDF.
+6. **Business guide**: new chapters on bookkeeping basics, payroll and employer duties, LGU permits and local business tax, and financial statements. New facts (SSS, PhilHealth and Pag-IBIG contribution rates, 13th month pay, audited statements thresholds, record retention, LGU deadlines) are data flagged `needs_verification` and listed in VERIFY.md.
+7. Practice progress is saved in the browser per set and track (no account needed).
+
+## Tasks
+
+| # | Task | Acceptance criteria |
+|---|------|---------------------|
+| 1 | Accounting engine | Journal validation, posting, trial balance, worksheet, closing, statements, answer checking — unit-tested. |
+| 2 | Practice-set data | Four sets with answer keys; tests prove every entry balances, statements balance, and returns compute. |
+| 3 | Business guide | Chapters and flagged payroll/LGU data; pages. |
+| 4 | Practice UI | Set picker, tracks, interactive journal with feedback, ledger, trial balance, worksheet, statements, books, returns, worked example, printable forms. |
+| 5 | Tests and docs | Unit + e2e; README; VERIFY.md. |
