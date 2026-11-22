@@ -93,6 +93,9 @@ importers:
       '@supabase/supabase-js':
         specifier: 2.119.2
         version: 2.119.2(@opentelemetry/api@1.10.0)
+      '@taxgabay/accounting':
+        specifier: workspace:*
+        version: link:../../packages/accounting
       '@taxgabay/content':
         specifier: workspace:*
         version: link:../../packages/content

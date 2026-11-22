@@ -13,6 +13,8 @@ export const fil: Messages = {
     checklists: "Checklist",
     calculators: "Calculator",
     guides: "Gabay",
+    business: "Negosyo",
+    practice: "Practice set",
     learn: "Matuto",
     issuances: "Issuance",
     lifeEvents: "Life events",

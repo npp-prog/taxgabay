@@ -7,6 +7,8 @@ const FEATURES = [
   { href: "/checklists", title: "Stay compliant every month", body: "Monthly, quarterly and annual checklists from your profile, with a compliance score." },
   { href: "/calculators", title: "Compute with the legal basis shown", body: "Income tax (8% vs graduated), corporate, VAT, percentage, withholding, estate, donor's, capital gains, DST and penalties — every line explained." },
   { href: "/guides", title: "Step-by-step filing guides", body: "Who files, when, where, what to attach and common mistakes for the most-used BIR forms." },
+  { href: "/business-guide", title: "Run your business by the book", body: "Bookkeeping basics, books of accounts, payroll and SSS/PhilHealth/Pag-IBIG, LGU permits and financial statements — in plain language." },
+  { href: "/practice", title: "Practice keeping the books", body: "Sample businesses with invoices and receipts to record. Your entries are checked and turned into a ledger, statements and tax returns." },
   { href: "/roadmap", title: "Starting a business?", body: "Registration roadmaps for sole proprietorships (DTI), companies (SEC) and cooperatives (CDA), with progress saved." },
   { href: "/learn", title: "Learn the basics", body: "Plain-language articles, a Taglish-friendly glossary and answers to common questions." },
   { href: "/issuances", title: "BIR issuances, explained", body: "Revenue regulations, memorandum orders and circulars with plain-language summaries and links to the official text." },

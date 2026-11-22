@@ -7,6 +7,8 @@ export const en = {
     checklists: "Checklists",
     calculators: "Calculators",
     guides: "Guides",
+    business: "Business",
+    practice: "Practice",
     learn: "Learn",
     issuances: "Issuances",
     lifeEvents: "Life events",

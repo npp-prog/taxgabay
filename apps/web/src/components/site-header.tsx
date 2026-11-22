@@ -13,6 +13,8 @@ const LINKS = [
   { href: "/checklists", key: "checklists" },
   { href: "/calculators", key: "calculators" },
   { href: "/guides", key: "guides" },
+  { href: "/business-guide", key: "business" },
+  { href: "/practice", key: "practice" },
   { href: "/learn", key: "learn" },
   { href: "/issuances", key: "issuances" },
   { href: "/life-events", key: "lifeEvents" },
