@@ -1,4 +1,5 @@
 import {
+  addDays,
   addMonths,
   computeCorporateIncomeTax,
   computeEwt,
@@ -26,7 +27,7 @@ import {
 import { checkRecords } from "./checks";
 import { employeeKey, linesInMonth, payrollIn, payrollYear } from "./payroll";
 import { linesFor } from "./data/form-lines";
-import { inRange, monthLabel, quarterLabel, quarterMonths, quarterRange, yearRange, type Range } from "./periods";
+import { fiscalQuarterLabel, fiscalQuarterRange, fiscalYearRange, inRange, monthLabel, monthsOfRange, quarterLabel, quarterRange, yearRange, type Range } from "./periods";
 import type { ClientInfo, ClientRecord, ExpenseRecord, Form2307Received, Form2316Received, Issue, Packet, Party, PreparedDocument, PreparedField, QuarterRef, SaleRecord } from "./types";
 
 export interface PrepareInput {
@@ -51,7 +52,15 @@ interface Ctx {
   rules: readonly TaxRule[];
   issues: Issue[];
   due: (form: string, periodEnd: ISODate) => { date: ISODate; needs_verification: boolean } | null;
+  /** Month the taxable year ends (12 = calendar year; fiscal years only for corporations). */
+  fy: number;
 }
+
+const qRange = (ctx: Ctx, q: QuarterRef) => fiscalQuarterRange(ctx.fy, q);
+const qMonths = (ctx: Ctx, q: QuarterRef) => monthsOfRange(qRange(ctx, q));
+const qLabel = (ctx: Ctx, q: QuarterRef) => fiscalQuarterLabel(ctx.fy, q);
+/** First day of the taxable year named `year` (the year it ends in). */
+const yStart = (ctx: Ctx, year: number) => fiscalYearRange(ctx.fy, year).start;
 
 function fieldsFor(form: string, on: ISODate, values: Record<string, string>): { fields: PreparedField[]; verified: boolean } {
   const lines = linesFor(form, on).filter((l) => l.field_key in values);
@@ -153,17 +162,16 @@ function vatQuarter(ctx: Ctx, range: Range): VatQuarter {
 /** Excess input VAT carried into a quarter, chaining every earlier quarter that has records. */
 function vatCarriedInto(ctx: Ctx, q: QuarterRef): Dec {
   const dates = ctx.input.records.map((r) => r.date).sort();
-  if (!dates.length) return dec(0);
-  let y = Number(dates[0]!.slice(0, 4));
-  let k = Math.floor((Number(dates[0]!.slice(5, 7)) - 1) / 3) + 1;
+  const start = qRange(ctx, q).start;
+  if (!dates.length || dates[0]! >= start) return dec(0);
+  // Walk back in 3-month blocks aligned to this quarter, then forward, chaining the excess.
+  let first = start;
+  while (first > dates[0]!) first = addMonths(first, -3);
   let carry = dec(0);
-  while (y < q.year || (y === q.year && k < q.quarter)) {
-    const v = vatQuarter(ctx, quarterRange({ year: y, quarter: k as 1 | 2 | 3 | 4 }));
+  for (let s = first; s < start; s = addMonths(s, 3)) {
+    const e = addMonths(s, 3);
+    const v = vatQuarter(ctx, { start: s, end: addDays(e, -1) });
     carry = max0(v.input.plus(carry).minus(v.output));
-    if (++k > 4) {
-      k = 1;
-      y++;
-    }
   }
   return carry;
 }
@@ -184,7 +192,7 @@ function prepare2550Q(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
     id: `2550Q-${range.end}`,
     form: "2550Q",
     title: "Quarterly VAT return",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: {
@@ -235,7 +243,7 @@ function prepareSalesList(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocume
     id: `SLS-${range.end}`,
     form: "SLS",
     title: "Summary list of sales (attachment to 2550Q)",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: {},
@@ -274,7 +282,7 @@ function preparePurchaseList(ctx: Ctx, q: QuarterRef, range: Range): PreparedDoc
     id: `SLP-${range.end}`,
     form: "SLP",
     title: "Summary list of purchases (attachment to 2550Q)",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: {},
@@ -338,7 +346,7 @@ function prepare1601C(ctx: Ctx, month: Range): PreparedDocument {
   });
 }
 
-function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range, label = quarterLabel(q)): PreparedDocument {
+function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range, label = qLabel(ctx, q)): PreparedDocument {
   const { lines } = payrollYear(ctx.input.records, q.year, ctx.rules);
   const ls = lines.filter((l) => inRange(l.record.date, range));
   const t = (f: (l: (typeof ls)[number]) => Dec) => sum(ls.map(f));
@@ -509,7 +517,7 @@ function byAtc(w: readonly Withheld[]) {
 }
 
 function prepare1601EQ(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
-  const [m1, m2] = quarterMonths(q) as [Range, Range, Range];
+  const [m1, m2] = qMonths(ctx, q) as [Range, Range, Range];
   const w = withheldIn(ctx, range);
   const total = sum(w.map((x) => x.ewt));
   const r1 = sum(withheldIn(ctx, m1).map((x) => x.ewt));
@@ -520,7 +528,7 @@ function prepare1601EQ(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument 
     id: `1601EQ-${range.end}`,
     form: "1601EQ",
     title: "Quarterly remittance return of expanded withholding tax",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: { total_withheld: money(total), remitted_month1: money(r1), remitted_month2: money(r2), payable: money(payable) },
@@ -548,7 +556,7 @@ function prepare1601EQ(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument 
 const payeeKey = (p: Party) => `${(p.tin ?? "").replace(/\D/g, "")}|${p.name.trim().toLowerCase()}`;
 
 function payees(ctx: Ctx, q: QuarterRef, range: Range) {
-  const months = quarterMonths(q);
+  const months = qMonths(ctx, q);
   const m = new Map<string, { payee: Party; atc: string; byMonth: [Dec, Dec, Dec]; ewt: Dec; rate: string; rule_ids: Set<string> }>();
   for (const x of withheldIn(ctx, range)) {
     const k = `${payeeKey(x.expense.supplier)}|${x.atc}`;
@@ -568,7 +576,7 @@ function prepareQap(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
     id: `QAP-${range.end}`,
     form: "QAP",
     title: "Quarterly alphalist of payees (attachment to 1601EQ)",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: {},
@@ -597,7 +605,7 @@ function prepare2307s(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument[]
       id: `2307-${range.end}-${i + 1}`,
       form: "2307",
       title: `Certificate of creditable tax withheld — ${p.payee.name}`,
-      period_label: quarterLabel(q),
+      period_label: qLabel(ctx, q),
       period_start: range.start,
       period_end: range.end,
       recipient: p.payee,
@@ -618,7 +626,7 @@ function prepareSawt(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
     id: `SAWT-${range.end}`,
     form: "SAWT",
     title: "Summary alphalist of withholding taxes (attachment to 1701Q / 2551Q)",
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     period_start: range.start,
     period_end: range.end,
     values: {},
@@ -710,7 +718,7 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption, wit
 const isMixed = (ctx: Ctx) => ctx.input.client.profile.taxpayer_type === "mixed_income";
 const certs2316 = (ctx: Ctx, year: number) => ctx.input.records.filter((r): r is Form2316Received => r.kind === "form_2316_received" && r.year === year);
 
-const cwtTo = (ctx: Ctx, year: number, end: ISODate) => sum(certsIn(ctx.input.records, { start: `${year}-01-01`, end }).map((c) => c.tax_withheld));
+const cwtTo = (ctx: Ctx, year: number, end: ISODate) => sum(certsIn(ctx.input.records, { start: yStart(ctx, year), end }).map((c) => c.tax_withheld));
 
 /** Tax paid with each 1701Q of the year up to (not including) quarter `upTo`, assuming each was paid as prepared. */
 function priorQuarterPayments(ctx: Ctx, year: number, upTo: number, option: ItOption): Dec {
@@ -824,16 +832,16 @@ function corporateTaxTo(ctx: Ctx, year: number, end: ISODate): CitComputation | 
     if (!ctx.issues.some((i) => i.code === "year_commenced")) ctx.issues.push({ code: "year_commenced", severity: "error", message: "Enter the year the business started operations (needed for the minimum corporate income tax) before income tax returns can be prepared." });
     return null;
   }
-  const r: Range = { start: `${year}-01-01`, end };
+  const r: Range = { start: yStart(ctx, year), end };
   const sales = sum(salesIn(ctx.input.records, r).map((s) => saleNet(ctx, s)));
   const exps = expensesIn(ctx.input.records, r);
   const cos = sum(exps.filter((e) => e.category === "cost_of_sales").map((e) => expenseSplit(ctx, e).net));
-  const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
-  const payroll = sum(lines.filter((l) => l.record.date <= end).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
+  const lines = [...new Set([Number(r.start.slice(0, 4)), Number(end.slice(0, 4))])].flatMap((y) => payrollYear(ctx.input.records, y, ctx.rules).lines);
+  const payroll = sum(lines.filter((l) => inRange(l.record.date, r)).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
   const deductions = sum(exps.filter((e) => e.category !== "cost_of_sales" && e.category !== "equipment").map((e) => expenseSplit(ctx, e).net)).plus(payroll).plus(depreciationIn(ctx, r));
   const assetsKnown = !!corp.total_assets_excl_land;
   const c = computeCorporateIncomeTax(
-    { taxable_year_end: `${year}-12-31`, year_commenced: corp.year_commenced, gross_sales: money(sales), cost_of_sales: money(cos), deductions: money(deductions), total_assets_excl_land: assetsKnown ? corp.total_assets_excl_land! : "999999999999" },
+    { taxable_year_end: fiscalYearRange(ctx.fy, year).end, year_commenced: corp.year_commenced, gross_sales: money(sales), cost_of_sales: money(cos), deductions: money(deductions), total_assets_excl_land: assetsKnown ? corp.total_assets_excl_land! : "999999999999" },
     ctx.rules,
   );
   const warnings = [...c.warnings];
@@ -856,7 +864,7 @@ function corporateTaxTo(ctx: Ctx, year: number, end: ISODate): CitComputation | 
 function priorCorporatePayments(ctx: Ctx, year: number, upTo: number): Dec {
   let paid = dec(0);
   for (let k = 1; k < upTo; k++) {
-    const end = quarterRange({ year, quarter: k as 1 | 2 | 3 }).end;
+    const end = qRange(ctx, { year, quarter: k as 1 | 2 | 3 }).end;
     const c = corporateTaxTo(ctx, year, end);
     if (!c) return paid;
     paid = paid.plus(max0(c.tax.minus(cwtTo(ctx, year, end)).minus(paid)));
@@ -865,7 +873,7 @@ function priorCorporatePayments(ctx: Ctx, year: number, upTo: number): Dec {
 }
 
 function prepareCorporate(ctx: Ctx, q: QuarterRef, annual: boolean): PreparedDocument | null {
-  const end = annual ? `${q.year}-12-31` : quarterRange(q).end;
+  const end = annual ? fiscalYearRange(ctx.fy, q.year).end : qRange(ctx, q).end;
   const c = corporateTaxTo(ctx, q.year, end);
   if (!c) return null;
   const prior = priorCorporatePayments(ctx, q.year, annual ? 4 : q.quarter);
@@ -876,8 +884,8 @@ function prepareCorporate(ctx: Ctx, q: QuarterRef, annual: boolean): PreparedDoc
     id: `${form}-${end}`,
     form,
     title: annual ? "Annual income tax return (corporations and partnerships, regular rate)" : "Quarterly income tax return (corporations and partnerships)",
-    period_label: annual ? `Taxable year ${q.year}` : `${quarterLabel(q)} (cumulative from 1 January)`,
-    period_start: `${q.year}-01-01`,
+    period_label: annual ? (ctx.fy === 12 ? `Taxable year ${q.year}` : `Fiscal year ${q.year} (ends ${end})`) : `${qLabel(ctx, q)} (cumulative from the start of the taxable year)`,
+    period_start: yStart(ctx, q.year),
     period_end: end,
     values: {
       sales: money(c.sales),
@@ -915,8 +923,11 @@ export function preparePacket(input: PrepareInput): Packet {
   const rules = input.rules ?? taxRules;
   const profile = input.client.profile;
   const q = input.period;
-  const range = quarterRange(q);
-  const issues = checkRecords(input.records, q, rules, { vat: profile.vat_status === "vat", hasEmployees: profile.has_employees });
+  const fyEnd = profile.fiscal_year_end_month || 12;
+  const fyOk = [3, 6, 9, 12].includes(fyEnd);
+  const fy = CORPORATE_TYPES.has(profile.taxpayer_type) && fyOk ? fyEnd : 12;
+  const range = fiscalQuarterRange(fy, q);
+  const issues = checkRecords(input.records, q, rules, { vat: profile.vat_status === "vat", hasEmployees: profile.has_employees, range });
   const obligations = generateObligations(profile, {
     from: range.start,
     to: addMonths(range.end, 6),
@@ -932,16 +943,17 @@ export function preparePacket(input: PrepareInput): Packet {
       const o = obligations.find((x) => x.form_code === form && x.period_end === end);
       return o ? { date: o.due_date, needs_verification: o.needs_verification } : null;
     },
+    fy,
   };
   const documents: PreparedDocument[] = [];
   const notSupported: Packet["not_supported"] = [];
 
   const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship" || profile.taxpayer_type === "mixed_income";
-  const corporate = CORPORATE_TYPES.has(profile.taxpayer_type) && profile.fiscal_year_end_month === 12;
+  const corporate = CORPORATE_TYPES.has(profile.taxpayer_type) && fyOk;
   if (!individual && !corporate) {
     notSupported.push({
       form: "—",
-      reason: CORPORATE_TYPES.has(profile.taxpayer_type) ? "Corporations with a fiscal year (not ending in December) are planned for a later batch." : "Supported: self-employed individuals, sole proprietors, mixed-income earners, and corporations, OPCs and partnerships on a calendar year.",
+      reason: CORPORATE_TYPES.has(profile.taxpayer_type) ? "Fiscal years ending in a month other than March, June, September or December are planned for a later batch (their quarters do not line up with the monthly and quarterly withholding returns)." : "Supported: self-employed individuals, sole proprietors, mixed-income earners, and corporations, OPCs and partnerships on a calendar year.",
     });
   }
   if (corporate && profile.taxpayer_type === "partnership") issues.push({ code: "partnership_type", severity: "warning", message: "General professional partnerships are not subject to income tax (partners are taxed instead). These returns assume a taxable partnership — confirm with Neil Priolo, CPA." });
@@ -951,9 +963,9 @@ export function preparePacket(input: PrepareInput): Packet {
   if (individual && !itOption) issues.push({ code: "income_tax_option", severity: "error", message: "Choose the income tax option (8%, graduated with OSD, or graduated with itemized deductions) in the client's profile before income tax returns can be prepared." });
 
   if (input.month !== undefined && (individual || corporate)) {
-    const months = quarterMonths(q);
+    const months = qMonths(ctx, q);
     const m = months.find((x) => Number(x.start.slice(5, 7)) === input.month);
-    if (!m) throw new Error(`Month ${input.month} is not in ${quarterLabel(q)}.`);
+    if (!m) throw new Error(`Month ${input.month} is not in ${qLabel(ctx, q)}.`);
     const quarterEnd = m === months[2];
     if (profile.withholds_expanded && !quarterEnd) documents.push(prepare0619E(ctx, m));
     if (profile.has_employees) documents.push(prepare1601C(ctx, m), prepareContributions(ctx, q, m, monthLabel(m)));
@@ -972,14 +984,15 @@ export function preparePacket(input: PrepareInput): Packet {
 
   if (individual || corporate) {
     if (profile.vat_status === "vat") documents.push(prepare2550Q(ctx, q, range), prepareSalesList(ctx, q, range), preparePurchaseList(ctx, q, range));
-    else if (corporate || itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, quarterLabel(q)));
+    else if (corporate || itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, qLabel(ctx, q)));
     if (profile.withholds_expanded) {
-      const [m1, m2] = quarterMonths(q) as [Range, Range, Range];
+      const [m1, m2] = qMonths(ctx, q) as [Range, Range, Range];
       documents.push(prepare0619E(ctx, m1), prepare0619E(ctx, m2), prepare1601EQ(ctx, q, range), prepareQap(ctx, q, range), ...prepare2307s(ctx, q, range));
     }
     if (profile.has_employees) {
-      documents.push(...quarterMonths(q).map((m) => prepare1601C(ctx, m)), prepareContributions(ctx, q, range));
-      if (q.quarter === 4) documents.push(prepare1604C(ctx, q.year), ...prepare2316s(ctx, q.year));
+      documents.push(...qMonths(ctx, q).map((m) => prepare1601C(ctx, m)), prepareContributions(ctx, q, range));
+      // The 1604C and 2316 follow the calendar year, whatever the taxable year.
+      if (range.end.slice(5, 7) === "12") documents.push(prepare1604C(ctx, Number(range.end.slice(0, 4))), ...prepare2316s(ctx, Number(range.end.slice(0, 4))));
     }
     if (certsIn(input.records, range).length) documents.push(prepareSawt(ctx, q, range));
     if (corporate) {
@@ -999,7 +1012,7 @@ export function preparePacket(input: PrepareInput): Packet {
   return {
     client: input.client.name,
     period: q,
-    period_label: quarterLabel(q),
+    period_label: qLabel(ctx, q),
     issues,
     documents,
     total_payable: money(sum(documents.map((d) => d.amount_payable))),

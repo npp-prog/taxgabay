@@ -1,0 +1,205 @@
+{
+  "description": "One-person corporation with a fiscal year ending 30 June (FY2027 = July 2026 to June 2027), non-VAT, operating since 2015, assets ₱2,000,000. Q2 of FY2027 (October–December 2026): the 1702Q counts from 1 July 2026 (the June 2026 sale belongs to FY2026 and is left out): gross income ₱450,000, rent ₱60,000, taxable ₱390,000 at 20% = ₱78,000 (MCIT ₱9,000), less ₱42,000 paid for Q1. Percentage tax on October–December sales.",
+  "client": {
+    "name": "Hilaga Foods OPC",
+    "profile": {
+      "taxpayer_type": "opc",
+      "vat_status": "non_vat",
+      "income_tax_option": "not_applicable",
+      "has_employees": false,
+      "withholds_expanded": false,
+      "filing_channel": "ebirforms",
+      "efps_group": null,
+      "fiscal_year_end_month": 6,
+      "rdo_code": null,
+      "taxpayer_size": "small",
+      "line_of_business": "Food"
+    },
+    "corporate": {
+      "year_commenced": 2015,
+      "total_assets_excl_land": "2000000.00"
+    }
+  },
+  "period": {
+    "year": 2027,
+    "quarter": 2
+  },
+  "records": [
+    {
+      "kind": "sale",
+      "id": "s0",
+      "date": "2026-06-30",
+      "document_no": "100",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "500000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s7",
+      "date": "2026-07-31",
+      "document_no": "101",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r7",
+      "date": "2026-07-31",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s8",
+      "date": "2026-08-31",
+      "document_no": "102",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r8",
+      "date": "2026-08-31",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s9",
+      "date": "2026-09-30",
+      "document_no": "103",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r9",
+      "date": "2026-09-30",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s10",
+      "date": "2026-10-31",
+      "document_no": "104",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r10",
+      "date": "2026-10-31",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s11",
+      "date": "2026-11-30",
+      "document_no": "105",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r11",
+      "date": "2026-11-30",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s12",
+      "date": "2026-12-31",
+      "document_no": "106",
+      "customer": {
+        "name": "Various"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "r12",
+      "date": "2026-12-31",
+      "supplier": {
+        "name": "Landlord"
+      },
+      "category": "rent",
+      "amount": "10000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "c1",
+      "date": "2026-08-10",
+      "supplier": {
+        "name": "Supplier"
+      },
+      "category": "cost_of_sales",
+      "amount": "60000.00"
+    },
+    {
+      "kind": "expense",
+      "id": "c2",
+      "date": "2026-11-10",
+      "supplier": {
+        "name": "Supplier"
+      },
+      "category": "cost_of_sales",
+      "amount": "90000.00"
+    }
+  ],
+  "expected": {
+    "forms": [
+      "2551Q",
+      "1702Q"
+    ],
+    "issue_codes": [],
+    "values": {
+      "2551Q-2026-12-31": {
+        "gross_sales": "300000.00",
+        "tax_due": "9000.00"
+      },
+      "1702Q-2026-12-31": {
+        "sales": "600000.00",
+        "cost_of_sales": "150000.00",
+        "gross_income": "450000.00",
+        "deductions": "60000.00",
+        "taxable_income": "390000.00",
+        "rcit": "78000.00",
+        "mcit": "9000.00",
+        "tax_due": "78000.00",
+        "prior_payments": "42000.00",
+        "payable": "36000.00"
+      }
+    },
+    "total_payable": "45000.00"
+  }
+}

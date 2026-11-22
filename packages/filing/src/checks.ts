@@ -1,5 +1,5 @@
 import { dec, findRule, peso, round2, type TaxRule } from "@taxgabay/tax-engine";
-import { inRange, monthLabel, quarterMonths, quarterRange } from "./periods";
+import { inRange, monthLabel, monthsOfRange, quarterMonths, quarterRange, type Range } from "./periods";
 import { journalProblem } from "./books";
 import type { ClientRecord, ExpenseRecord, Form2307Received, Issue, PayrollRecord, QuarterRef, SaleRecord } from "./types";
 
@@ -20,9 +20,9 @@ function atcRule(rules: readonly TaxRule[], atc: string, on: string) {
  * Checks a client's records for one quarter before documents are prepared. Errors block
  * preparation of the affected document; warnings are shown to the client and the reviewer.
  */
-export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[], opts: { vat?: boolean; hasEmployees?: boolean } = {}): Issue[] {
+export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[], opts: { vat?: boolean; hasEmployees?: boolean; range?: Range } = {}): Issue[] {
   const issues: Issue[] = [];
-  const range = quarterRange(q);
+  const range = opts.range ?? quarterRange(q);
   const inQ = records.filter((r) => inRange(r.date, range));
 
   for (const r of records) {
@@ -68,7 +68,7 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
       });
     }
   }
-  for (const m of quarterMonths(q)) {
+  for (const m of opts.range ? monthsOfRange(opts.range) : quarterMonths(q)) {
     if (!sales.some((s) => inRange(s.date, m))) issues.push({ code: "no_sales_month", severity: "warning", message: `No sales are recorded for ${monthLabel(m)}. Confirm there were none, or add them.` });
   }
 

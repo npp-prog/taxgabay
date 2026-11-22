@@ -1,6 +1,6 @@
 import { DEFAULT_PROFILE, type Profile } from "@taxgabay/tax-engine";
 import { describe, expect, it } from "vitest";
-import { buildBooks, checkRecords, journalProblem, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
+import { buildBooks, checkRecords, fiscalQuarterLabel, fiscalQuarterRange, fiscalYearRange, journalProblem, monthsOfRange, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
 
 const profile = (p: Partial<Profile>): Profile => ({ ...DEFAULT_PROFILE, taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", ...p });
 const sale = (id: string, date: string, amount: string, no = id, name = "Client A"): ClientRecord => ({ kind: "sale", id, date, document_no: no, customer: { name }, amount });
@@ -80,9 +80,9 @@ describe("preparePacket", () => {
   });
 
   it("reports what it cannot prepare yet", () => {
-    const fy = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", fiscal_year_end_month: 6 }) }, records: [], period: { year: 2026, quarter: 1 } });
+    const fy = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", fiscal_year_end_month: 5 }) }, records: [], period: { year: 2026, quarter: 1 } });
     expect(fy.documents).toEqual([]);
-    expect(fy.not_supported[0]!.reason).toContain("fiscal year");
+    expect(fy.not_supported[0]!.reason).toContain("March, June, September or December");
     const coop = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "cooperative" }) }, records: [], period: { year: 2026, quarter: 1 } });
     expect(coop.not_supported[0]!.reason).toContain("Supported:");
   });
@@ -345,5 +345,26 @@ describe("mixed-income earners", () => {
     const q4 = preparePacket({ client: { name: "M", profile: mixed({ income_tax_option: "graduated_osd" }) }, records: sales, period: { year: 2026, quarter: 4 } });
     expect(q4.documents.map((d) => d.form)).toContain("1701");
     expect(q4.issues.map((i) => i.code)).toContain("missing_2316");
+  });
+});
+
+describe("fiscal years", () => {
+  it("names fiscal years by the year they end and splits them into quarters", () => {
+    expect(fiscalYearRange(6, 2027)).toEqual({ start: "2026-07-01", end: "2027-06-30" });
+    expect(fiscalQuarterRange(6, { year: 2027, quarter: 4 })).toEqual({ start: "2027-04-01", end: "2027-06-30" });
+    expect(fiscalQuarterRange(12, { year: 2027, quarter: 1 })).toEqual({ start: "2027-01-01", end: "2027-03-31" });
+    expect(fiscalQuarterLabel(3, { year: 2027, quarter: 1 })).toBe("Q1 FY2027 (Apr–Jun 2026)");
+    expect(monthsOfRange({ start: "2026-11-01", end: "2027-01-31" }).map((m) => m.end)).toEqual(["2026-11-30", "2026-12-31", "2027-01-31"]);
+  });
+  it("prepares the 1702-RT at fiscal year end and the 1604C only in the calendar Q4", () => {
+    const prof = profile({ taxpayer_type: "corporation", fiscal_year_end_month: 6, has_employees: true });
+    const corp = { year_commenced: 2015, total_assets_excl_land: "1000000" };
+    const recs: ClientRecord[] = [{ kind: "payroll", id: "p", date: "2026-12-31", employee: { name: "A", tin: "1" }, basic_pay: "20000" }];
+    const fq4 = preparePacket({ client: { name: "C", profile: prof, corporate: corp }, records: recs, period: { year: 2027, quarter: 4 } });
+    expect(fq4.documents.some((d) => d.form === "1702-RT")).toBe(true);
+    expect(fq4.documents.some((d) => d.form === "1604C")).toBe(false);
+    const fq2 = preparePacket({ client: { name: "C", profile: prof, corporate: corp }, records: recs, period: { year: 2027, quarter: 2 } });
+    expect(fq2.documents.some((d) => d.form === "1604C")).toBe(true);
+    expect(fq2.period_label).toBe("Q2 FY2027 (Oct–Dec 2026)");
   });
 });
