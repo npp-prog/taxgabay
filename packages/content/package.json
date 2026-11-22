@@ -12,7 +12,8 @@
     "./faq": "./src/faq.ts",
     "./issuances": "./src/issuances.ts",
     "./ingest": "./src/ingest.ts",
-    "./search": "./src/search.ts"
+    "./search": "./src/search.ts",
+    "./business": "./src/business.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

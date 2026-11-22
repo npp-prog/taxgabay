@@ -5,6 +5,7 @@ import { issuanceLabel, seedIssuances, type Issuance } from "@taxgabay/content/i
 import { stripMarkdown, type SearchDoc } from "@taxgabay/content/search";
 import { lifeEvents } from "@taxgabay/tax-engine";
 import { getGuide, listGuides } from "./guides";
+import { getBusinessChapter, listBusinessChapters } from "./business";
 import { getHubArticle, listHubArticles } from "./hub";
 
 const CALCULATORS: { slug: string; title: string; keywords: string[] }[] = [
@@ -42,6 +43,10 @@ export function buildSearchIndex(): SearchDoc[] {
   for (const fm of listHubArticles()) {
     const a = getHubArticle(fm.slug)!;
     docs.push({ id: `article:${fm.slug}`, kind: "article", title: fm.title, href: `/learn/${fm.slug}`, text: `${fm.summary} ${stripMarkdown(a.body)}`, keywords: fm.tax_types });
+  }
+  for (const fm of listBusinessChapters()) {
+    const a = getBusinessChapter(fm.slug)!;
+    docs.push({ id: `business:${fm.slug}`, kind: "article", title: fm.title, href: `/business-guide/${fm.slug}`, text: `${fm.summary} ${stripMarkdown(a.body)}`, keywords: [fm.category, ...fm.tax_types] });
   }
   for (const t of glossary) {
     docs.push({ id: `glossary:${t.term}`, kind: "glossary", title: t.term, href: `/learn/glossary#${glossarySlug(t.term)}`, text: t.definition, keywords: t.aka ?? [] });

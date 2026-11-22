@@ -6,6 +6,7 @@ import { issuanceLabel, seedIssuances, type Issuance } from "@taxgabay/content/i
 import { deadlineRules, lifeEvents, peso, taxRules, type TaxRule } from "@taxgabay/tax-engine";
 import type { SourceDoc } from "./assistant-core";
 import { getGuide, listGuides } from "./guides";
+import { getBusinessChapter, listBusinessChapters } from "./business";
 import { getHubArticle, listHubArticles } from "./hub";
 
 const RULE_LABELS: Record<string, string> = {
@@ -99,6 +100,9 @@ export function staticSourceDocs(): SourceDoc[] {
   }
   for (const fm of listHubArticles()) {
     docs.push({ id: `article:${fm.slug}`, kind: "article", title: fm.title, href: `/learn/${fm.slug}`, text: getHubArticle(fm.slug)!.body, verified: !fm.needs_verification && Boolean(fm.last_verified_at) });
+  }
+  for (const fm of listBusinessChapters()) {
+    docs.push({ id: `business:${fm.slug}`, kind: "article", title: `Business guide: ${fm.title}`, href: `/business-guide/${fm.slug}`, text: getBusinessChapter(fm.slug)!.body, verified: !fm.needs_verification && Boolean(fm.last_verified_at) });
   }
   for (const t of glossary) {
     docs.push({ id: `glossary:${t.term}`, kind: "glossary", title: `Glossary: ${t.term}`, href: `/learn/glossary#${glossarySlug(t.term)}`, text: `${t.term}${t.aka?.length ? ` (also called ${t.aka.join(", ")})` : ""}: ${t.definition}`, verified: !GLOSSARY_NEEDS_VERIFICATION });
