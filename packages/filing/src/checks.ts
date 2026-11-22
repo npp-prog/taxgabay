@@ -1,6 +1,6 @@
 import { dec, findRule, peso, round2, type TaxRule } from "@taxgabay/tax-engine";
 import { inRange, monthLabel, quarterMonths, quarterRange } from "./periods";
-import type { ClientRecord, ExpenseRecord, Form2307Received, Issue, QuarterRef, SaleRecord } from "./types";
+import type { ClientRecord, ExpenseRecord, Form2307Received, Issue, PayrollRecord, QuarterRef, SaleRecord } from "./types";
 
 const isSale = (r: ClientRecord): r is SaleRecord => r.kind === "sale";
 const isExpense = (r: ClientRecord): r is ExpenseRecord => r.kind === "expense";
@@ -19,13 +19,13 @@ function atcRule(rules: readonly TaxRule[], atc: string, on: string) {
  * Checks a client's records for one quarter before documents are prepared. Errors block
  * preparation of the affected document; warnings are shown to the client and the reviewer.
  */
-export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[], opts: { vat?: boolean } = {}): Issue[] {
+export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[], opts: { vat?: boolean; hasEmployees?: boolean } = {}): Issue[] {
   const issues: Issue[] = [];
   const range = quarterRange(q);
   const inQ = records.filter((r) => inRange(r.date, range));
 
   for (const r of records) {
-    const amount = r.kind === "form_2307_received" ? r.income_payment : r.amount;
+    const amount = r.kind === "form_2307_received" ? r.income_payment : r.kind === "payroll" ? r.basic_pay : r.amount;
     let ok: boolean;
     try {
       ok = dec(amount).greaterThan(0);
@@ -88,6 +88,21 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
       issues.push({ code: "missing_vat_supplier_tin", severity: "warning", message: `${e.supplier.name}: add the supplier's TIN — input tax is listed by supplier TIN on the summary list of purchases.`, record_id: e.id });
     }
   }
+
+  // Payroll: one record per employee per month, and TINs for the 2316 and alphalist.
+  const pay = inQ.filter((r): r is PayrollRecord => r.kind === "payroll");
+  const seenPay = new Map<string, string>();
+  const warnedEmp = new Set<string>();
+  for (const p of pay) {
+    const k = `${norm(p.employee.name)}|${p.date.slice(0, 7)}`;
+    if (seenPay.has(k)) issues.push({ code: "duplicate_payroll", severity: "error", message: `${p.employee.name} has two payroll records for ${p.date.slice(0, 7)} (records ${seenPay.get(k)} and ${p.id}). Enter one record per employee per month.`, record_id: p.id });
+    else seenPay.set(k, p.id);
+    if (!p.employee.tin && !warnedEmp.has(norm(p.employee.name))) {
+      warnedEmp.add(norm(p.employee.name));
+      issues.push({ code: "missing_employee_tin", severity: "warning", message: `${p.employee.name}: add the employee's TIN — it is required on the 2316 and the alphalist.`, record_id: p.id });
+    }
+  }
+  if (pay.length && opts.hasEmployees === false) issues.push({ code: "payroll_without_employees", severity: "warning", message: "Payroll records were entered, but the profile says the business has no employees. Update the profile so the payroll returns are prepared." });
 
   // 2307s received.
   for (const c of records.filter(is2307)) {

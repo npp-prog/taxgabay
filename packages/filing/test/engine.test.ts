@@ -79,7 +79,7 @@ describe("preparePacket", () => {
   it("reports what it cannot prepare yet", () => {
     const p = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", vat_status: "vat", has_employees: true }) }, records: [], period: { year: 2026, quarter: 1 } });
     expect(p.documents).toEqual([]);
-    expect(p.not_supported.map((n) => n.form)).toEqual(["—", "1601C"]);
+    expect(p.not_supported.map((n) => n.form)).toEqual(["—"]);
   });
 
   it("asks for the income tax option and blocks an ineligible 8%", () => {
@@ -174,5 +174,44 @@ describe("VAT clients", () => {
     expect(q2.fields.find((f) => f.key === "input_vat_carried_over")!.value).toBe("2280.00");
     const empty = preparePacket({ client: { name: "V", profile: vat() }, records: [], period: { year: 2026, quarter: 1 } });
     expect(empty.documents.find((d) => d.form === "2550Q")!.amount_payable).toBe("0.00");
+  });
+});
+
+describe("payroll", () => {
+  const emp = (p: Partial<Profile> = {}) => profile({ income_tax_option: "graduated_osd", has_employees: true, ...p });
+  const pay = (id: string, date: string, basic: string, extra: Partial<ClientRecord> = {}): ClientRecord => ({ kind: "payroll", id, date, employee: { name: "Ben Cruz" }, basic_pay: basic, ...extra }) as ClientRecord;
+
+  it("checks duplicates, missing TINs and a profile without employees", () => {
+    const recs = [pay("a", "2026-01-31", "20000"), pay("b", "2026-01-15", "20000"), pay("c", "2026-02-28", "20000")];
+    const codes = checkRecords(recs, { year: 2026, quarter: 1 }, rules, { hasEmployees: false }).map((i) => i.code);
+    expect(codes.filter((c) => c === "duplicate_payroll")).toHaveLength(1);
+    expect(codes.filter((c) => c === "missing_employee_tin")).toHaveLength(1);
+    expect(codes).toContain("payroll_without_employees");
+  });
+
+  it("treats minimum wage earners as exempt and warns about months without payroll", () => {
+    const recs = [pay("a", "2026-01-31", "15000", { minimum_wage_earner: true } as Partial<ClientRecord>)];
+    const p = preparePacket({ client: { name: "S", profile: emp() }, records: recs, period: { year: 2026, quarter: 1 } });
+    const jan = p.documents.find((d) => d.id === "1601C-2026-01-31")!;
+    expect(jan.fields.find((f) => f.key === "tax_withheld")!.value).toBe("0.00");
+    expect(jan.warnings.some((w) => w.includes("Minimum wage earners"))).toBe(true);
+    expect(p.documents.find((d) => d.id === "1601C-2026-02-28")!.warnings.some((w) => w.includes("No payroll"))).toBe(true);
+    const q4 = preparePacket({ client: { name: "S", profile: emp() }, records: recs, period: { year: 2026, quarter: 4 } });
+    const c = q4.documents.find((d) => d.form === "2316")!;
+    expect(c.fields.find((f) => f.key === "tax_due")!.value).toBe("0.00");
+    expect(c.steps[0]!.label).toContain("Minimum wage earner");
+  });
+
+  it("refunds over-withholding in December and counts payroll in itemized deductions", () => {
+    // High pay early in the year, low in December: annual tax is less than what was withheld.
+    const recs = [pay("a", "2026-01-31", "200000"), pay("d", "2026-12-31", "0.01")];
+    const p = preparePacket({ client: { name: "S", profile: emp({ income_tax_option: "graduated_itemized" }) }, records: [...recs, { kind: "sale", id: "s", date: "2026-12-01", document_no: "1", customer: { name: "X" }, amount: "1000000.00" }], period: { year: 2026, quarter: 4 } });
+    const dec1601 = p.documents.find((d) => d.id === "1601C-2026-12-31")!;
+    expect(Number(dec1601.fields.find((f) => f.key === "tax_withheld")!.value)).toBeLessThan(0);
+    expect(dec1601.amount_payable).toBe("0.00");
+    expect(dec1601.warnings.some((w) => w.includes("refund"))).toBe(true);
+    expect(p.not_supported.map((n) => n.form)).toContain("1701");
+    const q1 = preparePacket({ client: { name: "S", profile: emp({ income_tax_option: "graduated_itemized" }) }, records: [...recs, { kind: "sale", id: "s", date: "2026-01-02", document_no: "1", customer: { name: "X" }, amount: "1000000.00" }], period: { year: 2026, quarter: 1 } });
+    expect(Number(q1.documents.find((d) => d.form === "1701Q")!.fields.find((f) => f.key === "deductions")!.value)).toBeGreaterThan(200000);
   });
 });

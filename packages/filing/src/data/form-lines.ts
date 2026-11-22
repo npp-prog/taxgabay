@@ -34,6 +34,7 @@ const line = (form: string, field_key: string, label: string, legal_basis: strin
 const PT = "NIRC Sec. 116, as amended; RR 7-2024 (to confirm form version)";
 const EWT = "NIRC Sec. 57(B); RR 2-98, as amended";
 const IT = "NIRC Secs. 24(A), 74; RR 8-2018";
+const WC = "NIRC Secs. 79–83, as amended; RR 2-98 Secs. 2.78–2.83, as amended by RR 11-2018";
 const VAT = "NIRC Secs. 106, 108, 110 and 114, as amended; RR 16-2005, as amended";
 
 export const formLines: FormLine[] = [
@@ -79,6 +80,23 @@ export const formLines: FormLine[] = [
   line("1701A", "quarterly_payments", "Less: tax paid in the 1701Q returns for the year", IT),
   line("1701A", "cwt", "Less: creditable tax withheld per BIR Form 2307 for the year", IT),
   line("1701A", "payable", "Tax payable / (overpayment)", IT),
+
+  line("1601C", "total_compensation", "Total amount of compensation (basic pay, benefits and de minimis)", WC),
+  line("1601C", "non_taxable", "Less: non-taxable compensation (mandatory contributions, de minimis, 13th month and other benefits up to the ceiling, minimum wage)", WC),
+  line("1601C", "taxable_compensation", "Taxable compensation", WC),
+  line("1601C", "tax_withheld", "Total taxes withheld (including year-end adjustment)", WC),
+  line("1601C", "payable", "Tax still due / amount payable", WC),
+
+  line("1604C", "total_compensation", "Total compensation paid for the year (all employees)", WC),
+  line("1604C", "taxable_compensation", "Total taxable compensation", WC),
+  line("1604C", "tax_due", "Total tax due (annualized)", WC),
+  line("1604C", "tax_withheld", "Total tax withheld for the year", WC),
+
+  line("2316", "gross_compensation", "Gross compensation income", WC),
+  line("2316", "non_taxable", "Less: non-taxable/exempt compensation", WC),
+  line("2316", "taxable_compensation", "Taxable compensation income", WC),
+  line("2316", "tax_due", "Tax due", WC),
+  line("2316", "tax_withheld", "Amount of taxes withheld (January to December)", WC),
 
   line("2307", "income_month1", "Amount of income payment — 1st month of the quarter", EWT),
   line("2307", "income_month2", "Amount of income payment — 2nd month of the quarter", EWT),

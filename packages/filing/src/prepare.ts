@@ -23,6 +23,7 @@ import {
   type TaxRule,
 } from "@taxgabay/tax-engine";
 import { checkRecords } from "./checks";
+import { employeeKey, linesInMonth, payrollIn, payrollYear } from "./payroll";
 import { linesFor } from "./data/form-lines";
 import { inRange, monthLabel, quarterLabel, quarterMonths, quarterRange, yearRange, type Range } from "./periods";
 import type { ClientInfo, ClientRecord, ExpenseRecord, Form2307Received, Issue, Packet, Party, PreparedDocument, PreparedField, QuarterRef, SaleRecord } from "./types";
@@ -280,6 +281,141 @@ function preparePurchaseList(ctx: Ctx, q: QuarterRef, range: Range): PreparedDoc
   });
 }
 
+// ---------- Payroll: 1601C, contributions, 1604C, 2316 ----------
+
+function prepare1601C(ctx: Ctx, month: Range): PreparedDocument {
+  const year = Number(month.start.slice(0, 4));
+  const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
+  const ls = linesInMonth(lines, month.start);
+  const total = sum(ls.map((l) => l.basic.plus(l.benefits).plus(l.de_minimis)));
+  const nonTax = sum(ls.map((l) => l.contributions_ee.plus(l.de_minimis).plus(l.benefits).plus(l.record.minimum_wage_earner ? l.basic : 0)));
+  const withheld = sum(ls.map((l) => l.withheld));
+  const warnings: string[] = ["13th month pay and other benefits are treated as non-taxable when paid; any excess over the annual ceiling is taxed in the December year-end adjustment."];
+  if (ls.some((l) => l.record.minimum_wage_earner)) warnings.push("Minimum wage earners: their statutory minimum wage is treated as exempt (holiday, overtime, night-shift and hazard pay too). Confirm each employee's status.");
+  if (withheld.isNegative()) warnings.push("More was withheld during the year than the annual tax: refund the difference to the employees. How the refund is applied against later remittances is to be confirmed with Neil Priolo, CPA.");
+  if (!ls.length) warnings.push("No payroll is recorded for this month.");
+  return doc(ctx, {
+    id: `1601C-${month.end}`,
+    form: "1601C",
+    title: "Monthly remittance of tax withheld on compensation",
+    period_label: monthLabel(month),
+    period_start: month.start,
+    period_end: month.end,
+    values: { total_compensation: money(total), non_taxable: money(nonTax), taxable_compensation: money(total.minus(nonTax)), tax_withheld: money(withheld), payable: money(max0(withheld)) },
+    steps: [
+      ...ls.map((l) => step(`${l.record.employee.name}`, l.month === 12 ? "December: year-end adjustment" : `Monthly table on ${peso(l.basic)} less ${peso(l.contributions_ee)} contributions`, l.withheld, "RR 2-98 Sec. 2.79, as amended")),
+      step("Total tax withheld this month", ls.map((l) => peso(l.withheld)).join(" + ") || "No payroll", withheld),
+    ],
+    schedule: {
+      columns: [
+        { key: "name", label: "Employee" },
+        { key: "basic", label: "Basic pay", align: "right" },
+        { key: "contrib", label: "Contributions (employee)", align: "right" },
+        { key: "other", label: "Benefits and de minimis", align: "right" },
+        { key: "tax", label: "Tax withheld", align: "right" },
+      ],
+      rows: ls.map((l) => ({ name: l.record.employee.name, basic: money(l.basic), contrib: money(l.contributions_ee), other: money(l.benefits.plus(l.de_minimis)), tax: money(l.withheld) })),
+    },
+    amount_payable: money(max0(withheld)),
+    warnings,
+    rules_used: [...new Set(ls.flatMap((l) => l.rules_used))],
+  });
+}
+
+function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
+  const { lines } = payrollYear(ctx.input.records, q.year, ctx.rules);
+  const ls = lines.filter((l) => inRange(l.record.date, range));
+  const t = (f: (l: (typeof ls)[number]) => Dec) => sum(ls.map(f));
+  const total = t((l) => l.sss_ee.plus(l.sss_er).plus(l.ph_ee).plus(l.ph_er).plus(l.hdmf_ee).plus(l.hdmf_er));
+  return doc(ctx, {
+    id: `CONTRIB-${range.end}`,
+    form: "SSS/PhilHealth/Pag-IBIG",
+    title: "Contributions to remit (SSS, PhilHealth, Pag-IBIG)",
+    period_label: quarterLabel(q),
+    period_start: range.start,
+    period_end: range.end,
+    values: {},
+    steps: [
+      step("SSS (employee + employer)", `${peso(t((l) => l.sss_ee))} + ${peso(t((l) => l.sss_er))}`, t((l) => l.sss_ee.plus(l.sss_er)), "RA 11199 (Social Security Act of 2018)"),
+      step("PhilHealth (employee + employer)", `${peso(t((l) => l.ph_ee))} + ${peso(t((l) => l.ph_er))}`, t((l) => l.ph_ee.plus(l.ph_er)), "RA 11223 (Universal Health Care Act)"),
+      step("Pag-IBIG (employee + employer)", `${peso(t((l) => l.hdmf_ee))} + ${peso(t((l) => l.hdmf_er))}`, t((l) => l.hdmf_ee.plus(l.hdmf_er)), "RA 9679 (HDMF Law)"),
+      step("Total contributions to remit for the quarter", "SSS + PhilHealth + Pag-IBIG", total),
+    ],
+    schedule: {
+      columns: [
+        { key: "month", label: "Month" },
+        { key: "name", label: "Employee" },
+        { key: "sss", label: "SSS (EE + ER)", align: "right" },
+        { key: "ph", label: "PhilHealth (EE + ER)", align: "right" },
+        { key: "hdmf", label: "Pag-IBIG (EE + ER)", align: "right" },
+      ],
+      rows: ls.map((l) => ({ month: l.record.date.slice(0, 7), name: l.record.employee.name, sss: money(l.sss_ee.plus(l.sss_er)), ph: money(l.ph_ee.plus(l.ph_er)), hdmf: money(l.hdmf_ee.plus(l.hdmf_er)) })),
+    },
+    amount_payable: money(total),
+    warnings: ["These are remitted to SSS, PhilHealth and Pag-IBIG, not the BIR, each with its own schedule and channel (due dates to be confirmed by Neil Priolo, CPA). The SSS employees' compensation (EC) contribution and WISP are not included."],
+    rules_used: [...new Set(ls.flatMap((l) => l.rules_used))],
+  });
+}
+
+function prepare1604C(ctx: Ctx, year: number): PreparedDocument {
+  const yr = yearRange(year);
+  const { employees } = payrollYear(ctx.input.records, year, ctx.rules);
+  const t = (f: (e: (typeof employees)[number]) => Dec) => sum(employees.map(f));
+  const gross = t((e) => e.basic.plus(e.benefits).plus(e.de_minimis));
+  return doc(ctx, {
+    id: `1604C-${year}`,
+    form: "1604C",
+    title: "Annual information return of taxes withheld on compensation, with the alphalist of employees",
+    period_label: `Calendar year ${year}`,
+    period_start: yr.start,
+    period_end: yr.end,
+    values: { total_compensation: money(gross), taxable_compensation: money(t((e) => e.taxable)), tax_due: money(t((e) => e.annual_tax)), tax_withheld: money(t((e) => e.withheld)) },
+    steps: [
+      step("Total compensation paid", employees.map((e) => peso(e.basic.plus(e.benefits).plus(e.de_minimis))).join(" + ") || "No payroll", gross),
+      step("Total tax withheld (must equal the year's 1601C returns)", employees.map((e) => peso(e.withheld)).join(" + ") || "None", t((e) => e.withheld)),
+    ],
+    schedule: {
+      columns: [
+        { key: "tin", label: "TIN" },
+        { key: "name", label: "Employee" },
+        { key: "gross", label: "Gross compensation", align: "right" },
+        { key: "nontax", label: "Non-taxable", align: "right" },
+        { key: "taxable", label: "Taxable", align: "right" },
+        { key: "due", label: "Tax due", align: "right" },
+        { key: "withheld", label: "Tax withheld", align: "right" },
+      ],
+      rows: employees.map((e) => {
+        const g = e.basic.plus(e.benefits).plus(e.de_minimis);
+        return { tin: e.employee.tin ?? "", name: e.employee.name, gross: money(g), nontax: money(g.minus(e.taxable)), taxable: money(e.taxable), due: money(e.annual_tax), withheld: money(e.withheld) };
+      }),
+    },
+    amount_payable: "0.00",
+    warnings: ["The alphalist is submitted in the BIR's required data-file format (format to be confirmed); TaxGabay gives the list for now. Employees who qualify for substituted filing are marked by the CPA."],
+    rules_used: [...new Set(employees.flatMap((e) => e.rules_used))],
+  });
+}
+
+function prepare2316s(ctx: Ctx, year: number): PreparedDocument[] {
+  const yr = yearRange(year);
+  return payrollYear(ctx.input.records, year, ctx.rules).employees.map((e) => {
+    const g = e.basic.plus(e.benefits).plus(e.de_minimis);
+    return doc(ctx, {
+      id: `2316-${year}-${employeeKey(e.employee).replace(/[^a-z0-9]+/g, "-")}`,
+      form: "2316",
+      title: `Certificate of compensation payment and tax withheld — ${e.employee.name}`,
+      period_label: `Calendar year ${year}`,
+      period_start: yr.start,
+      period_end: yr.end,
+      recipient: e.employee,
+      values: { gross_compensation: money(g), non_taxable: money(g.minus(e.taxable)), taxable_compensation: money(e.taxable), tax_due: money(e.annual_tax), tax_withheld: money(e.withheld) },
+      steps: e.minimum_wage_earner ? [step("Minimum wage earner — exempt", "Statutory minimum wage is exempt", "0", "NIRC Sec. 24(A)(2), as amended")] : e.steps.filter((x) => !/^Less tax withheld|^Balance|^Over-withheld/.test(x.label)),
+      amount_payable: "0.00",
+      warnings: [`Give this certificate to the employee (deadline to be confirmed by Neil Priolo, CPA).${e.employee.tin ? "" : " Add the employee's TIN first."}`],
+      rules_used: e.rules_used,
+    });
+  });
+}
+
 // ---------- Percentage tax (2551Q) ----------
 
 function prepare2551Q(ctx: Ctx, range: Range, label: string): PreparedDocument {
@@ -504,7 +640,11 @@ interface ItComputation {
 function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): ItComputation | null {
   const r: Range = { start: `${year}-01-01`, end };
   const gross = sum(salesIn(ctx.input.records, r).map((s) => saleNet(ctx, s)));
-  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => expenseSplit(ctx, e).net))) : undefined;
+  const payrollCost = () => {
+    const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
+    return sum(lines.filter((l) => l.record.date <= end).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
+  };
+  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => expenseSplit(ctx, e).net)).plus(payrollIn(ctx.input.records, year).length ? payrollCost() : dec(0))) : undefined;
   if (gross.isZero()) {
     return { gross, deduction: dec(0), taxable: dec(0), tax: dec(0), steps: [step("Gross sales/receipts to date", "No sales recorded yet", "0")], rules_used: [], warnings: ["No sales are recorded for the year so far."] };
   }
@@ -626,7 +766,7 @@ export function preparePacket(input: PrepareInput): Packet {
   const profile = input.client.profile;
   const q = input.period;
   const range = quarterRange(q);
-  const issues = checkRecords(input.records, q, rules, { vat: profile.vat_status === "vat" });
+  const issues = checkRecords(input.records, q, rules, { vat: profile.vat_status === "vat", hasEmployees: profile.has_employees });
   const obligations = generateObligations(profile, {
     from: range.start,
     to: addMonths(range.end, 6),
@@ -648,7 +788,6 @@ export function preparePacket(input: PrepareInput): Packet {
 
   const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship";
   if (!individual) notSupported.push({ form: "—", reason: "Only self-employed individuals and sole proprietors are supported in this first batch." });
-  if (profile.has_employees) notSupported.push({ form: "1601C", reason: "Payroll returns (1601C, 1604C, 2316) are planned for a later batch." });
 
   const option = profile.income_tax_option;
   const itOption: ItOption | null = option === "eight_percent" || option === "graduated_osd" || option === "graduated_itemized" ? option : null;
@@ -660,6 +799,10 @@ export function preparePacket(input: PrepareInput): Packet {
     if (profile.withholds_expanded) {
       const [m1, m2] = quarterMonths(q) as [Range, Range, Range];
       documents.push(prepare0619E(ctx, m1), prepare0619E(ctx, m2), prepare1601EQ(ctx, q, range), prepareQap(ctx, q, range), ...prepare2307s(ctx, q, range));
+    }
+    if (profile.has_employees) {
+      documents.push(...quarterMonths(q).map((m) => prepare1601C(ctx, m)), prepareContributions(ctx, q, range));
+      if (q.quarter === 4) documents.push(prepare1604C(ctx, q.year), ...prepare2316s(ctx, q.year));
     }
     if (certsIn(input.records, range).length) documents.push(prepareSawt(ctx, q, range));
     if (itOption) {

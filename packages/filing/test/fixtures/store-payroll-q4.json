@@ -1,0 +1,232 @@
+{
+  "description": "Sari-sari store (sole proprietor, non-VAT, graduated rates with OSD) with one employee on ₱30,000 a month and a ₱30,000 13th month pay in December, Q4 2026. Shows the monthly 1601C (monthly table after the employee's SSS ₱1,500, PhilHealth ₱750 and Pag-IBIG ₱200), the December year-end adjustment, the contributions summary, the 1604C with the alphalist, and the employee's 2316.",
+  "client": {
+    "name": "Tindahan ni Aling Nena",
+    "profile": {
+      "taxpayer_type": "sole_proprietorship",
+      "vat_status": "non_vat",
+      "income_tax_option": "graduated_osd",
+      "has_employees": true,
+      "withholds_expanded": false,
+      "filing_channel": "ebirforms",
+      "efps_group": null,
+      "fiscal_year_end_month": 12,
+      "rdo_code": null,
+      "taxpayer_size": "micro",
+      "line_of_business": "Retail"
+    }
+  },
+  "period": {
+    "year": 2026,
+    "quarter": 4
+  },
+  "records": [
+    {
+      "kind": "sale",
+      "id": "s1",
+      "date": "2026-10-31",
+      "document_no": "1001",
+      "customer": {
+        "name": "Walk-in customers"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s2",
+      "date": "2026-11-30",
+      "document_no": "1002",
+      "customer": {
+        "name": "Walk-in customers"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "sale",
+      "id": "s3",
+      "date": "2026-12-31",
+      "document_no": "1003",
+      "customer": {
+        "name": "Walk-in customers"
+      },
+      "amount": "100000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p01",
+      "date": "2026-01-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p02",
+      "date": "2026-02-28",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p03",
+      "date": "2026-03-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p04",
+      "date": "2026-04-30",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p05",
+      "date": "2026-05-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p06",
+      "date": "2026-06-30",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p07",
+      "date": "2026-07-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p08",
+      "date": "2026-08-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p09",
+      "date": "2026-09-30",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p10",
+      "date": "2026-10-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p11",
+      "date": "2026-11-30",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00"
+    },
+    {
+      "kind": "payroll",
+      "id": "p12",
+      "date": "2026-12-31",
+      "employee": {
+        "name": "Ana Santos",
+        "tin": "401-222-333-000"
+      },
+      "basic_pay": "30000.00",
+      "benefits": "30000.00"
+    }
+  ],
+  "expected": {
+    "forms": [
+      "2551Q",
+      "1601C",
+      "1601C",
+      "1601C",
+      "SSS/PhilHealth/Pag-IBIG",
+      "1604C",
+      "2316",
+      "1701A"
+    ],
+    "issue_codes": [],
+    "values": {
+      "2551Q-2026-12-31": {
+        "gross_sales": "300000.00",
+        "tax_due": "9000.00"
+      },
+      "1601C-2026-10-31": {
+        "total_compensation": "30000.00",
+        "non_taxable": "2450.00",
+        "taxable_compensation": "27550.00",
+        "tax_withheld": "1007.55",
+        "payable": "1007.55"
+      },
+      "1601C-2026-11-30": {
+        "tax_withheld": "1007.55"
+      },
+      "1601C-2026-12-31": {
+        "total_compensation": "60000.00",
+        "non_taxable": "32450.00",
+        "taxable_compensation": "27550.00",
+        "tax_withheld": "1006.95",
+        "payable": "1006.95"
+      },
+      "1604C-2026": {
+        "total_compensation": "390000.00",
+        "taxable_compensation": "330600.00",
+        "tax_due": "12090.00",
+        "tax_withheld": "12090.00"
+      },
+      "2316-2026-ana-santos": {
+        "gross_compensation": "390000.00",
+        "non_taxable": "59400.00",
+        "taxable_compensation": "330600.00",
+        "tax_due": "12090.00",
+        "tax_withheld": "12090.00"
+      },
+      "1701A-2026": {
+        "gross": "300000.00",
+        "taxable_income": "180000.00",
+        "tax_due": "0.00",
+        "payable": "0.00"
+      }
+    },
+    "total_payable": "31222.05"
+  }
+}

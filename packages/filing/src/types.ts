@@ -68,7 +68,26 @@ export interface Form2307Received {
   tax_withheld: string;
 }
 
-export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received;
+/**
+ * Pay for one employee for one month (enter one record per employee per month; date = the month's
+ * last payday). Employee shares of SSS, PhilHealth and Pag-IBIG are computed from basic pay.
+ */
+export interface PayrollRecord {
+  kind: "payroll";
+  id: string;
+  date: ISODate;
+  employee: Party;
+  /** Basic pay and taxable allowances for the month. */
+  basic_pay: string;
+  /** 13th month pay and other benefits (bonuses) paid this month. */
+  benefits?: string;
+  /** De minimis benefits within the ceilings, paid this month. */
+  de_minimis?: string;
+  /** Minimum wage earner: exempt on statutory minimum wage. */
+  minimum_wage_earner?: boolean;
+}
+
+export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received | PayrollRecord;
 
 export interface ClientInfo {
   name: string;
