@@ -2,29 +2,29 @@
 
 /*
  * TaxGabay visual system: friendly SaaS.
- * Deep navy-violet ink on a soft lavender ground, a vivid violet for actions,
+ * Deep navy ink on a soft blue-white ground, a vivid blue for actions,
  * rounded white cards with soft long shadows, pill buttons, Poppins throughout.
  * Sun-yellow stays as TaxGabay's signal colour (deadlines, highlights).
  */
 @theme {
-  --color-background: #f7f5fc;
-  --color-foreground: #281752;
+  --color-background: #f5f8fe;
+  --color-foreground: #0f1f4b;
   --color-card: #ffffff;
-  --color-card-foreground: #281752;
-  --color-muted: #f3f0fa;
-  --color-muted-foreground: #5a5675;
-  --color-border: #e1dcee;
-  --color-input: #cfc8e3;
-  --color-ring: #7f00ff;
-  --color-primary: #7f00ff;
+  --color-card-foreground: #0f1f4b;
+  --color-muted: #eef3fc;
+  --color-muted-foreground: #4f5b76;
+  --color-border: #dbe3f1;
+  --color-input: #c5d1e6;
+  --color-ring: #1f5eff;
+  --color-primary: #1f5eff;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f5ebff;
-  --color-secondary-foreground: #5b00b8;
-  --color-lavender: #f5f1fe;
+  --color-secondary: #e8f0ff;
+  --color-secondary-foreground: #1740b8;
+  --color-lavender: #f0f5ff;
   --color-sun: #f2b705;
   --color-sun-foreground: #3b2b00;
   --color-sun-soft: #fff4cc;
-  --color-ink: #281752;
+  --color-ink: #0f1f4b;
   --color-destructive: #c42b1c;
   --color-warning: #a35f00;
   --color-warning-foreground: #6b3d00;
@@ -35,30 +35,30 @@
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --shadow-card: 0 2px 4px rgb(40 23 82 / 0.05), 0 40px 80px -46px rgb(40 23 82 / 0.45);
-  --shadow-pop: 0 30px 70px -30px rgb(40 23 82 / 0.4);
+  --shadow-card: 0 2px 4px rgb(15 31 75 / 0.05), 0 40px 80px -46px rgb(15 31 75 / 0.45);
+  --shadow-pop: 0 30px 70px -30px rgb(15 31 75 / 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #120a24;
-    --color-foreground: #ece8f7;
-    --color-card: #1b1233;
-    --color-card-foreground: #ece8f7;
-    --color-muted: #231940;
-    --color-muted-foreground: #aaa1c6;
-    --color-border: #33295a;
-    --color-input: #4a3e78;
-    --color-ring: #b98cff;
-    --color-primary: #b98cff;
-    --color-primary-foreground: #1a0b33;
-    --color-secondary: #2a1a4d;
-    --color-secondary-foreground: #dcc8ff;
-    --color-lavender: #1e1438;
+    --color-background: #0a1124;
+    --color-foreground: #e7edf8;
+    --color-card: #111b33;
+    --color-card-foreground: #e7edf8;
+    --color-muted: #18243f;
+    --color-muted-foreground: #9fadc8;
+    --color-border: #26355a;
+    --color-input: #3a4d7a;
+    --color-ring: #7aa7ff;
+    --color-primary: #7aa7ff;
+    --color-primary-foreground: #0a1533;
+    --color-secondary: #1a2a52;
+    --color-secondary-foreground: #c9d9ff;
+    --color-lavender: #142140;
     --color-sun: #f5c542;
     --color-sun-foreground: #2a1f00;
     --color-sun-soft: #3a2f0d;
-    --color-ink: #ece8f7;
+    --color-ink: #e7edf8;
     --color-warning: #f2b14a;
     --color-warning-foreground: #f8d38f;
     --color-success: #5ccf8a;

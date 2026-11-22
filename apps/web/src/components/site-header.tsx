@@ -172,7 +172,7 @@ export function SiteHeader() {
       <div
         className={cn(
           "relative mx-auto flex max-w-6xl items-center gap-3 rounded-full border px-3 py-2 transition-[background-color,border-color,box-shadow] duration-300",
-          solid ? "border-border bg-card shadow-[0_1px_2px_rgb(40_23_82/0.04),0_14px_34px_-20px_rgb(40_23_82/0.3)]" : "border-transparent bg-transparent",
+          solid ? "border-border bg-card shadow-[0_1px_2px_rgb(15_31_75/0.04),0_14px_34px_-20px_rgb(15_31_75/0.3)]" : "border-transparent bg-transparent",
         )}
       >
         <Link href="/" aria-label="TaxGabay home" className="mr-auto rounded-full px-1" onClick={closeAll}>

@@ -37,7 +37,7 @@ const num = "px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap";
 
 export function JournalTable({ entries, chart }: { entries: JournalEntry[]; chart: Chart }) {
   return (
-    <table className="w-full min-w-[36rem] text-sm">
+    <table className="w-full min-w-[28rem] text-sm">
       <thead className="border-b border-border">
         <tr>
           <th className={th}>Date</th>
