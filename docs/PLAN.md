@@ -38,3 +38,36 @@ Source spec: [`docs/SPEC.md`](./SPEC.md). This file breaks Phase 1 into tasks wi
 | 17 | Sole proprietorship roadmap | DTI → barangay → mayor's permit → BIR (1901, COR, books, invoices, ORUS) → SSS/PhilHealth/Pag-IBIG if with employees; progress saved; printable. |
 | 18 | Tests | Vitest coverage ≥ 95% on tax-engine; Playwright: profiler → calendar, calculator breakdown, guide page. |
 | 19 | Docs | README (setup, commands, env, deploy), `.env.example`, VERIFY.md, CLAUDE.md. |
+
+---
+
+# Phase 2 Plan
+
+Approved by the product owner ("Go") on 2026-11-22. Phase 1 values remain unverified; Phase 2 adds more seed data under the same `needs_verification` rule.
+
+## Assumptions
+
+1. **Reminders** run as a daily scheduled job: a Next.js route (`/api/cron/reminders`) triggered by Vercel Cron and protected by `CRON_SECRET`. It uses the Supabase service-role key to read users who opted in, generates their obligations with the same engine, and sends **email via Resend** (HTTP API, `RESEND_API_KEY`) and **web push via VAPID** (`web-push`). A `reminder_log` table makes sends idempotent. The selection logic (`planReminders`) is pure and lives in tax-engine so it is unit-tested. Without the env vars, the job reports what it would send and sends nothing.
+2. **Reminders need an account** (spec). Local-mode users see the settings with a prompt to sign in.
+3. **Checklists** are data (`checklist-items.ts`) with `applies_when` against the profile, generated per period (month, quarter, year, one-time). Compliance score = done ÷ applicable items for the period. Progress is stored like roadmap progress (browser, synced to `user_checklist_progress` when signed in).
+4. **Calculators added:** corporate (RCIT vs MCIT, reduced CREATE rate eligibility, MCIT start year), withholding on compensation (per-period tables + annual computation with the ₱90,000 benefits exclusion), expanded withholding by ATC (rates as data), estate, donor's (annual cumulative), capital gains (real property and unlisted shares), documentary stamp tax (sale of real property, original issue of shares, debt instruments). "Or fractional part thereof" rounds the base up to the next unit, as the NIRC wording states.
+5. **Fiscal years straddling a rate change** (e.g. CREATE on 1 Jul 2020) are not pro-rated; the calculator warns and uses the rate in force on the last day of the taxable year.
+6. **Estate tax** covers decedents who died on or after 1 Jan 2018 (TRAIN), citizens/residents only. The family home deduction is the decedent's share (half if conjugal/community), capped.
+7. **Registration roadmaps** for SEC (partnership, corporation, OPC) and CDA (cooperative) paths are added to the same data table; the roadmap page lets the user switch paths, defaulting to their profile.
+8. **Life-event flows** are data (`life-events.ts`) linking roadmap steps, guides, calculators and checklists; deadlines they mention are flagged for verification. Guides for the new forms they reference (1706, 1707, 1800, 1801, 2000-OT, 1905, 1702 series) are out of scope for Phase 2.
+
+## Tasks
+
+| # | Task | Acceptance criteria |
+|---|------|---------------------|
+| 1 | Seed data | Corporate, withholding tables, benefits exclusion, de minimis, EWT ATCs, pre-CREATE rows; all flagged and in VERIFY.md. |
+| 2 | Corporate calculator | RCIT (regular/reduced with eligibility) vs MCIT (from 4th year after commencement), higher is payable; fixtures. |
+| 3 | Withholding on compensation | Monthly/semi-monthly/weekly/daily tables; annual tax with ₱90k exclusion and de minimis; fixtures at boundaries and across 2022/2023. |
+| 4 | EWT by ATC | Rate lookup by ATC and date; VAT-exclusive base; fixtures. |
+| 5 | Estate, donor's, CGT, DST | Each with steps and legal basis; fixtures including the cumulative donor's case and DST fractional rounding. |
+| 6 | Checklists + score | Items as data, generator per period, score; tests. |
+| 7 | Reminders | `planReminders` (pure, tested); migration for push subscriptions and reminder log; cron route; settings UI; service worker push handler. |
+| 8 | SEC/CDA roadmaps | Steps as data; roadmap path switcher. |
+| 9 | Life-event flows | 7 flows as data; index and detail pages. |
+| 10 | Web pages + e2e | Pages for all new calculators, checklists, life events; Playwright coverage. |
+| 11 | Docs | README, VERIFY.md, seed.sql regenerated. |
