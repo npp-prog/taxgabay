@@ -121,6 +121,7 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                     {r.kind === "sale" && (
                       <>
                         <span className="font-mono text-xs text-muted-foreground">{r.document_no}</span> {r.customer.name}
+                        {r.vat_treatment && r.vat_treatment !== "vatable" && <Badge variant="muted" className="ml-2">{r.vat_treatment === "zero_rated" ? "zero-rated" : "exempt"}</Badge>}
                       </>
                     )}
                     {r.kind === "expense" && (
@@ -306,7 +307,7 @@ export function DocumentCard({ d }: { d: PreparedDocument }) {
   );
 }
 
-export function RecordForm({ kind, tinConsent, onAdd }: { kind: TemplateKind; tinConsent: boolean; onAdd: (r: ClientRecord) => void }) {
+export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: TemplateKind; tinConsent: boolean; onAdd: (r: ClientRecord) => void; vat?: boolean }) {
   const [f, setF] = React.useState<Record<string, string>>({});
   const [error, setError] = React.useState<string | null>(null);
   const v = (k: string) => f[k] ?? "";
@@ -320,7 +321,8 @@ export function RecordForm({ kind, tinConsent, onAdd }: { kind: TemplateKind; ti
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v("date"))) return setError("Enter the date.");
     if (kind === "sale") {
       if (!v("no") || !ok(v("amount"))) return setError("Enter the invoice number and an amount.");
-      onAdd({ kind: "sale", id: newId(), date: v("date"), document_no: v("no"), customer: { name: v("name") || "Walk-in customer", tin: tin("tin") }, amount: amt(v("amount")) });
+      const vt = v("vt") as "" | "vatable" | "zero_rated" | "exempt";
+      onAdd({ kind: "sale", id: newId(), date: v("date"), document_no: v("no"), customer: { name: v("name") || "Walk-in customer", tin: tin("tin") }, amount: amt(v("amount")), ...(vat && vt ? { vat_treatment: vt } : {}) });
     } else if (kind === "expense") {
       if (!v("name") || !ok(v("amount"))) return setError("Enter the supplier and an amount.");
       onAdd({ kind: "expense", id: newId(), date: v("date"), document_no: v("no") || undefined, supplier: { name: v("name"), tin: tin("tin") }, category: (v("category") || "other") as ExpenseCategory, amount: amt(v("amount")), supplier_vat_registered: v("vat") === "yes", withholding: v("atc") ? { atc: v("atc") } : null });
@@ -348,7 +350,19 @@ export function RecordForm({ kind, tinConsent, onAdd }: { kind: TemplateKind; ti
         <>
           {field("no", "Invoice no.")}
           {field("name", "Customer")}
-          {field("amount", "Amount (₱)", { inputMode: "decimal" })}
+          {field("amount", vat ? "Invoice total incl. VAT (₱)" : "Amount (₱)", { inputMode: "decimal" })}
+          {vat && (
+            <div>
+              <label className={label} htmlFor="rf-vt">
+                VAT treatment
+              </label>
+              <select id="rf-vt" className={input} value={v("vt")} onChange={set("vt")}>
+                <option value="">Vatable (12% VAT included)</option>
+                <option value="zero_rated">Zero-rated</option>
+                <option value="exempt">VAT-exempt</option>
+              </select>
+            </div>
+          )}
         </>
       )}
       {kind === "expense" && (

@@ -209,6 +209,8 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 
 - Done: schema + RLS (tasks 1), invite codes, records intake with CSV import (2), record checks (3), `packages/filing` for the first batch (4), flagged form line maps (5), packet PDF (6), firm workspace `/firm` with prepare → review → release and the client portal at `/prepare` (7), docs (8).
 - Done after that: receipt uploads (photos/PDF, 10 MB, private bucket, signed links), "what the firm needs next" for clients with records due 10 days before each deadline (`RECORDS_LEAD_DAYS`, a firm rule, not a BIR rule), email reminders 5, 1 and 0 days before the records date (daily cron), firm overview sorted by next deadline with late records flagged, client data download (JSON) and firm-admin deletion of a client with all data.
+- Second batch done: VAT-registered individuals — 2550Q (vatable, zero-rated and exempt sales; input tax by capital goods, goods and services; excess input tax carried over), summary lists of sales and purchases, 1701Q/1701A on sales net of VAT; the 8% option is refused for VAT clients.
+- Next batches: payroll (1601C, 1604C, 2316, alphalist), corporations (1702Q, 1702-RT), books of accounts and financial statements, monthly packets.
 - Known limitation: packets are quarterly, but 0619E is monthly and falls due before the quarter ends. The firm can prepare a quarter's packet early (e.g. in February for January's 0619E); later batches should add monthly packets.
 
 ## Out of scope for Phase 6

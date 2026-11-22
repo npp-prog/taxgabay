@@ -1,7 +1,7 @@
 "use client";
 
 import { quarterLabel, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
-import { peso, type IncomeTaxOption, type Profile, type TaxpayerType } from "@taxgabay/tax-engine";
+import { peso, type IncomeTaxOption, type Profile, type TaxpayerType, type VatStatus } from "@taxgabay/tax-engine";
 import Link from "next/link";
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
@@ -278,7 +278,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
             </button>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div>
             <label className={label} htmlFor="f-type">
               Taxpayer type
@@ -296,6 +296,15 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
               <option value="eight_percent">8%</option>
               <option value="graduated_osd">Graduated, OSD</option>
               <option value="graduated_itemized">Graduated, itemized</option>
+            </select>
+          </div>
+          <div>
+            <label className={label} htmlFor="f-vat">
+              VAT registration
+            </label>
+            <select id="f-vat" className={input} value={profile.vat_status === "vat" ? "vat" : "non_vat"} onChange={(e) => setProfile({ ...profile, vat_status: e.target.value as VatStatus })}>
+              <option value="non_vat">Non-VAT (percentage tax)</option>
+              <option value="vat">VAT-registered</option>
             </select>
           </div>
           <label className="flex items-end gap-2 pb-2 text-sm">

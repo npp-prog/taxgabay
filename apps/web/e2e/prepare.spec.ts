@@ -38,3 +38,22 @@ test("imports a CSV and reports bad rows", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: "Imported 1 record" })).toContainText("Line 3");
   await expect(page.getByTestId("records-table")).toContainText("A-1");
 });
+
+test("a VAT-registered client gets the 2550Q and summary lists instead of the 2551Q", async ({ page }) => {
+  await page.goto("/prepare");
+  await page.getByLabel("Registered name").fill("Studio Malaya");
+  await page.getByLabel("VAT registration").selectOption("vat");
+  await page.getByLabel("Income tax option chosen for the year").selectOption("graduated_osd");
+  await page.getByLabel("Date", { exact: true }).fill("2026-02-10");
+  await page.getByLabel("Invoice no.").fill("INV-1");
+  await page.getByLabel("Customer", { exact: true }).fill("Kape Co.");
+  await page.getByLabel("Invoice total incl. VAT (₱)").fill("112000");
+  await page.getByRole("button", { name: "Add sale" }).click();
+
+  const docs = page.getByTestId("prepared-doc");
+  const vat = docs.filter({ hasText: "Quarterly VAT return" });
+  await expect(vat).toContainText("₱100,000.00"); // vatable sales, net of VAT
+  await expect(vat).toContainText("₱12,000.00"); // output tax
+  await expect(docs.filter({ hasText: "Summary list of sales" })).toContainText("Kape Co.");
+  await expect(docs.filter({ hasText: "Quarterly percentage tax return" })).toHaveCount(0);
+});

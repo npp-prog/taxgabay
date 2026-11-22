@@ -321,8 +321,8 @@ The chapters in `packages/content/business/` are flagged `needs_verification: tr
 `packages/filing` prepares returns, schedules and certificates from client records. To review:
 
 - **Form line maps** (`packages/filing/src/data/form-lines.ts`): every box is described in words and its **BIR item number is empty** — fill in the item number for the current version of 2551Q, 0619E, 1601EQ, 1701Q, 1701A and 2307, then set `needs_verification: false`.
-- **Worked examples** (`packages/filing/test/fixtures/*.json`): a freelancer on 8% (Q1, with 2307s, rent withholding, 0619E/1601EQ/QAP/SAWT) and a store on graduated rates with OSD (Q2, cumulative 1701Q and 2551Q). Check every expected value.
-- **Assumptions to confirm**: sales counted by invoice date; 1701Q prior-quarter payments assumed paid as prepared; 1601EQ assumes the 0619E were paid as prepared; whether a zero 0619E must be filed; SAWT/QAP data-file formats (lists only for now).
+- **Worked examples** (`packages/filing/test/fixtures/*.json`): a freelancer on 8% (Q1, with 2307s, rent withholding, 0619E/1601EQ/QAP/SAWT) and a store on graduated rates with OSD (Q2, cumulative 1701Q and 2551Q), and a VAT-registered studio (Q3: 2550Q with vatable, zero-rated and exempt sales, input tax by purchase class, carried-over excess input tax, summary lists of sales and purchases, 1701Q on sales net of VAT). Check every expected value.
+- **Assumptions to confirm**: sales counted by invoice date; 1701Q prior-quarter payments assumed paid as prepared; 1601EQ assumes the 0619E were paid as prepared; whether a zero 0619E must be filed; SAWT/QAP data-file formats (lists only for now); VAT: input tax claimed for every purchase from a VAT-registered supplier (valid VAT invoice assumed), capital goods input tax not spread over time, summary-list thresholds and formats, VAT carry-over chained across all earlier quarters with records, income tax computed on sales net of VAT and itemized deductions net of input tax.
 
 ## Practice sets
 

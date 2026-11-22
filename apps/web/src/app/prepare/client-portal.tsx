@@ -118,7 +118,7 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
           Your records
         </h2>
         <RecordTabs records={data.records} tab={tab} onTab={setTab} />
-        <RecordForm kind={tab} tinConsent={data.consents.tin} onAdd={(r) => run(() => addRecords(clientId, [r], data.consents.tin))} />
+        <RecordForm kind={tab} tinConsent={data.consents.tin} vat={data.client.profile.vat_status === "vat"} onAdd={(r) => run(() => addRecords(clientId, [r], data.consents.tin))} />
         <CsvImport kind={tab} onRecords={(rs) => run(() => addRecords(clientId, rs, data.consents.tin))} />
         <RecordsTable
           records={data.records}

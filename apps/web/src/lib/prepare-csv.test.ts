@@ -23,6 +23,11 @@ describe("prepare CSV import", () => {
     expect(r.records[0]).toMatchObject({ amount: "1500.00", customer: { name: "A", tin: null } });
     expect(r.errors).toEqual([expect.stringMatching(/^Line 3: /), expect.stringMatching(/^Line 4: invoice_no/), expect.stringMatching(/^Line 5: amount/)]);
   });
+  it("reads the VAT treatment of sales", () => {
+    const r = importCsv("sale", "date,invoice_no,customer_name,amount,vat_treatment\n2026-01-01,1,A,100,Zero-rated\n2026-01-01,2,A,100,\n2026-01-01,3,A,100,maybe\n", id);
+    expect(r.records.map((x) => (x as { vat_treatment?: string }).vat_treatment)).toEqual(["zero_rated", undefined]);
+    expect(r.errors[0]).toMatch(/^Line 4: vat_treatment/);
+  });
   it("validates expenses and 2307 rows", () => {
     const e = importCsv("expense", "date,supplier_name,category,amount,atc\n2026-01-01,X,food,100,\n2026-01-01,,rent,100,\n2026-01-01,Y,rent,1x,\n2026-01-01,Z,Rent,100,wi100\n", id);
     expect(e.errors).toHaveLength(3);

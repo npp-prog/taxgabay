@@ -2,7 +2,7 @@ import type { ClientRecord, ExpenseCategory } from "@taxgabay/filing";
 
 /** CSV templates clients can fill in a spreadsheet and import. */
 export const TEMPLATES = {
-  sale: { file: "taxgabay-sales.csv", columns: ["date", "invoice_no", "customer_name", "customer_tin", "amount"], example: ["2026-01-10", "SI-0001", "Kape Co., Inc.", "201-111-222-000", "30000.00"] },
+  sale: { file: "taxgabay-sales.csv", columns: ["date", "invoice_no", "customer_name", "customer_tin", "amount", "vat_treatment"], example: ["2026-01-10", "SI-0001", "Kape Co., Inc.", "201-111-222-000", "30000.00", ""] },
   expense: {
     file: "taxgabay-expenses.csv",
     columns: ["date", "document_no", "supplier_name", "supplier_tin", "category", "amount", "supplier_vat_registered", "atc"],
@@ -29,6 +29,7 @@ export const CATEGORIES: { key: ExpenseCategory; label: string }[] = [
   { key: "transportation", label: "Transportation" },
   { key: "communication", label: "Phone and internet" },
   { key: "repairs", label: "Repairs and maintenance" },
+  { key: "equipment", label: "Equipment and other capital goods" },
   { key: "other", label: "Other" },
 ];
 
@@ -89,7 +90,7 @@ export function importCsv(kind: TemplateKind, text: string, makeId: () => string
   if (!rows.length) return { records, errors: ["The file is empty."] };
   const header = rows[0]!.map((h) => h.trim().toLowerCase());
   const cols = TEMPLATES[kind].columns;
-  const missing = cols.filter((c) => !header.includes(c) && !c.endsWith("_tin") && c !== "document_no" && c !== "supplier_vat_registered" && c !== "atc");
+  const missing = cols.filter((c) => !header.includes(c) && !c.endsWith("_tin") && c !== "document_no" && c !== "supplier_vat_registered" && c !== "atc" && c !== "vat_treatment");
   if (missing.length) return { records, errors: [`Missing column(s): ${missing.join(", ")}. Download the template to see the expected columns.`] };
   const get = (r: string[], c: string) => (r[header.indexOf(c)] ?? "").trim();
 
@@ -103,7 +104,9 @@ export function importCsv(kind: TemplateKind, text: string, makeId: () => string
       const amount = cleanAmount(get(r, "amount"));
       if (!AMOUNT.test(amount)) return bad(`amount "${get(r, "amount")}" is not a peso amount.`);
       if (!get(r, "invoice_no")) return bad("invoice_no is required.");
-      records.push({ kind: "sale", id: makeId(), date, document_no: get(r, "invoice_no"), customer: { name: get(r, "customer_name") || "Walk-in customer", tin: get(r, "customer_tin") || null }, amount });
+      const vt = get(r, "vat_treatment").toLowerCase().replace(/[\s-]+/g, "_");
+      if (vt && !["vatable", "zero_rated", "exempt"].includes(vt)) return bad(`vat_treatment "${get(r, "vat_treatment")}" must be vatable, zero_rated or exempt (or blank).`);
+      records.push({ kind: "sale", id: makeId(), date, document_no: get(r, "invoice_no"), customer: { name: get(r, "customer_name") || "Walk-in customer", tin: get(r, "customer_tin") || null }, amount, ...(vt ? { vat_treatment: vt as "vatable" | "zero_rated" | "exempt" } : {}) });
     } else if (kind === "expense") {
       const amount = cleanAmount(get(r, "amount"));
       if (!AMOUNT.test(amount)) return bad(`amount "${get(r, "amount")}" is not a peso amount.`);

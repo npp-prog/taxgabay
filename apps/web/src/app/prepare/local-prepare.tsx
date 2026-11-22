@@ -1,7 +1,7 @@
 "use client";
 
 import { preparePacket, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
-import { type IncomeTaxOption, type TaxpayerType } from "@taxgabay/tax-engine";
+import { type IncomeTaxOption, type TaxpayerType, type VatStatus } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
     <div className="space-y-8">
       {banner}
       <div className="rounded-lg border border-sun bg-sun-soft p-4 text-sm leading-relaxed text-sun-foreground dark:text-sun">
-        <strong>For now, everything stays in this browser.</strong> Clients of {REVIEWER}&apos;s firm will get a secure account where records are saved and each packet is reviewed before release. This first version supports non-VAT self-employed individuals and sole proprietors.
+        <strong>For now, everything stays in this browser.</strong> Clients of {REVIEWER}&apos;s firm will get a secure account where records are saved and each packet is reviewed before release. It supports self-employed individuals and sole proprietors, VAT-registered or not.
       </div>
 
       {/* 1. Details */}
@@ -78,6 +78,15 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             </select>
           </div>
         </div>
+        <div className="max-w-md">
+          <label className={label} htmlFor="p-vat">
+            VAT registration
+          </label>
+          <select id="p-vat" className={input} value={client.profile.vat_status === "vat" ? "vat" : "non_vat"} onChange={(e) => setProfile({ vat_status: e.target.value as VatStatus })}>
+            <option value="non_vat">Not VAT-registered (percentage tax)</option>
+            <option value="vat">VAT-registered</option>
+          </select>
+        </div>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={client.profile.withholds_expanded} onChange={(e) => setProfile({ withholds_expanded: e.target.checked })} />I withhold tax when I pay rent, professional fees or contractors (I am a withholding agent).
         </label>
@@ -113,7 +122,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
         </div>
         <RecordTabs records={records} tab={tab} onTab={setTab} />
 
-        <RecordForm kind={tab} tinConsent={tinConsent} onAdd={addRecord} />
+        <RecordForm kind={tab} tinConsent={tinConsent} onAdd={addRecord} vat={client.profile.vat_status === "vat"} />
 
         <CsvImport kind={tab} onRecords={(rs) => update((s) => ({ ...s, records: [...s.records, ...rs] }))} />
         <RecordsTable records={records} kind={tab} onDelete={removeRecord} />
