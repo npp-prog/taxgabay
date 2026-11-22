@@ -10,14 +10,20 @@ import {
   type Profile,
   type ReminderSettings,
 } from "@taxgabay/tax-engine";
+import { reminderLogKey } from "./clients-core";
 
-/** Everything the job needs about one opted-in user. */
+/** Everything the job needs about one opted-in user's profile (one per client in multi-client mode). */
 export interface ReminderUser {
   user_id: string;
+  /** Database client id; null or absent = the user's default client. */
+  client_id?: string | null;
+  /** Shown in the message when set (users with more than one client). */
+  client_name?: string | null;
   email: string | null;
   profile: Profile;
   settings: ReminderSettings;
   completed: Set<string>;
+  /** Reminder keys already sent for this client (without the client prefix). */
   already_sent: Set<string>;
   push_subscriptions: { id: string; endpoint: string; p256dh: string; auth: string }[];
 }
@@ -68,14 +74,16 @@ export async function runReminderJob(today: string, deps: ReminderDeps): Promise
     }
     summary.planned += planned.length;
     for (const r of planned) {
-      const msg = reminderMessage(r);
+      const base = reminderMessage(r);
+      const msg = u.client_name ? { subject: `[${u.client_name}] ${base.subject}`, text: `For ${u.client_name}:\n${base.text}` } : base;
+      const logKey = reminderLogKey(u.client_id ?? null, r.key);
       if (r.channels.includes("email")) {
         if (!deps.sendEmail || !u.email) {
           summary.skipped.email++;
         } else {
           try {
             await deps.sendEmail(u.email, msg.subject, msg.text);
-            await deps.logSent(u.user_id, r.key, "email");
+            await deps.logSent(u.user_id, logKey, "email");
             summary.sent.email++;
           } catch (e) {
             summary.errors.push(`${u.user_id} email ${r.key}: ${(e as Error).message}`);
@@ -86,7 +94,7 @@ export async function runReminderJob(today: string, deps: ReminderDeps): Promise
         if (!deps.sendPush || u.push_subscriptions.length === 0) {
           summary.skipped.push++;
         } else {
-          const payload = JSON.stringify({ title: msg.subject, body: msg.text.split("\n")[0], url: "/calendar" });
+          const payload = JSON.stringify({ title: msg.subject, body: base.text.split("\n")[0], url: "/calendar" });
           let delivered = false;
           for (const sub of u.push_subscriptions) {
             try {
@@ -98,7 +106,7 @@ export async function runReminderJob(today: string, deps: ReminderDeps): Promise
             }
           }
           if (delivered) {
-            await deps.logSent(u.user_id, r.key, "push");
+            await deps.logSent(u.user_id, logKey, "push");
             summary.sent.push++;
           }
         }

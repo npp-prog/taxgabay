@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { ClientSwitcher } from "@/components/client-switcher";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -114,6 +115,17 @@ const YES_NO: Option<"yes" | "no">[] = [
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export function ProfileWizard() {
+  const { activeClientId } = useUserData();
+  return (
+    <div className="mx-auto max-w-2xl">
+      <ClientSwitcher />
+      {/* Keyed by client so an unsaved draft never carries over to another client. */}
+      <WizardForClient key={activeClientId} />
+    </div>
+  );
+}
+
+function WizardForClient() {
   const { data, saveProfile } = useUserData();
   const router = useRouter();
   // Until the user edits, show the saved profile (or defaults).

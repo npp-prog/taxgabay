@@ -3,6 +3,7 @@
 import { businessForm, registrationSteps } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { Disclaimer } from "@/components/disclaimer";
+import { ClientSwitcher } from "@/components/client-switcher";
 import { PageHeader } from "@/components/page-header";
 import { PdfButton } from "@/components/pdf-button";
 import type { PdfDoc } from "@/lib/pdf";
@@ -36,6 +37,7 @@ export function RoadmapView() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <ClientSwitcher />
       <div role="tablist" aria-label="Business form" className="no-print inline-flex flex-wrap rounded-md border border-border p-1">
         {PATHS.map((p) => (
           <button

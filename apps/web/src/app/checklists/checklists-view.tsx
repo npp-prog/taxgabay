@@ -4,6 +4,7 @@ import { addMonths, checklistFor, checklistPeriod, complianceScore, getForm, typ
 import Link from "next/link";
 import * as React from "react";
 import { Disclaimer } from "@/components/disclaimer";
+import { ClientSwitcher } from "@/components/client-switcher";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export function ChecklistsView() {
   if (!data.profile) {
     return (
       <div className="space-y-4">
+        <ClientSwitcher />
         <PageHeader title="Compliance checklists" description="Monthly, quarterly, annual and one-time tasks based on your profile." />
         <p>Create your profile first so we know which tasks apply to you.</p>
         <Link href="/profile" className={buttonVariants()}>
@@ -53,6 +55,7 @@ export function ChecklistsView() {
 
   return (
     <div className="space-y-6">
+      <ClientSwitcher />
       <PageHeader
         title="Compliance checklists"
         description="Tick tasks as you finish them. Your compliance score counts the tasks that definitely apply to you this period."

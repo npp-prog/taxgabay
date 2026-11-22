@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_PROFILE, normalizeProfile, type DeadlineExtension, type Holiday, type Profile } from "@taxgabay/tax-engine";
 import { mergeCalendarData } from "./calendar-merge";
 import { sendNotification, setVapidDetails } from "web-push";
+import { reminderLogKey } from "./clients-core";
 import type { ReminderDeps, ReminderUser } from "./reminders-job";
 
 /** Production dependencies for the reminder job (service role; server only). */
@@ -27,29 +28,46 @@ export function supabaseReminderDeps(): ReminderDeps {
       const users: ReminderUser[] = [];
       for (const s of settings ?? []) {
         const uid = s.user_id as string;
-        const [profile, obligations, log, subs, auth] = await Promise.all([
-          sb.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
-          sb.from("user_obligations").select("obligation_id").eq("user_id", uid).neq("status", "pending"),
+        const [profiles, clients, obligations, log, subs, auth] = await Promise.all([
+          sb.from("profiles").select("*").eq("user_id", uid),
+          sb.from("clients").select("id,name").eq("user_id", uid),
+          sb.from("user_obligations").select("obligation_id,client_id").eq("user_id", uid).neq("status", "pending"),
           sb.from("reminder_log").select("reminder_key").eq("user_id", uid),
           sb.from("push_subscriptions").select("id,endpoint,p256dh,auth").eq("user_id", uid),
           sb.auth.admin.getUserById(uid),
         ]);
-        if (!profile.data) continue;
-        const p = profile.data as Record<string, unknown>;
-        const prof: Profile = normalizeProfile({
-          ...DEFAULT_PROFILE,
-          ...Object.fromEntries(Object.keys(DEFAULT_PROFILE).map((k) => [k, p[k] ?? DEFAULT_PROFILE[k as keyof Profile]])),
-        } as Profile);
-        users.push({
-          user_id: uid,
-          email: auth.data.user?.email ?? null,
-          profile: prof,
-          settings: { days_before: s.days_before as number[], email_enabled: s.email_enabled as boolean, push_enabled: s.push_enabled as boolean },
-          completed: new Set((obligations.data ?? []).map((o) => o.obligation_id as string)),
-          // A key counts as sent if any channel logged it; per-channel resend is not attempted.
-          already_sent: new Set((log.data ?? []).map((l) => l.reminder_key as string)),
-          push_subscriptions: (subs.data ?? []) as ReminderUser["push_subscriptions"],
-        });
+        const rows = (profiles.data ?? []) as Record<string, unknown>[];
+        const names = new Map(((clients.data ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]));
+        const sentKeys = (log.data ?? []).map((l) => l.reminder_key as string);
+        const multi = rows.length > 1;
+        for (const p of rows) {
+          const clientId = (p.client_id as string | null) ?? null;
+          const prof: Profile = normalizeProfile({
+            ...DEFAULT_PROFILE,
+            ...Object.fromEntries(Object.keys(DEFAULT_PROFILE).map((k) => [k, p[k] ?? DEFAULT_PROFILE[k as keyof Profile]])),
+          } as Profile);
+          // Log keys carry the client id (none for the default client); strip it back off here.
+          const prefix = reminderLogKey(clientId, "");
+          const sent = sentKeys
+            .filter((k) => (clientId ? k.startsWith(prefix) : !/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(k)))
+            .map((k) => k.slice(prefix.length));
+          users.push({
+            user_id: uid,
+            client_id: clientId,
+            client_name: multi ? (clientId ? names.get(clientId) ?? "Client" : "Me") : null,
+            email: auth.data.user?.email ?? null,
+            profile: prof,
+            settings: { days_before: s.days_before as number[], email_enabled: s.email_enabled as boolean, push_enabled: s.push_enabled as boolean },
+            completed: new Set(
+              ((obligations.data ?? []) as { obligation_id: string; client_id: string | null }[])
+                .filter((o) => (o.client_id ?? null) === clientId)
+                .map((o) => o.obligation_id),
+            ),
+            // A key counts as sent if any channel logged it; per-channel resend is not attempted.
+            already_sent: new Set(sent),
+            push_subscriptions: (subs.data ?? []) as ReminderUser["push_subscriptions"],
+          });
+        }
       }
       return users;
     },

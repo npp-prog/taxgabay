@@ -10,7 +10,7 @@ import { useUserData } from "@/lib/user-data";
 import { ReminderSettingsCard } from "./reminder-settings";
 
 export function AccountView() {
-  const { data, session, deleteAccount } = useUserData();
+  const { session, deleteAccount, clients } = useUserData();
   const [confirming, setConfirming] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export function AccountView() {
   }
 
   function exportData() {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ clients }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "taxgabay-my-data.json";
@@ -62,6 +62,9 @@ export function AccountView() {
           <Button variant="outline" onClick={exportData}>
             Download my data
           </Button>
+          <Link href="/clients" className={buttonVariants({ variant: "outline" })}>
+            Manage clients (for bookkeepers)
+          </Link>
         </CardContent>
       </Card>
       <ReminderSettingsCard />

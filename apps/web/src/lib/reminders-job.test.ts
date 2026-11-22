@@ -90,3 +90,18 @@ describe("calendar data in the reminder job", () => {
     expect((await runReminderJob("2026-05-15", d)).planned).toBe(1);
   });
 });
+
+describe("multi-client reminders", () => {
+  it("prefixes the message with the client name and the log key with the client id", async () => {
+    const d = deps([user({ client_id: "c1", client_name: "Aling Nena Store" })]);
+    await runReminderJob(TODAY, d);
+    expect(d.sendEmail).toHaveBeenCalledWith("a@example.com", "[Aling Nena Store] BIR 1701Q is due in 7 days (2026-05-15)", expect.stringMatching(/^For Aling Nena Store:\n/));
+    expect(d.logSent).toHaveBeenCalledWith("u1", "c1:dl-1701q:2026-03-31:7", "email");
+  });
+
+  it("keeps the default client's log keys unprefixed", async () => {
+    const d = deps([user({ client_id: null })]);
+    await runReminderJob(TODAY, d);
+    expect(d.logSent).toHaveBeenCalledWith("u1", "dl-1701q:2026-03-31:7", "email");
+  });
+});

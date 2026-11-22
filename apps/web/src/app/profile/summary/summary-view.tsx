@@ -2,6 +2,7 @@
 
 import { businessForm, deadlineRules, summarizeProfile } from "@taxgabay/tax-engine";
 import Link from "next/link";
+import { ClientSwitcher } from "@/components/client-switcher";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function ProfileSummaryView() {
   if (!data.profile) {
     return (
       <div className="space-y-4">
+        <ClientSwitcher />
         <PageHeader title="What applies to you" description="Create your profile first so we can personalize this page." />
         <Link href="/profile" className={buttonVariants()}>
           Start my profile
@@ -29,6 +31,7 @@ export function ProfileSummaryView() {
 
   return (
     <div className="space-y-6">
+      <ClientSwitcher />
       <PageHeader title="Here is what applies to you" description="Based on your profile. Items marked “Depends” need an answer you weren’t sure about." />
       <div className="flex flex-wrap gap-3">
         <Link href="/calendar" className={buttonVariants()}>

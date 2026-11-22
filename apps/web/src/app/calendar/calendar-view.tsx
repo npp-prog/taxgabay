@@ -15,27 +15,34 @@ import {
 } from "@taxgabay/tax-engine";
 import Link from "next/link";
 import * as React from "react";
+import { ClientSwitcher } from "@/components/client-switcher";
 import { PageHeader } from "@/components/page-header";
 import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label, Select } from "@/components/ui/input";
 import { useCalendarData } from "@/lib/calendar-data";
 import { useUserData, type ObligationStatus } from "@/lib/user-data";
 import { cn, formatDatePH, todayPH } from "@/lib/utils";
 
 type View = "upcoming" | "month" | "form";
 
+/** An obligation tagged with the client it belongs to. */
+type Row = Obligation & { clientId: string; clientName: string; key: string };
+
 function ObligationRow({
   o,
   status,
   onToggle,
   today,
+  showClient,
 }: {
-  o: Obligation;
+  o: Row;
   status: ObligationStatus;
   onToggle: () => void;
   today: string;
+  showClient: boolean;
 }) {
   const done = status === "filed_and_paid";
   const overdue = !done && o.due_date < today;
@@ -45,11 +52,16 @@ function ObligationRow({
         type="checkbox"
         checked={done}
         onChange={onToggle}
-        aria-label={`Mark BIR ${o.form_code} for ${o.period_label} as filed and paid`}
+        aria-label={`Mark BIR ${o.form_code} for ${o.period_label}${showClient ? ` (${o.clientName})` : ""} as filed and paid`}
         className="mt-1 h-4 w-4 accent-[var(--color-primary)]"
       />
       <div className="min-w-0 flex-1">
         <div className={cn("flex flex-wrap items-center gap-2", done && "text-muted-foreground line-through")}>
+          {showClient && (
+            <Badge variant="outline" data-testid="obligation-client">
+              {o.clientName}
+            </Badge>
+          )}
           <span className="font-mono font-semibold">{o.form_code}</span>
           <span className="text-sm">{o.period_label}</span>
           {o.tentative && <Badge variant="warning">Depends on your answers</Badge>}
@@ -70,14 +82,14 @@ function ObligationRow({
   );
 }
 
-function MonthGrid({ month, obligations, holidays }: { month: string; obligations: Obligation[]; holidays: readonly Holiday[] }) {
+function MonthGrid({ month, obligations, holidays, showClient }: { month: string; obligations: Row[]; holidays: readonly Holiday[]; showClient: boolean }) {
   const { y, m } = parseISO(`${month}-01`);
   const first = toISO(y, m, 1);
   const lead = weekday(first);
   const n = daysInMonth(y, m);
   const cells: (string | null)[] = [...Array<null>(lead).fill(null), ...Array.from({ length: n }, (_, i) => toISO(y, m, i + 1))];
   while (cells.length % 7) cells.push(null);
-  const byDate = new Map<string, Obligation[]>();
+  const byDate = new Map<string, Row[]>();
   for (const o of obligations) byDate.set(o.due_date, [...(byDate.get(o.due_date) ?? []), o]);
   const holidayByDate = new Map(holidays.map((h) => [h.date, h.name]));
   return (
@@ -102,7 +114,7 @@ function MonthGrid({ month, obligations, holidays }: { month: string; obligation
                       <div className="text-muted-foreground">{Number(d.slice(8))}</div>
                       {holidayByDate.has(d) && <div className="truncate text-[10px] text-warning-foreground" title={holidayByDate.get(d)}>{holidayByDate.get(d)}</div>}
                       {(byDate.get(d) ?? []).map((o) => (
-                        <div key={o.id} className="mt-0.5 truncate rounded bg-secondary px-1 font-mono text-[11px] text-secondary-foreground" title={`${o.form_code} — ${o.title}`}>
+                        <div key={o.key} className="mt-0.5 truncate rounded bg-secondary px-1 font-mono text-[11px] text-secondary-foreground" title={`${showClient ? `${o.clientName}: ` : ""}${o.form_code} — ${o.title}`}>
                           {o.form_code}
                         </div>
                       ))}
@@ -119,8 +131,11 @@ function MonthGrid({ month, obligations, holidays }: { month: string; obligation
 }
 
 export function CalendarView() {
-  const { data, ready, setObligation } = useUserData();
+  const { data, ready, setObligation, clients, activeClientId } = useUserData();
   const [view, setView] = React.useState<View>("upcoming");
+  const [scope, setScope] = React.useState<"client" | "all">("client");
+  const multi = clients.length > 1;
+  const showAll = multi && scope === "all";
   const today = todayPH();
   const [month, setMonth] = React.useState(today.slice(0, 7));
 
@@ -129,15 +144,22 @@ export function CalendarView() {
   const to = addDays(addMonths(today, 12), -1);
 
   const { holidays, extensions } = useCalendarData();
-  const obligations = React.useMemo(
-    () => (data.profile ? generateObligations(data.profile, { from, to, rules: deadlineRules, holidays, extensions }) : []),
-    [data.profile, from, to, holidays, extensions],
-  );
+  const obligations = React.useMemo<Row[]>(() => {
+    const list = showAll ? clients : clients.filter((c) => c.id === activeClientId);
+    return list
+      .flatMap((c) =>
+        c.profile
+          ? generateObligations(c.profile, { from, to, rules: deadlineRules, holidays, extensions }).map((o) => ({ ...o, clientId: c.id, clientName: c.name, key: `${c.id}:${o.id}` }))
+          : [],
+      )
+      .sort((a, b) => (a.due_date === b.due_date ? a.clientName.localeCompare(b.clientName) || a.form_code.localeCompare(b.form_code) : a.due_date < b.due_date ? -1 : 1));
+  }, [showAll, clients, activeClientId, from, to, holidays, extensions]);
 
   if (!ready) return <p>Loading…</p>;
-  if (!data.profile) {
+  if (!data.profile && !showAll) {
     return (
       <div className="space-y-4">
+        <ClientSwitcher />
         <PageHeader title="My tax calendar" description="Your personalized deadlines for the next 12 months." />
         <p>Create your profile first so we know which returns apply to you.</p>
         <Link href="/profile" className={buttonVariants()}>
@@ -147,9 +169,9 @@ export function CalendarView() {
     );
   }
 
-  const statusOf = (o: Obligation): ObligationStatus => data.obligations[o.id] ?? "pending";
-  const toggle = (o: Obligation) =>
-    void setObligation(o.id, o.rule_id, o.period_label, o.due_date, statusOf(o) === "pending" ? "filed_and_paid" : "pending");
+  const statusOf = (o: Row): ObligationStatus => clients.find((c) => c.id === o.clientId)?.obligations[o.id] ?? "pending";
+  const toggle = (o: Row) =>
+    void setObligation(o.id, o.rule_id, o.period_label, o.due_date, statusOf(o) === "pending" ? "filed_and_paid" : "pending", o.clientId);
 
   const lastHolidayYear = holidays.reduce((y, h) => Math.max(y, h.year), 0);
   const beyondHolidays = Number(to.slice(0, 4)) > lastHolidayYear;
@@ -164,7 +186,7 @@ export function CalendarView() {
     URL.revokeObjectURL(a.href);
   }
 
-  const byForm = new Map<string, Obligation[]>();
+  const byForm = new Map<string, Row[]>();
   for (const o of obligations) byForm.set(o.form_code, [...(byForm.get(o.form_code) ?? []), o]);
   const monthObligations = obligations.filter((o) => o.due_date.startsWith(month));
   const firstMonth = from.slice(0, 7);
@@ -172,10 +194,20 @@ export function CalendarView() {
 
   return (
     <div className="space-y-6">
+      {!showAll && <ClientSwitcher />}
       <PageHeader
-        title="My tax calendar"
+        title={showAll ? "Tax calendar: all clients" : "My tax calendar"}
         description={`Deadlines from ${formatDatePH(from)} to ${formatDatePH(to)}. Dates falling on a weekend or holiday move to the next working day.`}
       />
+      {multi && (
+        <div className="flex max-w-xs flex-col gap-1">
+          <Label htmlFor="cal-scope">Show</Label>
+          <Select id="cal-scope" value={scope} onChange={(e) => setScope(e.target.value as "client" | "all")}>
+            <option value="client">{clients.find((c) => c.id === activeClientId)?.name ?? "This client"} only</option>
+            <option value="all">All clients</option>
+          </Select>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="Calendar view" className="inline-flex rounded-md border border-border p-1">
           {(
@@ -221,7 +253,7 @@ export function CalendarView() {
                       o.due_date,
                       o.form_code,
                       o.period_label,
-                      o.tentative ? `${o.title} (depends on your answers)` : o.title,
+                      `${showAll ? `${o.clientName}: ` : ""}${o.tentative ? `${o.title} (depends on your answers)` : o.title}`,
                       statusOf(o) === "filed_and_paid" ? "Filed & paid" : o.due_date < today ? "Overdue" : "Pending",
                     ]),
                   },
@@ -243,13 +275,13 @@ export function CalendarView() {
         <CardContent className="pt-2">
           {obligations.length === 0 ? (
             <p className="py-6 text-center text-muted-foreground">
-              No BIR returns to file based on your profile.{" "}
-              {data.profile.taxpayer_type === "employee" && "Your employer files and withholds for you; ask for your Form 2316 each year."}
+              No BIR returns to file based on {showAll ? "your clients' profiles" : "your profile"}.{" "}
+              {!showAll && data.profile?.taxpayer_type === "employee" && "Your employer files and withholds for you; ask for your Form 2316 each year."}
             </p>
           ) : view === "upcoming" ? (
             <ul className="divide-y divide-border" aria-label="Upcoming deadlines">
               {obligations.map((o) => (
-                <ObligationRow key={o.id} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} />
+                <ObligationRow key={o.key} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} showClient={showAll} />
               ))}
             </ul>
           ) : view === "month" ? (
@@ -263,10 +295,10 @@ export function CalendarView() {
                   Next →
                 </Button>
               </div>
-              <MonthGrid month={month} obligations={monthObligations} holidays={holidays} />
+              <MonthGrid month={month} obligations={monthObligations} holidays={holidays} showClient={showAll} />
               <ul className="divide-y divide-border">
                 {monthObligations.map((o) => (
-                  <ObligationRow key={o.id} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} />
+                  <ObligationRow key={o.key} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} showClient={showAll} />
                 ))}
               </ul>
             </div>
@@ -279,7 +311,7 @@ export function CalendarView() {
                   </h2>
                   <ul className="divide-y divide-border">
                     {list.map((o) => (
-                      <ObligationRow key={o.id} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} />
+                      <ObligationRow key={o.key} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} showClient={showAll} />
                     ))}
                   </ul>
                 </section>
