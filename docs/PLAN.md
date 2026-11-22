@@ -205,6 +205,11 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 | 7 | Firm workflow | Staff dashboard by deadline and status (records incomplete → ready → prepared → reviewed → released → client marked filed); reminders to clients for missing records; audit log. |
 | 8 | Docs | README, privacy notice update, VERIFY.md, PLAN. |
 
+## Progress
+
+- Done: schema + RLS (tasks 1), invite codes, records intake with CSV import (2), record checks (3), `packages/filing` for the first batch (4), flagged form line maps (5), packet PDF (6), firm workspace `/firm` with prepare → review → release and the client portal at `/prepare` (7), docs (8).
+- Still open in Phase 6: receipt photo uploads to the `receipts` bucket, client reminders for missing records, a firm dashboard sorted by deadline, account data export/deletion for prep clients.
+
 ## Out of scope for Phase 6
 
 Filing or paying on the client's behalf, storing BIR portal passwords, payment collection or billing for the firm, automatic receipt reading, and LGU (local business tax) returns.

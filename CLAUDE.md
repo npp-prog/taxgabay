@@ -23,7 +23,7 @@ Philippine BIR tax guide web app (PWA). Product owner and reviewing CPA: **Neil 
 4. **Money is `decimal.js`.** Never JS floating point arithmetic on amounts. Round each step to 2 decimals half-up (`round2`).
 5. **Worked examples are fixtures** (`packages/tax-engine/test/fixtures/*.json`) so the CPA can review/correct them; tests iterate over fixtures.
 6. Every calculator and guide page renders `<Disclaimer lastVerified=… />`.
-7. Privacy (RA 10173): minimal data, no TIN, consent before saving to the server, account deletion.
+7. Privacy (RA 10173): minimal data, consent before saving to the server, account deletion. No TIN, except in Phase 6 document preparation: encrypted in `public.tins` (via `set_tin`/`get_tin`), only with the client's TIN consent, never in record data or packet payloads.
 
 ## Style
 - Small, logical commits. Plain-language UI copy; explain Filipino/BIR terms on first use.
