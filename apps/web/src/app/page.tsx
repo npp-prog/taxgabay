@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const FEATURES = [
   { href: "/profile", title: "Find out what applies to you", body: "Answer a few questions about your work or business. We list the registrations, returns and taxes that apply." },
   { href: "/calendar", title: "Never miss a deadline", body: "A tax calendar built from your profile, with weekend and holiday roll-over. Export to Google or Apple Calendar." },
-  { href: "/calculators", title: "Compute with the legal basis shown", body: "8% vs graduated income tax, percentage tax, VAT and late-payment penalties — every line explained." },
+  { href: "/checklists", title: "Stay compliant every month", body: "Monthly, quarterly and annual checklists from your profile, with a compliance score." },
+  { href: "/calculators", title: "Compute with the legal basis shown", body: "Income tax (8% vs graduated), corporate, VAT, percentage, withholding, estate, donor's, capital gains, DST and penalties — every line explained." },
   { href: "/guides", title: "Step-by-step filing guides", body: "Who files, when, where, what to attach and common mistakes for the most-used BIR forms." },
-  { href: "/roadmap", title: "Starting a business?", body: "A checklist from DTI registration to your BIR Certificate of Registration, with progress saved." },
+  { href: "/roadmap", title: "Starting a business?", body: "Registration roadmaps for sole proprietorships (DTI), companies (SEC) and cooperatives (CDA), with progress saved." },
+  { href: "/life-events", title: "Big life events", body: "Hiring, closing a business, settling an estate, selling or donating property, moving RDO — step by step." },
 ];
 
 export default function Home() {

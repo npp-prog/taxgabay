@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/profile", label: "My profile" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/checklists", label: "Checklists" },
   { href: "/calculators", label: "Calculators" },
-  { href: "/guides", label: "Filing guides" },
-  { href: "/roadmap", label: "Start a business" },
+  { href: "/guides", label: "Guides" },
+  { href: "/life-events", label: "Life events" },
+  { href: "/roadmap", label: "Register" },
 ];
 
 export function SiteHeader() {
@@ -18,13 +20,13 @@ export function SiteHeader() {
   const [open, setOpen] = React.useState(false);
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="text-lg font-bold text-primary">
           TaxGabay
         </Link>
         <button
           type="button"
-          className="rounded-md p-2 md:hidden"
+          className="rounded-md p-2 lg:hidden"
           aria-expanded={open}
           aria-controls="main-nav"
           aria-label="Menu"
@@ -38,11 +40,11 @@ export function SiteHeader() {
           id="main-nav"
           aria-label="Main"
           className={cn(
-            "absolute left-0 right-0 top-14 border-b border-border bg-background px-4 pb-3 md:static md:block md:border-0 md:p-0",
+            "absolute left-0 right-0 top-14 border-b border-border bg-background px-4 pb-3 lg:static lg:block lg:border-0 lg:p-0",
             open ? "block" : "hidden",
           )}
         >
-          <ul className="flex flex-col gap-1 md:flex-row md:gap-1">
+          <ul className="flex flex-col gap-1 lg:flex-row lg:gap-0.5">
             {LINKS.map((l) => (
               <li key={l.href}>
                 <Link

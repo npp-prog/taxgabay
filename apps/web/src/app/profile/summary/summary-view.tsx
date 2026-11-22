@@ -34,6 +34,9 @@ export function ProfileSummaryView() {
         <Link href="/calendar" className={buttonVariants()}>
           See my tax calendar
         </Link>
+        <Link href="/checklists" className={buttonVariants({ variant: "outline" })}>
+          My checklists
+        </Link>
         <Link href="/profile" className={buttonVariants({ variant: "outline" })}>
           Edit profile
         </Link>
@@ -69,12 +72,11 @@ export function ProfileSummaryView() {
                 </li>
               ))}
             </ol>
-            {form === "dti" && (
+            {form && (
               <Link href="/roadmap" className={buttonVariants({ variant: "link", className: "mt-2 px-0" })}>
                 Open the step-by-step registration roadmap →
               </Link>
             )}
-            {form && form !== "dti" && <p className="mt-3 text-sm text-muted-foreground">The step-by-step roadmap for SEC and CDA registration arrives in Phase 2.</p>}
           </CardContent>
         </Card>
       )}
@@ -100,7 +102,7 @@ export function ProfileSummaryView() {
                       Filing guide
                     </Link>
                   ) : (
-                    <span className="text-sm text-muted-foreground">Guide coming in Phase 2</span>
+                    <span className="text-sm text-muted-foreground">Guide coming soon</span>
                   )}
                 </li>
               ))}

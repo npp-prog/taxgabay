@@ -13,9 +13,11 @@ export interface UserData {
   consentAt: string | null;
   obligations: Record<string, ObligationStatus>;
   roadmap: string[];
+  /** Checklist progress keys: `<item id>@<period>`. */
+  checklist: string[];
 }
 
-const EMPTY: UserData = { profile: null, consentAt: null, obligations: {}, roadmap: [] };
+const EMPTY: UserData = { profile: null, consentAt: null, obligations: {}, roadmap: [], checklist: [] };
 const KEY = "taxgabay:v1";
 
 // ---------- Local store (localStorage-backed, subscribable) ----------
@@ -73,14 +75,20 @@ const noopSubscribe = () => () => {};
 
 // ---------- Supabase mapping ----------
 
+function splitChecklistKey(key: string): { checklist_item_id: string; period: string } {
+  const at = key.lastIndexOf("@");
+  return { checklist_item_id: key.slice(0, at), period: key.slice(at + 1) };
+}
+
 type ProfileRow = Profile & { user_id: string; consent_at: string };
 
 async function loadRemote(userId: string): Promise<Partial<UserData>> {
   const sb = getSupabase()!;
-  const [profile, obligations, roadmap] = await Promise.all([
+  const [profile, obligations, roadmap, checklist] = await Promise.all([
     sb.from("profiles").select("*").eq("user_id", userId).maybeSingle<ProfileRow>(),
     sb.from("user_obligations").select("obligation_id,status"),
     sb.from("user_roadmap_progress").select("step_id"),
+    sb.from("user_checklist_progress").select("checklist_item_id,period"),
   ]);
   const out: Partial<UserData> = {};
   if (profile.data) {
@@ -104,6 +112,7 @@ async function loadRemote(userId: string): Promise<Partial<UserData>> {
     out.obligations = Object.fromEntries(obligations.data.map((o) => [o.obligation_id as string, o.status as ObligationStatus]));
   }
   if (roadmap.data) out.roadmap = roadmap.data.map((r) => r.step_id as string);
+  if (checklist.data) out.checklist = checklist.data.map((c) => `${c.checklist_item_id as string}@${c.period as string}`);
   return out;
 }
 
@@ -136,6 +145,7 @@ interface Ctx {
   saveProfile: (p: Profile) => Promise<void>;
   setObligation: (id: string, ruleId: string, period: string, dueDate: string, status: ObligationStatus) => Promise<void>;
   toggleRoadmap: (stepId: string) => Promise<void>;
+  toggleChecklist: (key: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
 
@@ -159,6 +169,9 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
         await sb.from("profiles").upsert(profileRow(s.user.id, local.profile, local.consentAt));
         if (local.roadmap.length) {
           await sb.from("user_roadmap_progress").upsert(local.roadmap.map((step_id) => ({ user_id: s.user.id, step_id })));
+        }
+        if (local.checklist.length) {
+          await sb.from("user_checklist_progress").upsert(local.checklist.map((k) => ({ user_id: s.user.id, ...splitChecklistKey(k) })));
         }
         return;
       }
@@ -219,6 +232,21 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
     [session],
   );
 
+  const toggleChecklist = React.useCallback(
+    async (key: string) => {
+      const cur = getSnapshot();
+      const done = cur.checklist.includes(key);
+      setStore({ ...cur, checklist: done ? cur.checklist.filter((k) => k !== key) : [...cur.checklist, key] });
+      const sb = getSupabase();
+      if (sb && session) {
+        const row = { user_id: session.user.id, ...splitChecklistKey(key) };
+        if (done) await sb.from("user_checklist_progress").delete().match(row);
+        else await sb.from("user_checklist_progress").upsert(row);
+      }
+    },
+    [session],
+  );
+
   const deleteAccount = React.useCallback(async () => {
     const sb = getSupabase();
     if (sb && session) {
@@ -230,8 +258,8 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   const value = React.useMemo<Ctx>(
-    () => ({ data, ready, session, saveProfile, setObligation, toggleRoadmap, deleteAccount }),
-    [data, ready, session, saveProfile, setObligation, toggleRoadmap, deleteAccount],
+    () => ({ data, ready, session, saveProfile, setObligation, toggleRoadmap, toggleChecklist, deleteAccount }),
+    [data, ready, session, saveProfile, setObligation, toggleRoadmap, toggleChecklist, deleteAccount],
   );
   return <UserDataContext.Provider value={value}>{children}</UserDataContext.Provider>;
 }

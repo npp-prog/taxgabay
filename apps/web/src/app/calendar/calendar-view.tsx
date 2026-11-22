@@ -259,7 +259,11 @@ export function CalendarView() {
         </CardContent>
       </Card>
       <p className="text-sm text-muted-foreground">
-        For guidance only. Verify with BIR issuances or consult a CPA. Deadline rules and holidays are pending CPA verification. Email and push reminders arrive in Phase 2.
+        For guidance only. Verify with BIR issuances or consult a CPA. Deadline rules and holidays are pending CPA verification.{" "}
+        <Link href="/account" className="underline">
+          Set up email or push reminders
+        </Link>
+        .
       </p>
     </div>
   );

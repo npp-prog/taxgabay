@@ -79,11 +79,11 @@ export function summarizeProfile(profileIn: Profile, rules: readonly DeadlineRul
     taxTypes.add("Income tax (withheld by your employer)");
   }
   if (p.taxpayer_type === "estate") {
-    notes.push("Estate tax (Form 1801) is due within one year from the date of death. The estate tax guide and calculator arrive in Phase 2.");
+    notes.push("Estate tax (Form 1801) is due within one year from the date of death. Use the estate tax calculator and the \"Settling an estate\" guide.");
     taxTypes.add("Estate tax");
   }
   if (p.taxpayer_type === "one_time") {
-    notes.push("One-time transactions (sale of real property, donation, sale of shares) are covered in Phase 2: capital gains tax, donor's tax and documentary stamp tax.");
+    notes.push("One-time transactions (sale of real property, donation, sale of shares) involve capital gains tax, donor's tax and documentary stamp tax — see the calculators and life-event guides.");
   }
   if (p.vat_status === "not_sure" && hasBusiness(p.taxpayer_type)) {
     notes.push("Your returns depend on whether you are VAT-registered. Check your Certificate of Registration (Form 2303) under \"Tax types\".");

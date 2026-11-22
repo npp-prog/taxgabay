@@ -1,6 +1,6 @@
 "use client";
 
-import { registrationSteps } from "@taxgabay/tax-engine";
+import { businessForm, registrationSteps } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { Disclaimer } from "@/components/disclaimer";
 import { PageHeader } from "@/components/page-header";
@@ -10,23 +10,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserData } from "@/lib/user-data";
 import { cn } from "@/lib/utils";
 
+type Path = "dti" | "sec" | "cda";
+
+const PATHS: { key: Path; label: string; title: string; description: string }[] = [
+  { key: "dti", label: "Sole proprietorship", title: "Register a sole proprietorship", description: "From DTI business name to your BIR Certificate of Registration." },
+  { key: "sec", label: "Partnership / corporation / OPC", title: "Register a partnership, corporation or OPC", description: "From SEC registration to your BIR Certificate of Registration." },
+  { key: "cda", label: "Cooperative", title: "Register a cooperative", description: "From the pre-membership seminar to CDA registration and BIR tax exemption." },
+];
+
 export function RoadmapView() {
   const { data, toggleRoadmap } = useUserData();
+  const [pathOverride, setPath] = React.useState<Path | null>(null);
+  const path: Path = pathOverride ?? (data.profile ? businessForm(data.profile.taxpayer_type) : null) ?? "dti";
+  const meta = PATHS.find((p) => p.key === path)!;
   const [employerOverride, setShowEmployer] = React.useState<boolean | null>(null);
   const showEmployer = employerOverride ?? data.profile?.has_employees ?? false;
 
   const steps = registrationSteps
-    .filter((s) => s.business_form === "dti")
+    .filter((s) => s.business_form === path)
     .filter((s) => !s.only_if_employees || showEmployer)
     .sort((a, b) => a.order - b.order);
   const done = steps.filter((s) => data.roadmap.includes(s.id)).length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="Register a sole proprietorship"
-        description="From DTI business name to your BIR Certificate of Registration. Tick each step as you finish it — your progress is saved."
-      />
+      <div role="tablist" aria-label="Business form" className="no-print inline-flex flex-wrap rounded-md border border-border p-1">
+        {PATHS.map((p) => (
+          <button
+            key={p.key}
+            role="tab"
+            aria-selected={path === p.key}
+            onClick={() => setPath(p.key)}
+            className={cn("rounded px-3 py-1.5 text-sm", path === p.key ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <PageHeader title={meta.title} description={`${meta.description} Tick each step as you finish it — your progress is saved.`} />
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm" aria-live="polite">
           <span className="font-semibold">
@@ -113,7 +134,6 @@ export function RoadmapView() {
           );
         })}
       </ol>
-      <p className="text-sm text-muted-foreground">Roadmaps for partnerships, corporations, OPCs (SEC) and cooperatives (CDA) arrive in Phase 2.</p>
       <Disclaimer lastVerified={null} />
     </div>
   );
