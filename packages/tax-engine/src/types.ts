@@ -25,7 +25,10 @@ export type TaxType =
   | "capital_gains_tax"
   | "documentary_stamp_tax"
   | "penalty"
-  | "registration";
+  | "registration"
+  | "employer_contributions"
+  | "bookkeeping"
+  | "lgu";
 
 export type TaxpayerCategory =
   | "individual"

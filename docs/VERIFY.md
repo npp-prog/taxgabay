@@ -9,6 +9,8 @@ Every value below was seeded from Claude's best understanding and **has not been
 ## Highest priority (low confidence)
 
 - **pen-compromise-rmo7-2015** — LOW CONFIDENCE: bracket amounts and effectivity reconstructed from memory. Replace from the current RMO annex before launch.
+- **pagibig-pre-2024** — LOW CONFIDENCE: effectivity date and ₱5,000 maximum compensation base to confirm.
+- **books-retention** — LOW CONFIDENCE: retention period and when it starts to run (to confirm, including any change under RA 11976).
 - **Holiday 2026-11-02 All Souls' Day** — LOW CONFIDENCE: included in recent years; confirm for 2026.
 - **Holiday 2027-11-02 All Souls' Day** — LOW CONFIDENCE: confirm for 2027.
 
@@ -89,6 +91,23 @@ Every value below was seeded from Claude's best understanding and **has not been
 | ewt-wc158-2018 | ewt.atc.WC158 | all | WC158 — Purchases of goods by top withholding agents — juridical supplier: 1% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
 | ewt-wi160-2018 | ewt.atc.WI160 | all | WI160 — Purchases of services by top withholding agents — individual supplier: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
 | ewt-wc160-2018 | ewt.atc.WC160 | all | WC160 — Purchases of services by top withholding agents — juridical supplier: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+
+## Employer, bookkeeping and LGU rules (10)
+
+Used by the business guide, the contributions calculator and the payroll practice examples. Rates are shown as decimals (0.05 = 5%).
+
+| ID | Rule | Value | Effective | Legal basis | Note |
+| --- | --- | --- | --- | --- | --- |
+| sss-2023 | employer.sss | rate: 0.14; employer rate: 0.095; employee rate: 0.045; msc floor: 4000; msc ceiling: 30000; msc step: 500 | 2023-01-01 → 2024-12-31 | RA 11199 (Social Security Act of 2018) Sec. 19 schedule; SSS circulars on the 2023 contribution table | Rates, split and MSC range to confirm against the SSS circular. Employees' Compensation (EC) and WISP portions not modeled. |
+| sss-2025 | employer.sss | rate: 0.15; employer rate: 0.10; employee rate: 0.05; msc floor: 5000; msc ceiling: 35000; msc step: 500 | 2025-01-01 → open | RA 11199 (Social Security Act of 2018) Sec. 19 schedule; SSS circular on the 2025 contribution table | To confirm: rate, split and MSC range for 2025 onwards. EC contribution and WISP (provident fund) split not modeled. |
+| philhealth-2024 | employer.philhealth | rate: 0.05; employee share: 0.5; income floor: 10000; income ceiling: 100000 | 2024-01-01 → open | RA 11223 (Universal Health Care Act) Sec. 10 premium schedule; PhilHealth circulars | To confirm: 5% premium, equal sharing, and the ₱10,000 floor / ₱100,000 ceiling. |
+| pagibig-pre-2024 | employer.pagibig | employee rate: 0.02; employee rate low: 0.01; low income limit: 1500; employer rate: 0.02; max compensation: 5000 | 2009-07-21 → 2024-01-31 | RA 9679 (Home Development Mutual Fund Law of 2009) Sec. 7; HDMF rules | LOW CONFIDENCE: effectivity date and ₱5,000 maximum compensation base to confirm. |
+| pagibig-2024 | employer.pagibig | employee rate: 0.02; employee rate low: 0.01; low income limit: 1500; employer rate: 0.02; max compensation: 10000 | 2024-02-01 → open | RA 9679 Sec. 7; HDMF circular raising the maximum fund salary to ₱10,000 (number to confirm) | To confirm: ₱10,000 maximum monthly compensation (₱200 maximum each from employee and employer). |
+| thirteenth-month-pd851 | employer.thirteenth_month | fraction of basic salary: 0.0833333333; pay by month: 12; pay by day: 24 | 1975-12-16 → open | PD 851 (13th Month Pay Law) and its implementing rules: 1/12 of the total basic salary earned within the calendar year, paid on or before 24 December | To confirm: coverage (rank-and-file employees) and exemptions under the implementing rules. |
+| books-retention | bookkeeping.retention_years | years: 5 | 2018-01-01 → open | NIRC Sec. 235, as amended (preservation of books of accounts and records) | LOW CONFIDENCE: retention period and when it starts to run (to confirm, including any change under RA 11976). |
+| books-audit-threshold-train | bookkeeping.audit_threshold | quarterly gross over: 3000000 | 2018-01-01 → open | NIRC Sec. 232(A), as amended by RA 10963 (TRAIN): books audited by an independent CPA when gross quarterly sales, earnings, receipts or output exceed the threshold | To confirm: the ₱3,000,000 threshold, whether it is per quarter, and how it applies to corporations (which attach audited statements under other rules). |
+| lgu-permit-renewal | lgu.permit_renewal | month: 1; by day: 20 | 1992-01-01 → open | RA 7160 (Local Government Code) Secs. 165 and 167: renewal and payment within the first 20 days of January | To confirm: LGUs may extend the deadline by ordinance. |
+| lgu-business-tax-payment | lgu.business_tax_payment | options: annual or quarterly; quarterly due within days: 20 | 1992-01-01 → open | RA 7160 Sec. 165: local taxes may be paid annually or in quarterly installments within the first 20 days of each quarter | To confirm: installment rules and surcharges are set by each LGU's revenue code. |
 
 ## Deadline rules (12)
 

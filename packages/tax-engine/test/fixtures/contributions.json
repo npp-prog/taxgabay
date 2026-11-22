@@ -1,0 +1,11 @@
+{
+  "description": "Monthly SSS, PhilHealth and Pag-IBIG shares (rates pending verification).",
+  "cases": [
+    { "name": "₱20,000 salary, 2026", "input": { "monthly_salary": "20000", "date": "2026-06-30" }, "expected": { "sss": { "base": "20000.00", "employee": "1000.00", "employer": "2000.00" }, "philhealth": { "base": "20000.00", "employee": "500.00", "employer": "500.00" }, "pagibig": { "base": "10000.00", "employee": "200.00", "employer": "200.00" }, "total_employee": "1700.00", "total_employer": "2700.00" } },
+    { "name": "Below the floors (₱4,000), 2026", "input": { "monthly_salary": "4000", "date": "2026-06-30" }, "expected": { "sss": { "base": "5000.00", "employee": "250.00", "employer": "500.00" }, "philhealth": { "base": "10000.00", "employee": "250.00", "employer": "250.00" }, "pagibig": { "base": "4000.00", "employee": "80.00", "employer": "80.00" } } },
+    { "name": "Above the ceilings (₱150,000), 2026", "input": { "monthly_salary": "150000", "date": "2026-06-30" }, "expected": { "sss": { "base": "35000.00", "employee": "1750.00", "employer": "3500.00" }, "philhealth": { "base": "100000.00", "employee": "2500.00", "employer": "2500.00" }, "pagibig": { "employee": "200.00", "employer": "200.00" } } },
+    { "name": "Low income Pag-IBIG rate (₱1,200)", "input": { "monthly_salary": "1200", "date": "2026-06-30" }, "expected": { "pagibig": { "base": "1200.00", "employee": "12.00", "employer": "24.00" } } },
+    { "name": "SSS rounds to the nearest ₱500 (₱25,300 → ₱25,500)", "input": { "monthly_salary": "25300", "date": "2026-06-30" }, "expected": { "sss": { "base": "25500.00", "employee": "1275.00", "employer": "2550.00" } } },
+    { "name": "2024 rates (SSS 14%, Pag-IBIG ₱10,000 base)", "input": { "monthly_salary": "20000", "date": "2024-06-30" }, "expected": { "sss": { "base": "20000.00", "employee": "900.00", "employer": "1900.00" }, "pagibig": { "base": "10000.00", "employee": "200.00" } } }
+  ]
+}

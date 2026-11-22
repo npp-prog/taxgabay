@@ -5,7 +5,11 @@
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HOLIDAYS_NOT_SEEDED, checklistItems, deadlineRules, forms, holidays, lifeEvents, registrationSteps, taxRules, type Bracket, type DueLogic } from "../src";
+import { HOLIDAYS_NOT_SEEDED, checklistItems, deadlineRules, employerRules, forms, holidays, lifeEvents, registrationSteps, taxRules, type Bracket, type DueLogic } from "../src";
+
+const employerIds = new Set(employerRules.map((r) => r.id));
+const coreTaxRules = taxRules.filter((r) => !employerIds.has(r.id));
+const describePlain = (v: unknown) => Object.entries(v as Record<string, unknown>).map(([k, x]) => `${k.replace(/_/g, " ")}: ${Array.isArray(x) ? x.join(" or ") : String(x)}`).join("; ");
 
 // Content-package data, imported by path (scripts only; tax-engine itself does not depend on content).
 import { seedIssuanceLinks, seedIssuances } from "../../content/src/issuances";
@@ -111,13 +115,21 @@ ${low.join("\n")}
 - **DST:** "or fractional part thereof" rounds the base up to the next whole unit; debt instruments under one year pro-rated by days/365.
 - **Reminders:** sent only on the exact configured day (7/3/1 days before); a day the job does not run is not caught up.
 
-## Tax rules (${taxRules.length})
+## Tax rules (${coreTaxRules.length})
 
 ${row(["ID", "Rule", "Applies to", "Value", "Effective", "Legal basis", "Note"])}
 ${row(["---", "---", "---", "---", "---", "---", "---"])}
-${taxRules
+${coreTaxRules
   .map((r) => row([r.id, r.rule_key, r.taxpayer_category, describeValue(r.value), `${r.effective_from} → ${r.effective_to ?? "open"}`, r.legal_basis, r.note ?? ""]))
   .join("\n")}
+
+## Employer, bookkeeping and LGU rules (${employerRules.length})
+
+Used by the business guide, the contributions calculator and the payroll practice examples. Rates are shown as decimals (0.05 = 5%).
+
+${row(["ID", "Rule", "Value", "Effective", "Legal basis", "Note"])}
+${row(["---", "---", "---", "---", "---", "---"])}
+${employerRules.map((r) => row([r.id, r.rule_key, describePlain(r.value), `${r.effective_from} → ${r.effective_to ?? "open"}`, r.legal_basis, r.note ?? ""])).join("\n")}
 
 ## Deadline rules (${deadlineRules.length})
 

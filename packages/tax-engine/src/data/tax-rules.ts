@@ -1,4 +1,5 @@
 import type { Bracket, TaxRule } from "../types";
+import { employerRules } from "./employer-rules";
 import { phase2Rules } from "./tax-rules-phase2";
 import { rule, TRAIN_URL } from "./rule-helper";
 
@@ -438,4 +439,4 @@ const coreRules: TaxRule[] = [
   ),
 ];
 
-export const taxRules: TaxRule[] = [...coreRules, ...phase2Rules];
+export const taxRules: TaxRule[] = [...coreRules, ...phase2Rules, ...employerRules];
