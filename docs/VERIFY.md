@@ -304,3 +304,11 @@ The assistant answers only from content marked verified (rules with `last_verifi
 ## Filing guides
 
 All 10 guides in `packages/content/guides/` are skeletons (`status: skeleton`, `needs_verification: true`). Facts in them that need checking are marked "(to confirm)", and each has a `TODO(CPA)` field-by-field walkthrough to write.
+
+## Business guide
+
+The chapters in `packages/content/business/` are flagged `needs_verification: true`. Facts the rule data does not support are marked "(to confirm)" in the text (remittance due dates for SSS, PhilHealth and Pag-IBIG; loose-leaf binding deadline; eAFS; how LGUs compute local business tax; RR 9-2009 as the books regulation).
+
+## Practice sets
+
+The practice sets in `packages/accounting/src/sets/` are fictional businesses. Check that each journal entry and explanation follows Philippine practice (accounts used, treatment of withholding taxes and VAT, depreciation method), and that the tax returns at the end use the right forms. Their tax figures come from the rules above, so they change automatically when a rule is corrected; the tests in `packages/accounting/test/sets.test.ts` hold the hand-checked totals and will fail if a correction changes them.

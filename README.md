@@ -17,6 +17,8 @@ A Philippine BIR tax guide (web app, PWA). Users answer a short profile question
 | Email and web-push reminders 7/3/1 days before (configurable; needs an account) | `/account`, `/api/cron/reminders` |
 | Life-event guides: start a business, hire, close, settle an estate, sell or donate property, move RDO | `/life-events` |
 | 10 filing guides (MDX skeletons): 1701Q, 1701, 1701A, 2551Q, 2550Q, 1601C, 0619E, 1601EQ, 1604C, 1604E | `/guides` |
+| Business guide: books of accounts, chart of accounts, invoices and receipts, bank reconciliation, hiring and payroll, SSS/PhilHealth/Pag-IBIG contributions, employer filings, LGU permits and local business tax, financial statements | `/business-guide` |
+| Accounting practice sets (freelancer, sari-sari store, VAT business, small corporation) with a business-owner track and an accounting-student track: auto-checked journal entries, ledger, trial balance, 10-column worksheet, statements, closing entries, books, tax returns from the books, worked solution and blank-form PDFs | `/practice`, `packages/accounting` |
 | Registration roadmaps for DTI, SEC and CDA paths with saved progress and print-to-PDF | `/roadmap` |
 | BIR issuances library: search, filters, plain-language summaries, related-issuance graph, official source links | `/issuances` |
 | Knowledge hub: articles, Taglish-friendly glossary, FAQs | `/learn` |
@@ -35,7 +37,8 @@ A Philippine BIR tax guide (web app, PWA). Users answer a short profile question
 ```
 apps/web               Next.js (App Router) + TypeScript + Tailwind v4, PWA
 packages/tax-engine    Pure TS: rules (effective-dated data), calculators, deadline generator
-packages/content       MDX filing guides + loader
+packages/accounting    Pure TS: double-entry engine (ledger, worksheet, statements, answer checking) + practice sets
+packages/content       MDX filing guides, hub articles, business guide + loaders
 supabase/              migrations/ (schema + RLS), seed.sql (generated)
 docs/                  SPEC, PLAN, VERIFY (generated)
 ```
