@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "seed-sql": "tsx scripts/generate-seed-sql.ts"
+    "seed-sql": "tsx scripts/generate-seed-sql.ts",
+    "verify-doc": "tsx scripts/generate-verify-md.ts"
   },
   "dependencies": {
     "decimal.js": "10.6.0"
