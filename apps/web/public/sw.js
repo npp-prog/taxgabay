@@ -1,6 +1,6 @@
 // TaxGabay service worker: offline access to guides and calculators.
 // Static assets: cache-first. Pages: network-first, falling back to cache.
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `taxgabay-${VERSION}`;
 const PRECACHE = [
   "/",
@@ -20,6 +20,14 @@ const PRECACHE = [
   "/guides/1601eq",
   "/guides/1604c",
   "/guides/1604e",
+  "/calculators/corporate",
+  "/calculators/withholding-compensation",
+  "/calculators/ewt",
+  "/calculators/estate",
+  "/calculators/donors",
+  "/calculators/cgt",
+  "/calculators/dst",
+  "/life-events",
   "/manifest.webmanifest",
   "/icon.svg",
 ];
@@ -76,4 +84,26 @@ self.addEventListener("fetch", (event) => {
         .catch(() => caches.match(req).then((hit) => hit || caches.match("/"))),
     );
   }
+});
+
+// Web push reminders (payload: { title, body, url }).
+self.addEventListener("push", (event) => {
+  let data = { title: "TaxGabay reminder", body: "You have a BIR deadline coming up.", url: "/calendar" };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    /* plain-text payload: keep defaults */
+  }
+  event.waitUntil(self.registration.showNotification(data.title, { body: data.body, icon: "/icon.svg", data: { url: data.url } }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/calendar", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url === url);
+      return open ? open.focus() : self.clients.openWindow(url);
+    }),
+  );
 });

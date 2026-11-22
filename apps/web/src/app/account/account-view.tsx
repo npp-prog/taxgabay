@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSupabase, supabaseEnabled } from "@/lib/supabase";
 import { useUserData } from "@/lib/user-data";
+import { ReminderSettingsCard } from "./reminder-settings";
 
 export function AccountView() {
   const { data, session, deleteAccount } = useUserData();
@@ -63,6 +64,7 @@ export function AccountView() {
           </Button>
         </CardContent>
       </Card>
+      <ReminderSettingsCard />
       <Card>
         <CardHeader>
           <CardTitle>Delete my data</CardTitle>
