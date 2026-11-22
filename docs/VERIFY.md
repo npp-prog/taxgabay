@@ -268,6 +268,14 @@ Relations: rr-8-2018 implements ra-10963; rr-11-2018 implements ra-10963; rr-11-
 
 Six articles in `packages/content/hub/`, 34 glossary terms (`packages/content/src/glossary.ts`) and 13 FAQs (`packages/content/src/faq.ts`), all flagged. They restate facts from the rule data above; check them after the rules are confirmed.
 
+## Filipino UI text
+
+The Filipino interface text in `apps/web/src/lib/i18n/fil.ts` was written by Claude and **needs review by a native speaker** (ideally one familiar with BIR terms) before launch. Tax content itself is still English only.
+
+## AI assistant
+
+The assistant answers only from content marked verified (rules with `last_verified_at`, guides and articles with `needs_verification: false`, published issuances). Until values above are verified it refuses almost every question unless `ASSISTANT_ALLOW_UNVERIFIED=1` is set, in which case answers are labelled unverified.
+
 ## Filing guides
 
 All 10 guides in `packages/content/guides/` are skeletons (`status: skeleton`, `needs_verification: true`). Facts in them that need checking are marked "(to confirm)", and each has a `TODO(CPA)` field-by-field walkthrough to write.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { HomeFootnote, HomeHero } from "@/components/home-hero";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FEATURES = [
@@ -17,23 +17,7 @@ const FEATURES = [
 export default function Home() {
   return (
     <div className="space-y-10">
-      <section className="space-y-4 py-4">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Tell us who you are, and we&apos;ll tell you what BIR expects from you — when, and how much.
-        </h1>
-        <p className="max-w-2xl text-lg text-muted-foreground">
-          TaxGabay (<i>gabay</i> means &ldquo;guide&rdquo;) helps Philippine taxpayers understand their BIR obligations: what to register, file, pay and keep.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/profile" className={buttonVariants({ size: "lg" })}>
-            Start my profile
-          </Link>
-          <Link href="/calculators" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            Try a calculator
-          </Link>
-        </div>
-        <p className="text-sm text-muted-foreground">No account needed. Your answers stay in your browser unless you sign in.</p>
-      </section>
+      <HomeHero />
       <section className="grid gap-4 sm:grid-cols-2">
         {FEATURES.map((f) => (
           <Link key={f.href} href={f.href} className="group">
@@ -48,8 +32,7 @@ export default function Home() {
       </section>
       <Card>
         <CardContent className="pt-5 text-sm text-muted-foreground">
-          TaxGabay explains and computes; it does not file on your behalf. All rates and deadlines are being verified by a CPA before launch.
-          For guidance only — verify with BIR issuances or consult a CPA.
+          <HomeFootnote />
         </CardContent>
       </Card>
     </div>

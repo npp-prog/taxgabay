@@ -2,7 +2,7 @@
 
 A Philippine BIR tax guide (web app, PWA). Users answer a short profile questionnaire and get a personalized list of what to register, file and pay, with deadlines, computations and the legal basis for each.
 
-**Status: Phases 1–3 built — all tax content is pending CPA verification.** See [`docs/VERIFY.md`](docs/VERIFY.md).
+**Status: Phases 1–4 built — all tax content is pending CPA verification.** See [`docs/VERIFY.md`](docs/VERIFY.md).
 
 - Spec: [`docs/SPEC.md`](docs/SPEC.md) · Phase plan and assumptions: [`docs/PLAN.md`](docs/PLAN.md) · Conventions: [`CLAUDE.md`](CLAUDE.md)
 
@@ -23,6 +23,10 @@ A Philippine BIR tax guide (web app, PWA). Users answer a short profile question
 | Site search across guides, articles, glossary, FAQs, issuances, life events and calculators | `/search` |
 | PDF downloads of calculator results, roadmaps and the calendar | buttons on those pages |
 | Admin: issuance workflow (draft → reviewed → published), drafting from a pasted text / PDF / BIR link, BIR deadline extensions and holidays, needs-verification dashboard, audit log | `/admin` |
+| AI assistant answering only from TaxGabay's content, with a source for every point; refuses otherwise | `/assistant` |
+| Multi-client mode for bookkeepers: several taxpayer profiles, switcher, all-clients calendar | `/clients` |
+| Filipino interface (toggle in the header); tax content stays English | header "FIL / EN" |
+| Mobile app (Expo) reusing the tax engine | `apps/mobile` |
 | Privacy notice, account page with data download and deletion | `/privacy`, `/account` |
 | Supabase schema with RLS, admin role, audit log; generated seed SQL | `supabase/` |
 
@@ -89,6 +93,13 @@ When a local-mode user signs in for the first time, their browser profile, roadm
 - **Draft from source** (`/admin/ingest`): paste text, upload a PDF (text is extracted in the browser with pdf.js) or fetch from a link on bir.gov.ph, dof.gov.ph or officialgazette.gov.ph (through the admin-only `/api/admin/source` route). The parser suggests the type, number, date, title, tax types, topics and related issuances; you check them and write the summary.
 - **Extensions and holidays** added in the admin area are merged into the calendar and the reminder job.
 - Tax rules themselves stay in code (`packages/tax-engine/src/data`) so every change runs through the fixture tests.
+
+### AI assistant
+
+- Set `ANTHROPIC_API_KEY` (server only). Without it, `/assistant` still refuses unanswerable questions and points to search, but cannot answer.
+- Each question makes one Claude API call (Claude Opus 5.5, with the server-side refusal fallback on) with the most relevant passages sent as documents with citations enabled. Questions with no relevant passage are refused without calling the API, and answers without citations are discarded.
+- Only **verified** content is used. Until the CPA review is done, set `ASSISTANT_ALLOW_UNVERIFIED=1` on preview deployments to try it; answers are then labelled unverified.
+- A simple rate limit (8 questions per minute per IP, per server instance) applies.
 
 ### Reminders
 

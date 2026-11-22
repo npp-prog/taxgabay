@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { SkipLink } from "@/components/skip-link";
 import { UserDataProvider } from "@/lib/user-data";
 import "./globals.css";
 
@@ -23,23 +24,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-PH">
       <body className="min-h-screen font-sans antialiased">
-        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-background focus:p-2">
-          Skip to content
-        </a>
+        <SkipLink />
         <UserDataProvider>
           <SiteHeader />
           <main id="main" className="mx-auto max-w-5xl px-4 py-8">
             {children}
           </main>
         </UserDataProvider>
-        <footer className="border-t border-border">
-          <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:justify-between">
-            <p>TaxGabay explains and computes; it does not file for you. File on eBIRForms, eFPS or ORUS.</p>
-            <Link href="/privacy" className="underline">
-              Privacy notice
-            </Link>
-          </div>
-        </footer>
+        <SiteFooter />
         <ServiceWorkerRegister />
       </body>
     </html>
