@@ -1,4 +1,4 @@
-import { getLifeEvent, lifeEvents } from "@taxgabay/tax-engine";
+import { getForm, getLifeEvent, lifeEvents } from "@taxgabay/tax-engine";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -40,7 +40,14 @@ export default async function LifeEventPage({ params }: { params: Promise<{ slug
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="muted">Step {i + 1}</Badge>
-                  {s.form_code && <Badge variant="outline">BIR Form {s.form_code}</Badge>}
+                  {s.form_code &&
+                    (getForm(s.form_code)?.guide_slug ? (
+                      <Link href={`/guides/${getForm(s.form_code)!.guide_slug}`}>
+                        <Badge variant="outline">BIR Form {s.form_code} guide →</Badge>
+                      </Link>
+                    ) : (
+                      <Badge variant="outline">BIR Form {s.form_code}</Badge>
+                    ))}
                 </div>
                 <CardTitle className="mt-2">{s.title}</CardTitle>
               </CardHeader>

@@ -223,7 +223,7 @@ Deadlines and forms mentioned in each flow:
 | Donating property | File and pay donor's tax | Within 30 days after the date of the gift | 1800 | NIRC Sec. 103 |
 | Moving to another RDO | File for transfer of registration |  | 1905 | NIRC Sec. 236(B), as amended by RA 11976; RR 7-2024 (to confirm) |
 
-## Forms (14)
+## Forms (20)
 
 | Code | Name | Who files | Frequency |
 | --- | --- | --- | --- |
@@ -241,6 +241,12 @@ Deadlines and forms mentioned in each flow:
 | 1702-RT | Annual Income Tax Return for Corporations, Partnerships and Other Non-Individual Taxpayers Subject Only to the Regular Income Tax Rate | Corporations and partnerships subject to the regular rate. | annual |
 | 1901 | Application for Registration for Self-Employed (Single Proprietor/Professional), Mixed-Income Individuals, Non-Resident Alien Engaged in Trade/Business, Estate and Trust | Sole proprietors, professionals and mixed-income earners registering with BIR. | one_time |
 | 1903 | Application for Registration for Corporations/Partnerships (Taxable/Non-Taxable) | Corporations, partnerships, OPCs, cooperatives. | one_time |
+| 1706 | Capital Gains Tax Return for Onerous Transfer of Real Property Classified as Capital Assets | Sellers of real property held as a capital asset (not used in business). | one_time |
+| 1707 | Capital Gains Tax Return for Onerous Transfer of Shares of Stock Not Traded Through the Local Stock Exchange | Sellers of unlisted shares of stock. | one_time |
+| 1800 | Donor's Tax Return | Donors (individuals or entities) making gifts. | one_time |
+| 1801 | Estate Tax Return | The executor, administrator or heirs of the decedent. | one_time |
+| 2000-OT | Documentary Stamp Tax Declaration/Return (One-Time Transactions) | Parties to one-time taxable documents, such as the seller or buyer in a sale of real property. | one_time |
+| 1905 | Application for Registration Information Update/Correction/Cancellation | Registered taxpayers changing their registration details or closing their business. | one_time |
 
 ## Seeded issuances (13)
 

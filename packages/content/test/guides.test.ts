@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getGuide, listGuides, parseGuide } from "../src";
 
-const PHASE1 = ["0619E", "1601C", "1601EQ", "1604C", "1604E", "1701", "1701A", "1701Q", "2550Q", "2551Q"];
+const FORMS = ["0619E", "1601C", "1601EQ", "1604C", "1604E", "1701", "1701A", "1701Q", "1702-RT", "1702Q", "1706", "1707", "1800", "1801", "1905", "2000-OT", "2550Q", "2551Q"];
 const SECTIONS = ["Who must file", "Deadline", "Where to file and pay", "Attachments", "Field-by-field walkthrough", "Common mistakes", "Related calculators", "Legal basis"];
 
 describe("filing guides", () => {
-  it("has one guide per Phase 1 form", () => {
-    expect(listGuides().map((g) => g.form)).toEqual(PHASE1);
+  it("has one guide per covered form", () => {
+    expect(listGuides().map((g) => g.form)).toEqual(FORMS);
   });
 
   it("every guide has all required sections and is flagged for verification", () => {

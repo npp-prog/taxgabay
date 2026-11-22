@@ -72,7 +72,7 @@ describe("summarizeProfile", () => {
     expect(s.registrations[2]!.detail).toContain("1903");
     expect(s.tax_types).toContain("Value-added tax (VAT)");
     expect(s.tax_types).toContain("Expanded withholding tax");
-    expect(s.returns.find((r) => r.code === "1702Q")!.guide_slug).toBeNull();
+    expect(s.returns.find((r) => r.code === "1702Q")!.guide_slug).toBe("1702q");
   });
 
   it("cooperative path and not-sure notes", () => {
