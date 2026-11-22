@@ -19,7 +19,7 @@ function atcRule(rules: readonly TaxRule[], atc: string, on: string) {
  * Checks a client's records for one quarter before documents are prepared. Errors block
  * preparation of the affected document; warnings are shown to the client and the reviewer.
  */
-export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[]): Issue[] {
+export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, rules: readonly TaxRule[], opts: { vat?: boolean } = {}): Issue[] {
   const issues: Issue[] = [];
   const range = quarterRange(q);
   const inQ = records.filter((r) => inRange(r.date, range));
@@ -76,6 +76,16 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
     if (!e.supplier.tin && !warnedTin.has(norm(e.supplier.name))) {
       warnedTin.add(norm(e.supplier.name));
       issues.push({ code: "missing_payee_tin", severity: "warning", message: `${e.supplier.name}: add the supplier's TIN — it is required on the Form 2307 and in the QAP.`, record_id: e.id });
+    }
+  }
+
+  // VAT clients: purchases from VAT suppliers go on the summary list of purchases with the supplier's TIN.
+  if (opts.vat) {
+    const warned = new Set<string>();
+    for (const e of inQ.filter(isExpense)) {
+      if (!e.supplier_vat_registered || e.supplier.tin || warned.has(norm(e.supplier.name))) continue;
+      warned.add(norm(e.supplier.name));
+      issues.push({ code: "missing_vat_supplier_tin", severity: "warning", message: `${e.supplier.name}: add the supplier's TIN — input tax is listed by supplier TIN on the summary list of purchases.`, record_id: e.id });
     }
   }
 

@@ -29,7 +29,7 @@ describe.each(fixtures)("worked example %s", (_name, fx) => {
     expect(packet.total_payable).toBe(fx.expected.total_payable);
   });
   it("gives every return a due date and explains every amount", () => {
-    for (const d of packet.documents.filter((x) => !["QAP", "SAWT", "2307"].includes(x.form))) expect(d.due_date, d.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const d of packet.documents.filter((x) => !["QAP", "SAWT", "2307", "SLS", "SLP"].includes(x.form))) expect(d.due_date, d.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     for (const d of packet.documents) {
       expect(d.steps.length).toBeGreaterThan(0);
       expect(d.needs_verification).toBe(true);

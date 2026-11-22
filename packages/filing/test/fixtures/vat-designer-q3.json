@@ -1,0 +1,32 @@
+{
+  "description": "VAT-registered design studio (self-employed, graduated rates with OSD), Q3 2026. Vatable, zero-rated and exempt sales; purchases of services, goods and capital goods from VAT-registered suppliers, one non-VAT supplier, and excess input tax of ₱12,000 carried over from a June laptop purchase. Sales are recorded at invoice totals including 12% VAT.",
+  "client": {
+    "name": "Studio Malaya",
+    "profile": { "taxpayer_type": "self_employed", "vat_status": "vat", "income_tax_option": "graduated_osd", "has_employees": false, "withholds_expanded": false, "filing_channel": "ebirforms", "efps_group": null, "fiscal_year_end_month": 12, "rdo_code": null, "taxpayer_size": "small", "line_of_business": "Design services" }
+  },
+  "period": { "year": 2026, "quarter": 3 },
+  "records": [
+    { "kind": "expense", "id": "q2", "date": "2026-06-10", "supplier": { "name": "Silicon Valley Computers" }, "category": "equipment", "amount": "112000.00", "supplier_vat_registered": true },
+    { "kind": "sale", "id": "s1", "date": "2026-07-10", "document_no": "INV-101", "customer": { "name": "Kape Co., Inc." }, "amount": "448000.00" },
+    { "kind": "sale", "id": "s2", "date": "2026-08-12", "document_no": "INV-102", "customer": { "name": "Bright Corp." }, "amount": "224000.00", "vat_treatment": "vatable" },
+    { "kind": "sale", "id": "s3", "date": "2026-09-05", "document_no": "INV-103", "customer": { "name": "Export Client Ltd." }, "amount": "50000.00", "vat_treatment": "zero_rated" },
+    { "kind": "sale", "id": "s4", "date": "2026-09-20", "document_no": "INV-104", "customer": { "name": "Tindahan Coop" }, "amount": "10000.00", "vat_treatment": "exempt" },
+    { "kind": "expense", "id": "e1", "date": "2026-07-31", "supplier": { "name": "Ayala Land" }, "category": "rent", "amount": "56000.00", "supplier_vat_registered": true },
+    { "kind": "expense", "id": "e2", "date": "2026-08-15", "supplier": { "name": "Silicon Valley Computers" }, "category": "equipment", "amount": "67200.00", "supplier_vat_registered": true },
+    { "kind": "expense", "id": "e3", "date": "2026-08-20", "supplier": { "name": "National Book Store" }, "category": "supplies", "amount": "1120.00", "supplier_vat_registered": true },
+    { "kind": "expense", "id": "e4", "date": "2026-09-01", "supplier": { "name": "Barangay Internet Reseller" }, "category": "communication", "amount": "3000.00" }
+  ],
+  "expected": {
+    "forms": ["2550Q", "SLS", "SLP", "1701Q"],
+    "issue_codes": ["missing_vat_supplier_tin", "missing_vat_supplier_tin", "missing_vat_supplier_tin"],
+    "values": {
+      "2550Q-2026-09-30": {
+        "vatable_sales": "600000.00", "output_vat": "72000.00", "zero_rated_sales": "50000.00", "exempt_sales": "10000.00", "total_sales": "660000.00",
+        "purchases_capital_goods": "60000.00", "purchases_goods": "1000.00", "purchases_services": "50000.00", "purchases_no_vat": "3000.00",
+        "input_vat_current": "13320.00", "input_vat_carried_over": "12000.00", "total_input_vat": "25320.00", "payable": "46680.00"
+      },
+      "1701Q-2026-09-30": { "gross_cumulative": "660000.00", "deductions": "264000.00", "taxable_income": "396000.00", "tax_due": "21900.00", "prior_payments": "0.00", "cwt": "0.00", "payable": "21900.00" }
+    },
+    "total_payable": "68580.00"
+  }
+}

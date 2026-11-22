@@ -13,6 +13,7 @@ import {
   money,
   peso,
   round2,
+  splitVat,
   taxRules,
   type Dec,
   type DeadlineRule,
@@ -74,6 +75,210 @@ const salesIn = (records: readonly ClientRecord[], r: Range) => records.filter((
 const expensesIn = (records: readonly ClientRecord[], r: Range) => records.filter((x): x is ExpenseRecord => x.kind === "expense" && inRange(x.date, r));
 /** 2307s whose covered period ends within the range. */
 const certsIn = (records: readonly ClientRecord[], r: Range) => records.filter((x): x is Form2307Received => x.kind === "form_2307_received" && inRange(x.period_to, r));
+
+// ---------- VAT helpers ----------
+
+const isVatClient = (ctx: Ctx) => ctx.input.client.profile.vat_status === "vat";
+const vatRule = (ctx: Ctx, on: ISODate) => findRule<{ rate: string }>(ctx.rules, "vat.rate", on);
+const treatment = (s: SaleRecord) => s.vat_treatment ?? "vatable";
+
+/** A sale's amount for income tax: net of VAT for vatable sales of a VAT-registered client. */
+function saleNet(ctx: Ctx, s: SaleRecord): Dec {
+  if (!isVatClient(ctx) || treatment(s) !== "vatable") return dec(s.amount);
+  return splitVat(s.amount, vatRule(ctx, s.date).value.rate, true).net;
+}
+
+/** Input VAT on an expense (VAT-registered client buying from a VAT-registered supplier). */
+function expenseSplit(ctx: Ctx, e: ExpenseRecord): { net: Dec; vat: Dec } {
+  if (!isVatClient(ctx) || !e.supplier_vat_registered || e.category === "salaries" || e.category === "taxes_licenses") return { net: dec(e.amount), vat: dec(0) };
+  const sp = splitVat(e.amount, vatRule(ctx, e.date).value.rate, true);
+  return { net: sp.net, vat: sp.vat };
+}
+
+type PurchaseClass = "capital_goods" | "goods" | "services" | "no_vat";
+function purchaseClass(ctx: Ctx, e: ExpenseRecord): PurchaseClass {
+  if (expenseSplit(ctx, e).vat.isZero()) return "no_vat";
+  if (e.category === "equipment") return "capital_goods";
+  if (e.category === "cost_of_sales" || e.category === "supplies") return "goods";
+  return "services";
+}
+
+interface VatQuarter {
+  vatable: Dec;
+  output: Dec;
+  zero: Dec;
+  exempt: Dec;
+  purchases: Record<PurchaseClass, Dec>;
+  input: Dec;
+}
+
+function vatQuarter(ctx: Ctx, range: Range): VatQuarter {
+  const out: VatQuarter = { vatable: dec(0), output: dec(0), zero: dec(0), exempt: dec(0), purchases: { capital_goods: dec(0), goods: dec(0), services: dec(0), no_vat: dec(0) }, input: dec(0) };
+  for (const s of salesIn(ctx.input.records, range)) {
+    const t = treatment(s);
+    if (t === "zero_rated") out.zero = out.zero.plus(s.amount);
+    else if (t === "exempt") out.exempt = out.exempt.plus(s.amount);
+    else {
+      const sp = splitVat(s.amount, vatRule(ctx, s.date).value.rate, true);
+      out.vatable = out.vatable.plus(sp.net);
+      out.output = out.output.plus(sp.vat);
+    }
+  }
+  for (const e of expensesIn(ctx.input.records, range)) {
+    const sp = expenseSplit(ctx, e);
+    const c = purchaseClass(ctx, e);
+    out.purchases[c] = out.purchases[c].plus(sp.net);
+    out.input = out.input.plus(sp.vat);
+  }
+  return out;
+}
+
+/** Excess input VAT carried into a quarter, chaining every earlier quarter that has records. */
+function vatCarriedInto(ctx: Ctx, q: QuarterRef): Dec {
+  const dates = ctx.input.records.map((r) => r.date).sort();
+  if (!dates.length) return dec(0);
+  let y = Number(dates[0]!.slice(0, 4));
+  let k = Math.floor((Number(dates[0]!.slice(5, 7)) - 1) / 3) + 1;
+  let carry = dec(0);
+  while (y < q.year || (y === q.year && k < q.quarter)) {
+    const v = vatQuarter(ctx, quarterRange({ year: y, quarter: k as 1 | 2 | 3 | 4 }));
+    carry = max0(v.input.plus(carry).minus(v.output));
+    if (++k > 4) {
+      k = 1;
+      y++;
+    }
+  }
+  return carry;
+}
+
+// ---------- VAT return (2550Q) and summary lists ----------
+
+function prepare2550Q(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
+  const v = vatQuarter(ctx, range);
+  const carried = vatCarriedInto(ctx, q);
+  const totalInput = v.input.plus(carried);
+  const payable = v.output.minus(totalInput);
+  const rule = vatRule(ctx, range.end);
+  const rate = `${dec(rule.value.rate).times(100).toString()}%`;
+  const warnings = ["Input tax is claimed only for purchases from VAT-registered suppliers with valid VAT invoices or receipts. Keep them with your books."];
+  if (!v.purchases.capital_goods.isZero()) warnings.push("Input tax on capital goods may have to be spread over several periods under the rules in force when they were bought (to confirm with Neil Priolo, CPA).");
+  if (!v.zero.isZero()) warnings.push("Zero-rated sales need supporting documents (and, for some, prior BIR approval) — confirm with Neil Priolo, CPA.");
+  return doc(ctx, {
+    id: `2550Q-${range.end}`,
+    form: "2550Q",
+    title: "Quarterly VAT return",
+    period_label: quarterLabel(q),
+    period_start: range.start,
+    period_end: range.end,
+    values: {
+      vatable_sales: money(v.vatable),
+      output_vat: money(v.output),
+      zero_rated_sales: money(v.zero),
+      exempt_sales: money(v.exempt),
+      total_sales: money(v.vatable.plus(v.zero).plus(v.exempt)),
+      purchases_capital_goods: money(v.purchases.capital_goods),
+      purchases_goods: money(v.purchases.goods),
+      purchases_services: money(v.purchases.services),
+      purchases_no_vat: money(v.purchases.no_vat),
+      input_vat_current: money(v.input),
+      input_vat_carried_over: money(carried),
+      total_input_vat: money(totalInput),
+      payable: money(payable),
+    },
+    steps: [
+      step("Vatable sales, net of VAT", `Each invoice total ÷ (1 + ${rate}), added up`, v.vatable, rule.legal_basis),
+      step("Output tax", `Each invoice total − its net amount, added up`, v.output, rule.legal_basis),
+      step("Input tax on purchases from VAT-registered suppliers", `Each bill ÷ (1 + ${rate}) taken out of the bill, added up`, v.input, "NIRC Sec. 110"),
+      step("Add: excess input tax carried over", "From earlier quarters' records", carried, "NIRC Sec. 110(B)"),
+      step(payable.isNegative() ? "Excess input tax carried to the next quarter" : "VAT payable", `${peso(v.output)} − ${peso(totalInput)}`, payable.abs(), "NIRC Sec. 110(B)"),
+    ],
+    amount_payable: money(max0(payable)),
+    warnings,
+    rules_used: [rule.id],
+  });
+}
+
+function prepareSalesList(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
+  const m = new Map<string, { name: string; tin: string; exempt: Dec; zero: Dec; taxable: Dec; vat: Dec }>();
+  for (const s of salesIn(ctx.input.records, range)) {
+    const k = payeeKey(s.customer);
+    const cur = m.get(k) ?? { name: s.customer.name, tin: s.customer.tin ?? "", exempt: dec(0), zero: dec(0), taxable: dec(0), vat: dec(0) };
+    const t = treatment(s);
+    if (t === "exempt") cur.exempt = cur.exempt.plus(s.amount);
+    else if (t === "zero_rated") cur.zero = cur.zero.plus(s.amount);
+    else {
+      const sp = splitVat(s.amount, vatRule(ctx, s.date).value.rate, true);
+      cur.taxable = cur.taxable.plus(sp.net);
+      cur.vat = cur.vat.plus(sp.vat);
+    }
+    m.set(k, cur);
+  }
+  const rows = [...m.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return doc(ctx, {
+    id: `SLS-${range.end}`,
+    form: "SLS",
+    title: "Summary list of sales (attachment to 2550Q)",
+    period_label: quarterLabel(q),
+    period_start: range.start,
+    period_end: range.end,
+    values: {},
+    steps: [step("Total output tax (must equal the 2550Q)", rows.map((r) => peso(r.vat)).join(" + ") || "None", sum(rows.map((r) => r.vat)))],
+    schedule: {
+      columns: [
+        { key: "tin", label: "Customer TIN" },
+        { key: "name", label: "Customer" },
+        { key: "exempt", label: "Exempt", align: "right" },
+        { key: "zero", label: "Zero-rated", align: "right" },
+        { key: "taxable", label: "Taxable (net)", align: "right" },
+        { key: "vat", label: "Output tax", align: "right" },
+      ],
+      rows: rows.map((r) => ({ tin: r.tin, name: r.name, exempt: money(r.exempt), zero: money(r.zero), taxable: money(r.taxable), vat: money(r.vat) })),
+    },
+    amount_payable: "0.00",
+    warnings: ["Whether you must submit summary lists, and in which file format, depends on BIR thresholds and rules to be confirmed by Neil Priolo, CPA. Sales to walk-in customers are usually reported as one line."],
+    rules_used: [],
+  });
+}
+
+function preparePurchaseList(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
+  const m = new Map<string, { name: string; tin: string; no_vat: Dec; services: Dec; capital_goods: Dec; goods: Dec; vat: Dec }>();
+  for (const e of expensesIn(ctx.input.records, range)) {
+    if (e.category === "salaries" || e.category === "taxes_licenses") continue;
+    const k = payeeKey(e.supplier);
+    const cur = m.get(k) ?? { name: e.supplier.name, tin: e.supplier.tin ?? "", no_vat: dec(0), services: dec(0), capital_goods: dec(0), goods: dec(0), vat: dec(0) };
+    const sp = expenseSplit(ctx, e);
+    const c = purchaseClass(ctx, e);
+    cur[c] = cur[c].plus(sp.net);
+    cur.vat = cur.vat.plus(sp.vat);
+    m.set(k, cur);
+  }
+  const rows = [...m.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return doc(ctx, {
+    id: `SLP-${range.end}`,
+    form: "SLP",
+    title: "Summary list of purchases (attachment to 2550Q)",
+    period_label: quarterLabel(q),
+    period_start: range.start,
+    period_end: range.end,
+    values: {},
+    steps: [step("Total input tax (must equal the 2550Q current input tax)", rows.map((r) => peso(r.vat)).join(" + ") || "None", sum(rows.map((r) => r.vat)))],
+    schedule: {
+      columns: [
+        { key: "tin", label: "Supplier TIN" },
+        { key: "name", label: "Supplier" },
+        { key: "no_vat", label: "Exempt / non-VAT", align: "right" },
+        { key: "services", label: "Services", align: "right" },
+        { key: "capital_goods", label: "Capital goods", align: "right" },
+        { key: "goods", label: "Other goods", align: "right" },
+        { key: "vat", label: "Input tax", align: "right" },
+      ],
+      rows: rows.map((r) => ({ tin: r.tin, name: r.name, no_vat: money(r.no_vat), services: money(r.services), capital_goods: money(r.capital_goods), goods: money(r.goods), vat: money(r.vat) })),
+    },
+    amount_payable: "0.00",
+    warnings: ["Whether you must submit summary lists, and in which file format, depends on BIR thresholds and rules to be confirmed by Neil Priolo, CPA."],
+    rules_used: [],
+  });
+}
 
 // ---------- Percentage tax (2551Q) ----------
 
@@ -298,12 +503,12 @@ interface ItComputation {
 
 function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): ItComputation | null {
   const r: Range = { start: `${year}-01-01`, end };
-  const gross = sum(salesIn(ctx.input.records, r).map((s) => s.amount));
-  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => e.amount))) : undefined;
+  const gross = sum(salesIn(ctx.input.records, r).map((s) => saleNet(ctx, s)));
+  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => expenseSplit(ctx, e).net))) : undefined;
   if (gross.isZero()) {
     return { gross, deduction: dec(0), taxable: dec(0), tax: dec(0), steps: [step("Gross sales/receipts to date", "No sales recorded yet", "0")], rules_used: [], warnings: ["No sales are recorded for the year so far."] };
   }
-  const calc = computeIndividualIncomeTax({ taxable_year: year, gross_sales_receipts: money(gross), itemized_deductions: itemized, vat_registered: false }, ctx.rules);
+  const calc = computeIndividualIncomeTax({ taxable_year: year, gross_sales_receipts: money(gross), itemized_deductions: itemized, vat_registered: isVatClient(ctx) }, ctx.rules);
   const opt = calc.result.options.find((o) => o.key === option)!;
   if (!opt.eligible) {
     ctx.issues.push({ code: "option_ineligible", severity: "error", message: `The income tax option on the profile cannot be used: ${opt.ineligible_reasons.join(" ")}` });
@@ -421,7 +626,7 @@ export function preparePacket(input: PrepareInput): Packet {
   const profile = input.client.profile;
   const q = input.period;
   const range = quarterRange(q);
-  const issues = checkRecords(input.records, q, rules);
+  const issues = checkRecords(input.records, q, rules, { vat: profile.vat_status === "vat" });
   const obligations = generateObligations(profile, {
     from: range.start,
     to: addMonths(range.end, 6),
@@ -443,15 +648,15 @@ export function preparePacket(input: PrepareInput): Packet {
 
   const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship";
   if (!individual) notSupported.push({ form: "—", reason: "Only self-employed individuals and sole proprietors are supported in this first batch." });
-  if (profile.vat_status === "vat") notSupported.push({ form: "2550Q", reason: "VAT returns are planned for the next batch." });
   if (profile.has_employees) notSupported.push({ form: "1601C", reason: "Payroll returns (1601C, 1604C, 2316) are planned for a later batch." });
 
   const option = profile.income_tax_option;
   const itOption: ItOption | null = option === "eight_percent" || option === "graduated_osd" || option === "graduated_itemized" ? option : null;
   if (individual && !itOption) issues.push({ code: "income_tax_option", severity: "error", message: "Choose the income tax option (8%, graduated with OSD, or graduated with itemized deductions) in the client's profile before income tax returns can be prepared." });
 
-  if (individual && profile.vat_status !== "vat") {
-    if (itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, quarterLabel(q)));
+  if (individual) {
+    if (profile.vat_status === "vat") documents.push(prepare2550Q(ctx, q, range), prepareSalesList(ctx, q, range), preparePurchaseList(ctx, q, range));
+    else if (itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, quarterLabel(q)));
     if (profile.withholds_expanded) {
       const [m1, m2] = quarterMonths(q) as [Range, Range, Range];
       documents.push(prepare0619E(ctx, m1), prepare0619E(ctx, m2), prepare1601EQ(ctx, q, range), prepareQap(ctx, q, range), ...prepare2307s(ctx, q, range));

@@ -79,7 +79,7 @@ describe("preparePacket", () => {
   it("reports what it cannot prepare yet", () => {
     const p = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", vat_status: "vat", has_employees: true }) }, records: [], period: { year: 2026, quarter: 1 } });
     expect(p.documents).toEqual([]);
-    expect(p.not_supported.map((n) => n.form)).toEqual(["—", "2550Q", "1601C"]);
+    expect(p.not_supported.map((n) => n.form)).toEqual(["—", "1601C"]);
   });
 
   it("asks for the income tax option and blocks an ineligible 8%", () => {
@@ -130,5 +130,49 @@ describe("preparePacket", () => {
       expect(lines.every((l) => l.item === null && l.needs_verification)).toBe(true);
     }
     expect(linesFor("2551Q", "2010-01-01")).toEqual([]);
+  });
+});
+
+describe("VAT clients", () => {
+  const vat = (p: Partial<Profile> = {}) => profile({ vat_status: "vat", income_tax_option: "graduated_osd", ...p });
+  it("refuses the 8% option and lists customers and suppliers on the summary lists", () => {
+    const recs: ClientRecord[] = [
+      { kind: "sale", id: "a", date: "2026-01-05", document_no: "1", customer: { name: "B", tin: "1" }, amount: "11200.00" },
+      { kind: "sale", id: "b", date: "2026-02-05", document_no: "2", customer: { name: "A" }, amount: "1000.00", vat_treatment: "exempt" },
+      { kind: "sale", id: "c", date: "2026-03-05", document_no: "3", customer: { name: "B", tin: "1" }, amount: "500.00", vat_treatment: "zero_rated" },
+      { kind: "expense", id: "s", date: "2026-01-31", supplier: { name: "Staff" }, category: "salaries", amount: "5000.00", supplier_vat_registered: true },
+      { kind: "expense", id: "t", date: "2026-01-31", supplier: { name: "LGU" }, category: "taxes_licenses", amount: "500.00" },
+      { kind: "expense", id: "g", date: "2026-02-01", supplier: { name: "Goods Inc." }, category: "cost_of_sales", amount: "2240.00", supplier_vat_registered: true },
+    ];
+    const eight = preparePacket({ client: { name: "V", profile: vat({ income_tax_option: "eight_percent" }) }, records: recs, period: { year: 2026, quarter: 1 } });
+    expect(eight.issues.map((i) => i.code)).toContain("option_ineligible");
+    expect(eight.documents.some((d) => d.form === "2551Q")).toBe(false);
+    const p = preparePacket({ client: { name: "V", profile: vat({ income_tax_option: "graduated_itemized" }) }, records: recs, period: { year: 2026, quarter: 1 } });
+    const sls = p.documents.find((d) => d.form === "SLS")!;
+    expect(sls.schedule!.rows).toEqual([
+      { tin: "", name: "A", exempt: "1000.00", zero: "0.00", taxable: "0.00", vat: "0.00" },
+      { tin: "1", name: "B", exempt: "0.00", zero: "500.00", taxable: "10000.00", vat: "1200.00" },
+    ]);
+    const slp = p.documents.find((d) => d.form === "SLP")!;
+    expect(slp.schedule!.rows).toEqual([{ tin: "", name: "Goods Inc.", no_vat: "0.00", services: "0.00", capital_goods: "0.00", goods: "2000.00", vat: "240.00" }]);
+    const q = p.documents.find((d) => d.form === "2550Q")!;
+    expect(q.fields.find((f) => f.key === "payable")!.value).toBe("960.00");
+    expect(q.warnings.some((w) => w.includes("Zero-rated"))).toBe(true);
+    // Itemized deductions are net of input VAT; salaries and taxes carry no VAT.
+    expect(p.documents.find((d) => d.form === "1701Q")!.fields.find((f) => f.key === "deductions")!.value).toBe("7500.00");
+  });
+  it("carries excess input tax forward and pays nothing", () => {
+    const recs: ClientRecord[] = [
+      { kind: "sale", id: "a", date: "2026-01-05", document_no: "1", customer: { name: "B" }, amount: "1120.00" },
+      { kind: "expense", id: "g", date: "2026-01-06", supplier: { name: "G" }, category: "equipment", amount: "22400.00", supplier_vat_registered: true },
+    ];
+    const p = preparePacket({ client: { name: "V", profile: vat() }, records: recs, period: { year: 2026, quarter: 1 } });
+    const q = p.documents.find((d) => d.form === "2550Q")!;
+    expect(q.fields.find((f) => f.key === "payable")!.value).toBe("-2280.00");
+    expect(q.amount_payable).toBe("0.00");
+    const q2 = preparePacket({ client: { name: "V", profile: vat() }, records: recs, period: { year: 2026, quarter: 2 } }).documents.find((d) => d.form === "2550Q")!;
+    expect(q2.fields.find((f) => f.key === "input_vat_carried_over")!.value).toBe("2280.00");
+    const empty = preparePacket({ client: { name: "V", profile: vat() }, records: [], period: { year: 2026, quarter: 1 } });
+    expect(empty.documents.find((d) => d.form === "2550Q")!.amount_payable).toBe("0.00");
   });
 });

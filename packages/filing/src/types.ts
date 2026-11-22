@@ -15,6 +15,11 @@ export interface SaleRecord {
   document_no: string;
   customer: Party;
   amount: string;
+  /**
+   * VAT-registered clients only: how the sale is treated for VAT. Vatable sales are recorded at
+   * the invoice total including VAT. Defaults to "vatable".
+   */
+  vat_treatment?: "vatable" | "zero_rated" | "exempt";
   description?: string;
 }
 
@@ -30,6 +35,7 @@ export type ExpenseCategory =
   | "transportation"
   | "communication"
   | "repairs"
+  | "equipment"
   | "other";
 
 /** A purchase or expense paid. When the client withheld tax, `withholding` names the ATC. */
