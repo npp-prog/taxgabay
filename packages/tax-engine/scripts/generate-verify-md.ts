@@ -7,6 +7,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HOLIDAYS_NOT_SEEDED, checklistItems, deadlineRules, forms, holidays, lifeEvents, registrationSteps, taxRules, type Bracket, type DueLogic } from "../src";
 
+// Content-package data, imported by path (scripts only; tax-engine itself does not depend on content).
+import { seedIssuanceLinks, seedIssuances } from "../../content/src/issuances";
+import { glossary } from "../../content/src/glossary";
+import { faqs } from "../../content/src/faq";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, "../../../docs/VERIFY.md");
 
@@ -157,6 +162,20 @@ ${lifeEvents
 ${row(["Code", "Name", "Who files", "Frequency"])}
 ${row(["---", "---", "---", "---"])}
 ${forms.map((f) => row([f.code, f.name, f.who_files, f.frequency])).join("\n")}
+
+## Seeded issuances (${seedIssuances.length})
+
+Inserted into Supabase as **drafts** by \`supabase/seed-issuances.sql\`; publish them from /admin after review. Unknown dates are left blank on purpose.
+
+${row(["Issuance", "Title", "Date issued", "Effectivity", "Summary"])}
+${row(["---", "---", "---", "---", "---"])}
+${seedIssuances.map((i) => row([`${i.type} ${i.number}`, i.title, i.date_issued ?? "to confirm", i.effectivity_date ?? "to confirm", i.summary_plain ?? ""])).join("\n")}
+
+Relations: ${seedIssuanceLinks.map((l) => `${l.from_slug} ${l.relation} ${l.to_slug}`).join("; ")}.
+
+## Knowledge hub
+
+Six articles in \`packages/content/hub/\`, ${glossary.length} glossary terms (\`packages/content/src/glossary.ts\`) and ${faqs.length} FAQs (\`packages/content/src/faq.ts\`), all flagged. They restate facts from the rule data above; check them after the rules are confirmed.
 
 ## Filing guides
 

@@ -195,7 +195,7 @@ export const deadlineRules: DeadlineRule[] = [
     effective_from: "2018-01-01",
     effective_to: null,
     legal_basis: "NIRC Sec. 77(B): within 60 days after the close of each of the first three quarters of the taxable year",
-    note: "Filing guide is a Phase 2 item.",
+    note: "Filing guide not yet written.",
   }),
   dl({
     id: "dl-1702rt",
@@ -207,6 +207,6 @@ export const deadlineRules: DeadlineRule[] = [
     effective_from: "2018-01-01",
     effective_to: null,
     legal_basis: "NIRC Sec. 77(B): on or before the 15th day of the fourth month following the close of the taxable year",
-    note: "Exempt (1702-EX) and mixed (1702-MX) variants not yet distinguished. Filing guide is a Phase 2 item.",
+    note: "Exempt (1702-EX) and mixed (1702-MX) variants not yet distinguished. Filing guide not yet written.",
   }),
 ];

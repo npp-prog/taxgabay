@@ -104,8 +104,8 @@ Every value below was seeded from Claude's best understanding and **has not been
 | dl-1601eq | 1601EQ | Q1,Q2,Q3,Q4 (calendar quarters): day last of month +1 after quarter end | {"withholds_expanded":true} | 2018-01-01 → open | NIRC Sec. 58(A); RR 2-98 as amended by RR 11-2018: last day of the month following the close of the quarter |  |
 | dl-1604c | 1604C | Calendar year: day 31 of month +1 after year end | {"has_employees":true} | 2018-01-01 → open | NIRC Sec. 58(C), as amended by RA 10963 (TRAIN): on or before 31 January of the following year |  |
 | dl-1604e | 1604E | Calendar year: day 1 of month +3 after year end | {"withholds_expanded":true} | 2018-01-01 → open | NIRC Sec. 58(C); RR 2-98 as amended: on or before 1 March of the following year |  |
-| dl-1702q | 1702Q | Q1,Q2,Q3 (taxable-year quarters): 60 days after quarter end | {"taxpayer_types":["partnership","corporation","opc","cooperative"]} | 2018-01-01 → open | NIRC Sec. 77(B): within 60 days after the close of each of the first three quarters of the taxable year | Filing guide is a Phase 2 item. |
-| dl-1702rt | 1702-RT | Taxable year: day 15 of month +4 after year end | {"taxpayer_types":["partnership","corporation","opc","cooperative"]} | 2018-01-01 → open | NIRC Sec. 77(B): on or before the 15th day of the fourth month following the close of the taxable year | Exempt (1702-EX) and mixed (1702-MX) variants not yet distinguished. Filing guide is a Phase 2 item. |
+| dl-1702q | 1702Q | Q1,Q2,Q3 (taxable-year quarters): 60 days after quarter end | {"taxpayer_types":["partnership","corporation","opc","cooperative"]} | 2018-01-01 → open | NIRC Sec. 77(B): within 60 days after the close of each of the first three quarters of the taxable year | Filing guide not yet written. |
+| dl-1702rt | 1702-RT | Taxable year: day 15 of month +4 after year end | {"taxpayer_types":["partnership","corporation","opc","cooperative"]} | 2018-01-01 → open | NIRC Sec. 77(B): on or before the 15th day of the fourth month following the close of the taxable year | Exempt (1702-EX) and mixed (1702-MX) variants not yet distinguished. Filing guide not yet written. |
 
 ## Holidays (36)
 
@@ -241,6 +241,32 @@ Deadlines and forms mentioned in each flow:
 | 1702-RT | Annual Income Tax Return for Corporations, Partnerships and Other Non-Individual Taxpayers Subject Only to the Regular Income Tax Rate | Corporations and partnerships subject to the regular rate. | annual |
 | 1901 | Application for Registration for Self-Employed (Single Proprietor/Professional), Mixed-Income Individuals, Non-Resident Alien Engaged in Trade/Business, Estate and Trust | Sole proprietors, professionals and mixed-income earners registering with BIR. | one_time |
 | 1903 | Application for Registration for Corporations/Partnerships (Taxable/Non-Taxable) | Corporations, partnerships, OPCs, cooperatives. | one_time |
+
+## Seeded issuances (13)
+
+Inserted into Supabase as **drafts** by `supabase/seed-issuances.sql`; publish them from /admin after review. Unknown dates are left blank on purpose.
+
+| Issuance | Title | Date issued | Effectivity | Summary |
+| --- | --- | --- | --- | --- |
+| RA 10963 | Tax Reform for Acceleration and Inclusion (TRAIN) Law | 2017-12-19 | 2018-01-01 | Rewrote individual income tax rates (₱250,000 exempt), introduced the 8% option for small self-employed taxpayers, set estate and donor's tax at a flat 6%, and raised documentary stamp tax rates. |
+| RA 11534 | Corporate Recovery and Tax Incentives for Enterprises (CREATE) Act | 2021-03-26 | 2021-04-11 | Cut the corporate income tax to 25% (20% for smaller corporations) from 1 July 2020, temporarily lowered MCIT to 1% and percentage tax to 1% until 30 June 2023, and reformed tax incentives. |
+| RA 11976 | Ease of Paying Taxes Act | 2024-01-05 | 2024-01-22 | Lets taxpayers file and pay anywhere, classifies taxpayers by size, lowers penalties for micro and small taxpayers, makes the invoice the main sales document, and removes the ₱500 annual registration fee. |
+| RA 12066 | CREATE MORE Act | to confirm | to confirm | Amends CREATE's incentive system, including a 20% corporate income tax for registered business enterprises under the enhanced deductions regime. |
+| RA 9337 | Reformed Value-Added Tax Law | to confirm | to confirm | Amended the VAT provisions of the Tax Code, including the 12% VAT rate, and the corporate income tax rate. |
+| RR 2-98 | Withholding tax regulations | to confirm | to confirm | The main regulations on withholding of income tax, amended many times since. |
+| RR 8-2018 | Implementing the income tax provisions of the TRAIN Law | to confirm | to confirm | Rules for the new individual income tax rates and the 8% option, including who can elect it and how. |
+| RR 11-2018 | Amendments to the withholding tax regulations under the TRAIN Law | to confirm | to confirm | Revised the withholding tax tables on compensation and expanded withholding rates to match TRAIN. |
+| RR 13-2018 | Implementing the VAT provisions of the TRAIN Law | to confirm | to confirm | Rules on the VAT changes under TRAIN, including the ₱3,000,000 VAT threshold. |
+| RR 6-2024 | Implementing the penalty provisions of the Ease of Paying Taxes Act | to confirm | to confirm | Rules for the lower surcharge and interest for micro and small taxpayers. |
+| RR 7-2024 | Implementing the invoicing provisions of the Ease of Paying Taxes Act | to confirm | to confirm | Rules making the sales invoice the main document for sales of goods and services, with official receipts as supplementary documents. |
+| RR 8-2024 | Classification of taxpayers under the Ease of Paying Taxes Act | to confirm | to confirm | Groups taxpayers into micro, small, medium and large by gross sales. |
+| RMO 7-2015 | Revised schedule of compromise penalties | to confirm | to confirm | Schedule of suggested compromise penalties for violations of the Tax Code. |
+
+Relations: rr-8-2018 implements ra-10963; rr-11-2018 implements ra-10963; rr-11-2018 amends rr-2-98; rr-13-2018 implements ra-10963; rr-6-2024 implements ra-11976; rr-7-2024 implements ra-11976; rr-8-2024 implements ra-11976; ra-12066 amends ra-11534.
+
+## Knowledge hub
+
+Six articles in `packages/content/hub/`, 34 glossary terms (`packages/content/src/glossary.ts`) and 13 FAQs (`packages/content/src/faq.ts`), all flagged. They restate facts from the rule data above; check them after the rules are confirmed.
 
 ## Filing guides
 

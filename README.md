@@ -2,7 +2,7 @@
 
 A Philippine BIR tax guide (web app, PWA). Users answer a short profile questionnaire and get a personalized list of what to register, file and pay, with deadlines, computations and the legal basis for each.
 
-**Status: Phases 1 and 2 built — all tax content is pending CPA verification.** See [`docs/VERIFY.md`](docs/VERIFY.md).
+**Status: Phases 1–3 built — all tax content is pending CPA verification.** See [`docs/VERIFY.md`](docs/VERIFY.md).
 
 - Spec: [`docs/SPEC.md`](docs/SPEC.md) · Phase plan and assumptions: [`docs/PLAN.md`](docs/PLAN.md) · Conventions: [`CLAUDE.md`](CLAUDE.md)
 
@@ -18,6 +18,11 @@ A Philippine BIR tax guide (web app, PWA). Users answer a short profile question
 | Life-event guides: start a business, hire, close, settle an estate, sell or donate property, move RDO | `/life-events` |
 | 10 filing guides (MDX skeletons): 1701Q, 1701, 1701A, 2551Q, 2550Q, 1601C, 0619E, 1601EQ, 1604C, 1604E | `/guides` |
 | Registration roadmaps for DTI, SEC and CDA paths with saved progress and print-to-PDF | `/roadmap` |
+| BIR issuances library: search, filters, plain-language summaries, related-issuance graph, official source links | `/issuances` |
+| Knowledge hub: articles, Taglish-friendly glossary, FAQs | `/learn` |
+| Site search across guides, articles, glossary, FAQs, issuances, life events and calculators | `/search` |
+| PDF downloads of calculator results, roadmaps and the calendar | buttons on those pages |
+| Admin: issuance workflow (draft → reviewed → published), drafting from a pasted text / PDF / BIR link, BIR deadline extensions and holidays, needs-verification dashboard, audit log | `/admin` |
 | Privacy notice, account page with data download and deletion | `/privacy`, `/account` |
 | Supabase schema with RLS, admin role, audit log; generated seed SQL | `supabase/` |
 
@@ -50,9 +55,11 @@ With no environment variables, the app runs in **local mode**: the profile, cale
 | `pnpm build` | Production build of all packages |
 | `pnpm test` | Vitest for tax-engine (coverage gate 95%), content and the web reminder job |
 | `pnpm test:e2e` | Playwright (builds and starts the app on port 3100; desktop + mobile) |
+| `pnpm --filter @taxgabay/web test:e2e:admin` | Admin flows against a separate build that talks to an in-test mock of Supabase (port 3101) |
 | `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` across the monorepo |
 | `pnpm db:seed-sql` | Regenerate `supabase/seed.sql` from tax-engine data |
 | `pnpm db:verify-doc` | Regenerate `docs/VERIFY.md` from tax-engine data |
+| `pnpm db:seed-issuances` | Regenerate `supabase/seed-issuances.sql` (starter issuances, inserted as drafts) |
 
 ## Tax rules are data
 
@@ -68,12 +75,20 @@ The disclaimer on each calculator switches from "not yet verified" to the oldest
 
 ## Supabase (optional)
 
-1. Create a Supabase project. Apply `supabase/migrations/*.sql`, then `supabase/seed.sql` (SQL editor, or `supabase db push` with the Supabase CLI).
+1. Create a Supabase project. Apply `supabase/migrations/*.sql` in order, then `supabase/seed.sql` and `supabase/seed-issuances.sql` (SQL editor, or `supabase db push` with the Supabase CLI).
 2. Auth → Providers: enable Email (magic link) and Google. Add `<site>/account` to the redirect allow-list.
 3. Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL`.
 4. To make someone an admin, set `app_metadata.role = "admin"` on their user (service role / dashboard). Admins can write reference tables; every change goes to `admin_audit_log`.
 
 When a local-mode user signs in for the first time, their browser profile, roadmap and checklist progress are uploaded to their account.
+
+### Issuances library and admin
+
+- The public library shows only **published** issuances (enforced by RLS). Without Supabase it shows the bundled starter list.
+- The workflow is enforced by a database trigger: new issuances start as drafts; review requires a summary, the official source link and a tax type; only reviewed issuances can be published; editing a reviewed or published issuance sends it back to draft. Every change is in `admin_audit_log`.
+- **Draft from source** (`/admin/ingest`): paste text, upload a PDF (text is extracted in the browser with pdf.js) or fetch from a link on bir.gov.ph, dof.gov.ph or officialgazette.gov.ph (through the admin-only `/api/admin/source` route). The parser suggests the type, number, date, title, tax types, topics and related issuances; you check them and write the summary.
+- **Extensions and holidays** added in the admin area are merged into the calendar and the reminder job.
+- Tax rules themselves stay in code (`packages/tax-engine/src/data`) so every change runs through the fixture tests.
 
 ### Reminders
 
