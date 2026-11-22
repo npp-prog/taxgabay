@@ -1,5 +1,6 @@
 import { dec, findRule, peso, round2, type TaxRule } from "@taxgabay/tax-engine";
 import { inRange, monthLabel, quarterMonths, quarterRange } from "./periods";
+import { journalProblem } from "./books";
 import type { ClientRecord, ExpenseRecord, Form2307Received, Issue, PayrollRecord, QuarterRef, SaleRecord } from "./types";
 
 const isSale = (r: ClientRecord): r is SaleRecord => r.kind === "sale";
@@ -25,6 +26,11 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
   const inQ = records.filter((r) => inRange(r.date, range));
 
   for (const r of records) {
+    if (r.kind === "journal") {
+      const problem = journalProblem(r);
+      if (problem) issues.push({ code: "invalid_journal", severity: "error", message: `Journal entry "${r.memo}" (${r.date}): ${problem}`, record_id: r.id });
+      continue;
+    }
     const amount = r.kind === "form_2307_received" ? r.income_payment : r.kind === "payroll" ? r.basic_pay : r.amount;
     let ok: boolean;
     try {

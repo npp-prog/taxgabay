@@ -87,7 +87,21 @@ export interface PayrollRecord {
   minimum_wage_earner?: boolean;
 }
 
-export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received | PayrollRecord;
+/**
+ * A manual journal entry for things the other records do not cover: opening balances, tax and
+ * contribution remittances, depreciation, owner's withdrawals or dividends, and other adjustments.
+ * Accounts are codes from the client chart of accounts (see `clientChart`).
+ */
+export interface JournalRecord {
+  kind: "journal";
+  id: string;
+  date: ISODate;
+  entry_type: "opening" | "remittance" | "depreciation" | "withdrawal" | "other";
+  memo: string;
+  lines: { account: string; debit?: string; credit?: string }[];
+}
+
+export type ClientRecord = SaleRecord | ExpenseRecord | Form2307Received | PayrollRecord | JournalRecord;
 
 export interface ClientInfo {
   name: string;
@@ -157,7 +171,10 @@ export interface PreparedDocument {
 
 export interface Packet {
   client: string;
+  /** The quarter (for a monthly packet: the quarter containing the month). */
   period: QuarterRef;
+  /** Set for a monthly packet (1–12). */
+  month?: number;
   period_label: string;
   issues: Issue[];
   documents: PreparedDocument[];

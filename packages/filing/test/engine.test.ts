@@ -1,6 +1,6 @@
 import { DEFAULT_PROFILE, type Profile } from "@taxgabay/tax-engine";
 import { describe, expect, it } from "vitest";
-import { buildBooks, checkRecords, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
+import { buildBooks, checkRecords, journalProblem, linesFor, preparePacket, quarterLabel, quarterMonths, quarterRange, redactTins, taxRulesFor, type ClientRecord } from "../src";
 
 const profile = (p: Partial<Profile>): Profile => ({ ...DEFAULT_PROFILE, taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", ...p });
 const sale = (id: string, date: string, amount: string, no = id, name = "Client A"): ClientRecord => ({ kind: "sale", id, date, document_no: no, customer: { name }, amount });
@@ -262,5 +262,68 @@ describe("books", () => {
     expect(b.entries.find((e) => e.id === "p2")!.lines.some((l) => l.account === "203" && l.debit)).toBe(true);
     expect(b.warnings.join(" ")).toMatch(/NOPE.*depreciation/s);
     expect(trialBalance(post(b.entries, b.chart)).balanced).toBe(true);
+  });
+});
+
+describe("journal entries", () => {
+  const j = (id: string, date: string, entry_type: "opening" | "remittance" | "depreciation" | "withdrawal" | "other", lines: { account: string; debit?: string; credit?: string }[]): ClientRecord => ({ kind: "journal", id, date, entry_type, memo: id, lines });
+
+  it("validates balance, accounts and amounts", () => {
+    const ok = j("a", "2026-01-01", "opening", [{ account: "101", debit: "100" }, { account: "301", credit: "100" }]) as Extract<ClientRecord, { kind: "journal" }>;
+    expect(journalProblem(ok)).toBeNull();
+    const bad = (lines: { account: string; debit?: string; credit?: string }[]) => journalProblem({ ...ok, lines });
+    expect(bad([{ account: "101", debit: "100" }])).toMatch(/at least one/);
+    expect(bad([{ account: "999", debit: "1" }, { account: "301", credit: "1" }])).toMatch(/not in the chart/);
+    expect(bad([{ account: "101", debit: "1", credit: "1" }, { account: "301", credit: "1" }])).toMatch(/either a debit/);
+    expect(bad([{ account: "101", debit: "0" }, { account: "301", credit: "0" }])).toMatch(/greater than zero/);
+    expect(bad([{ account: "101", debit: "x" }, { account: "301", credit: "1" }])).toMatch(/numbers/);
+    expect(bad([{ account: "101", debit: "2" }, { account: "301", credit: "1" }])).toMatch(/not equal/);
+    const issues = checkRecords([{ ...ok, lines: [{ account: "101", debit: "2" }, { account: "301", credit: "1" }] }], { year: 2026, quarter: 1 }, rules);
+    expect(issues.map((i) => i.code)).toContain("invalid_journal");
+  });
+
+  it("posts opening balances into later periods, deducts depreciation and skips bad entries", async () => {
+    const { financialStatements } = await import("@taxgabay/accounting");
+    const recs: ClientRecord[] = [
+      j("open", "2026-01-01", "opening", [{ account: "101", debit: "50000" }, { account: "151", debit: "120000" }, { account: "301", credit: "170000" }]),
+      j("dep", "2026-06-30", "depreciation", [{ account: "612", debit: "6000" }, { account: "152", credit: "6000" }]),
+      j("rem", "2026-05-10", "remittance", [{ account: "202", debit: "500" }, { account: "101", credit: "500" }]),
+      j("bad", "2026-05-11", "other", [{ account: "101", debit: "1" }, { account: "301", credit: "2" }]),
+      { kind: "sale", id: "s", date: "2026-04-15", document_no: "1", customer: { name: "X" }, amount: "100000.00" },
+    ];
+    const b = buildBooks({ client: { name: "A", profile: profile({}) }, records: recs, from: "2026-04-01", to: "2026-06-30" });
+    expect(b.entries.map((e) => e.id)).toEqual(["open", "s", "rem", "dep"]);
+    expect(b.entries[0]!.kind).toBe("opening");
+    expect(b.warnings.join(" ")).toMatch(/"bad".*left out/);
+    const fs = financialStatements(b.entries, b.chart, "2026-06-30", b.earningsAccount);
+    expect(fs.incomeStatement.netIncome).toBe("94000.00");
+    expect(fs.balanceSheet.balanced).toBe(true);
+    const corp = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation" }), corporate: { year_commenced: 2015, total_assets_excl_land: "1" } }, records: [...recs, { kind: "expense", id: "eq", date: "2026-04-20", supplier: { name: "S" }, category: "equipment", amount: "50000.00" }], period: { year: 2026, quarter: 2 } });
+    expect(corp.documents.find((d) => d.form === "1702Q")!.fields.find((f) => f.key === "deductions")!.value).toBe("6000.00");
+  });
+});
+
+describe("monthly packets", () => {
+  const recs: ClientRecord[] = [
+    { kind: "expense", id: "e", date: "2026-01-31", supplier: { name: "Landlord", tin: "1" }, category: "rent", amount: "10000.00", withholding: { atc: "WI100" } },
+    { kind: "payroll", id: "p", date: "2026-01-31", employee: { name: "Ana", tin: "2" }, basic_pay: "30000.00" },
+  ];
+  const prof = profile({ income_tax_option: "graduated_osd", withholds_expanded: true, has_employees: true });
+  it("prepares the month's 0619E, 1601C and contributions", () => {
+    const p = preparePacket({ client: { name: "A", profile: prof }, records: recs, period: { year: 2026, quarter: 1 }, month: 1 });
+    expect(p.month).toBe(1);
+    expect(p.period_label).toBe("January 2026");
+    expect(p.documents.map((d) => d.form)).toEqual(["0619E", "1601C", "SSS/PhilHealth/Pag-IBIG"]);
+    expect(p.total_payable).toBe("7907.55"); // 0619E ₱500 + 1601C ₱1,007.55 + contributions ₱6,400
+    expect(p.issues.some((i) => i.code === "no_sales_month")).toBe(false);
+  });
+  it("leaves the quarter's last month to the quarterly packet and rejects months outside the quarter", () => {
+    const mar = preparePacket({ client: { name: "A", profile: prof }, records: recs, period: { year: 2026, quarter: 1 }, month: 3 });
+    expect(mar.documents.map((d) => d.form)).toEqual(["1601C", "SSS/PhilHealth/Pag-IBIG"]);
+    const none = preparePacket({ client: { name: "A", profile: profile({ withholds_expanded: false, has_employees: false }) }, records: [], period: { year: 2026, quarter: 1 }, month: 3 });
+    expect(none.not_supported[0]!.reason).toContain("quarterly packet");
+    const none2 = preparePacket({ client: { name: "A", profile: profile({ withholds_expanded: false, has_employees: false }) }, records: [], period: { year: 2026, quarter: 1 }, month: 2 });
+    expect(none2.not_supported[0]!.reason).toContain("Nothing is filed monthly");
+    expect(() => preparePacket({ client: { name: "A", profile: prof }, records: [], period: { year: 2026, quarter: 1 }, month: 5 })).toThrow(/not in Q1/);
   });
 });

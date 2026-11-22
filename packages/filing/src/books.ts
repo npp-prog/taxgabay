@@ -1,7 +1,7 @@
 import { makeChart, type Account, type Chart, type EntryLine, type JournalEntry } from "@taxgabay/accounting";
 import { computeEwt, dec, findRule, money, splitVat, taxRules, type Dec, type ISODate, type TaxRule } from "@taxgabay/tax-engine";
 import { payrollYear } from "./payroll";
-import type { ClientInfo, ClientRecord, ExpenseCategory } from "./types";
+import type { ClientInfo, ClientRecord, ExpenseCategory, JournalRecord } from "./types";
 
 /**
  * Books of accounts posted automatically from a client's records (cash basis): sales to the
@@ -39,14 +39,20 @@ export function clientChart(corporate: boolean): Account[] {
     a("101", "Cash on hand and in bank", "asset", "current_assets"),
     a("111", "Creditable withholding tax", "asset", "current_assets"),
     a("112", "Input VAT", "asset", "current_assets"),
+    a("121", "Accounts receivable", "asset", "current_assets"),
+    a("131", "Other current assets", "asset", "current_assets"),
     a("151", "Equipment", "asset", "noncurrent_assets"),
+    { code: "152", name: "Accumulated depreciation — equipment", type: "asset", section: "noncurrent_assets", contra: true },
     a("201", "Output VAT payable", "liability", "current_liabilities"),
     a("202", "Withholding tax payable — expanded", "liability", "current_liabilities"),
     a("203", "Withholding tax payable — compensation", "liability", "current_liabilities"),
     a("204", "SSS contributions payable", "liability", "current_liabilities"),
     a("205", "PhilHealth contributions payable", "liability", "current_liabilities"),
     a("206", "Pag-IBIG contributions payable", "liability", "current_liabilities"),
+    a("211", "Loans payable", "liability", "current_liabilities"),
+    a("212", "Other payables", "liability", "current_liabilities"),
     corporate ? a("301", "Retained earnings", "equity", "equity") : a("301", "Owner's capital", "equity", "equity"),
+    { code: "302", name: corporate ? "Dividends declared" : "Owner's drawings", type: "equity", section: "equity", contra: true },
     a("401", "Sales and service income", "revenue", "revenue"),
     a("501", "Cost of sales", "expense", "cost_of_sales"),
     a("601", "Rent expense", "expense", "expenses"),
@@ -60,6 +66,7 @@ export function clientChart(corporate: boolean): Account[] {
     a("609", "Repairs and maintenance", "expense", "expenses"),
     a("610", "Salaries and wages", "expense", "expenses"),
     a("611", "Employer's SSS, PhilHealth and Pag-IBIG", "expense", "expenses"),
+    a("612", "Depreciation expense", "expense", "expenses"),
     a("699", "Other expenses", "expense", "expenses"),
   ];
 }
@@ -67,6 +74,30 @@ export function clientChart(corporate: boolean): Account[] {
 const dr = (account: string, amount: Dec): EntryLine[] => (amount.isZero() ? [] : amount.isNegative() ? [{ account, credit: money(amount.negated()) }] : [{ account, debit: money(amount) }]);
 const cr = (account: string, amount: Dec): EntryLine[] => dr(account, amount.negated());
 const inRange = (d: ISODate, from: ISODate, to: ISODate) => from <= d && d <= to;
+
+let accountCodes: Set<string> | null = null;
+
+/** Why a manual journal entry cannot be posted, or null when it is fine. */
+export function journalProblem(j: JournalRecord): string | null {
+  if (j.lines.length < 2) return "it needs at least one debit and one credit line.";
+  let dr = dec(0);
+  let cr = dec(0);
+  for (const l of j.lines) {
+    if (!(accountCodes ??= new Set(clientChart(false).map((a) => a.code))).has(l.account)) return `account ${l.account || "(blank)"} is not in the chart of accounts.`;
+    const d = l.debit ? l.debit.trim() : "";
+    const c = l.credit ? l.credit.trim() : "";
+    if ((d && c) || (!d && !c)) return "each line needs either a debit or a credit.";
+    try {
+      const v = dec(d || c);
+      if (!v.greaterThan(0)) return "amounts must be greater than zero.";
+      if (d) dr = dr.plus(v);
+      else cr = cr.plus(v);
+    } catch {
+      return "amounts must be numbers.";
+    }
+  }
+  return dr.equals(cr) ? null : `debits (${dr.toFixed(2)}) and credits (${cr.toFixed(2)}) are not equal.`;
+}
 
 export function buildBooks(input: { client: ClientInfo; records: readonly ClientRecord[]; from: ISODate; to: ISODate; rules?: readonly TaxRule[] }): Books {
   const rules = input.rules ?? taxRules;
@@ -78,7 +109,16 @@ export function buildBooks(input: { client: ClientInfo; records: readonly Client
   const vatRate = (d: ISODate) => findRule<{ rate: string }>(rules, "vat.rate", d).value.rate;
 
   for (const r of input.records) {
-    if (r.kind === "sale" && inRange(r.date, input.from, input.to)) {
+    if (r.kind === "journal") {
+      // Opening balances carry into every later period; other entries post in their period.
+      const opening = r.entry_type === "opening";
+      if (!(opening ? r.date <= input.to : inRange(r.date, input.from, input.to))) continue;
+      if (journalProblem(r)) {
+        warnings.add(`Journal entry "${r.memo}" (${r.date}) is not balanced or uses an unknown account, so it was left out.`);
+        continue;
+      }
+      entries.push({ id: r.id, date: r.date, book: "GJ", kind: opening ? "opening" : r.entry_type === "depreciation" ? "adjusting" : "regular", memo: r.memo, lines: r.lines.map((l) => (l.debit ? { account: l.account, debit: money(dec(l.debit)) } : { account: l.account, credit: money(dec(l.credit!)) })) });
+    } else if (r.kind === "sale" && inRange(r.date, input.from, input.to)) {
       const vatable = vatClient && (r.vat_treatment ?? "vatable") === "vatable";
       const sp = vatable ? splitVat(r.amount, vatRate(r.date), true) : { net: dec(r.amount), vat: dec(0) };
       entries.push({ id: r.id, date: r.date, book: "CRB", memo: `Invoice ${r.document_no} — ${r.customer.name}`, lines: [...dr("101", dec(r.amount)), ...cr("401", sp.net), ...cr("201", sp.vat)] });
@@ -95,7 +135,7 @@ export function buildBooks(input: { client: ClientInfo; records: readonly Client
           warnings.add(`ATC ${r.withholding.atc} is not in the withholding table; the tax withheld from ${r.supplier.name} was not booked.`);
         }
       }
-      if (r.category === "equipment") warnings.add("Equipment is recorded as an asset at cost; depreciation is not computed yet — Neil Priolo, CPA adds the adjusting entry.");
+      if (r.category === "equipment") warnings.add("Equipment is recorded as an asset at cost; record depreciation with a journal entry (Depreciation expense / Accumulated depreciation).");
       entries.push({
         id: r.id,
         date: r.date,
@@ -133,6 +173,10 @@ export function buildBooks(input: { client: ClientInfo; records: readonly Client
   }
 
   entries.sort((a, b) => a.date.localeCompare(b.date) || a.book.localeCompare(b.book) || a.id.localeCompare(b.id));
-  warnings.add("Opening balances, tax and contribution remittances, owner's withdrawals or dividends, and income tax are not recorded from the records yet; add them as journal entries for complete books.");
+  const has = (t: string) => input.records.some((r) => r.kind === "journal" && r.entry_type === t);
+  const missing = [!has("opening") && "opening balances", !has("remittance") && "tax and contribution remittances", !has("depreciation") && input.records.some((r) => r.kind === "expense" && r.category === "equipment") && "depreciation"].filter(Boolean);
+  if (missing.length) warnings.add(`Not yet entered as journal entries: ${missing.join(", ")}. Add them for complete books.`);
+  if (input.from.slice(5) !== "01-01") warnings.add("For a quarter, the balance sheet shows opening balances plus this quarter's activity only; use the year-to-date view for balances as of the end of the quarter.");
+  warnings.add("Income tax expense is not booked automatically.");
   return { chart, entries, earningsAccount: "301", warnings: [...warnings] };
 }

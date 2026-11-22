@@ -33,6 +33,11 @@ export interface PrepareInput {
   client: ClientInfo;
   records: readonly ClientRecord[];
   period: QuarterRef;
+  /**
+   * Prepare a monthly packet for this calendar month (must fall in `period`): the month's 0619E
+   * (not for the quarter's last month), 1601C and contributions. Omit for the quarterly packet.
+   */
+  month?: number;
   rules?: readonly TaxRule[];
   deadlines?: readonly DeadlineRule[];
   holidayList?: readonly Holiday[];
@@ -77,6 +82,16 @@ const salesIn = (records: readonly ClientRecord[], r: Range) => records.filter((
 const expensesIn = (records: readonly ClientRecord[], r: Range) => records.filter((x): x is ExpenseRecord => x.kind === "expense" && inRange(x.date, r));
 /** 2307s whose covered period ends within the range. */
 const certsIn = (records: readonly ClientRecord[], r: Range) => records.filter((x): x is Form2307Received => x.kind === "form_2307_received" && inRange(x.period_to, r));
+
+/** Depreciation booked with journal entries (account 612) within a range, deductible as an expense. */
+function depreciationIn(ctx: Ctx, r: Range): Dec {
+  let d = dec(0);
+  for (const j of ctx.input.records) {
+    if (j.kind !== "journal" || !inRange(j.date, r)) continue;
+    for (const l of j.lines) if (l.account === "612") d = l.debit ? d.plus(l.debit) : d.minus(l.credit ?? "0");
+  }
+  return d;
+}
 
 // ---------- VAT helpers ----------
 
@@ -323,7 +338,7 @@ function prepare1601C(ctx: Ctx, month: Range): PreparedDocument {
   });
 }
 
-function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range): PreparedDocument {
+function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range, label = quarterLabel(q)): PreparedDocument {
   const { lines } = payrollYear(ctx.input.records, q.year, ctx.rules);
   const ls = lines.filter((l) => inRange(l.record.date, range));
   const t = (f: (l: (typeof ls)[number]) => Dec) => sum(ls.map(f));
@@ -332,7 +347,7 @@ function prepareContributions(ctx: Ctx, q: QuarterRef, range: Range): PreparedDo
     id: `CONTRIB-${range.end}`,
     form: "SSS/PhilHealth/Pag-IBIG",
     title: "Contributions to remit (SSS, PhilHealth, Pag-IBIG)",
-    period_label: quarterLabel(q),
+    period_label: label,
     period_start: range.start,
     period_end: range.end,
     values: {},
@@ -645,7 +660,7 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): It
     const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
     return sum(lines.filter((l) => l.record.date <= end).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
   };
-  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => expenseSplit(ctx, e).net)).plus(payrollIn(ctx.input.records, year).length ? payrollCost() : dec(0))) : undefined;
+  const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).filter((e) => e.category !== "equipment").map((e) => expenseSplit(ctx, e).net)).plus(payrollIn(ctx.input.records, year).length ? payrollCost() : dec(0)).plus(depreciationIn(ctx, r))) : undefined;
   if (gross.isZero()) {
     return { gross, deduction: dec(0), taxable: dec(0), tax: dec(0), steps: [step("Gross sales/receipts to date", "No sales recorded yet", "0")], rules_used: [], warnings: ["No sales are recorded for the year so far."] };
   }
@@ -785,7 +800,7 @@ function corporateTaxTo(ctx: Ctx, year: number, end: ISODate): CitComputation | 
   const cos = sum(exps.filter((e) => e.category === "cost_of_sales").map((e) => expenseSplit(ctx, e).net));
   const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
   const payroll = sum(lines.filter((l) => l.record.date <= end).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
-  const deductions = sum(exps.filter((e) => e.category !== "cost_of_sales").map((e) => expenseSplit(ctx, e).net)).plus(payroll);
+  const deductions = sum(exps.filter((e) => e.category !== "cost_of_sales" && e.category !== "equipment").map((e) => expenseSplit(ctx, e).net)).plus(payroll).plus(depreciationIn(ctx, r));
   const assetsKnown = !!corp.total_assets_excl_land;
   const c = computeCorporateIncomeTax(
     { taxable_year_end: `${year}-12-31`, year_commenced: corp.year_commenced, gross_sales: money(sales), cost_of_sales: money(cos), deductions: money(deductions), total_assets_excl_land: assetsKnown ? corp.total_assets_excl_land! : "999999999999" },
@@ -802,7 +817,7 @@ function corporateTaxTo(ctx: Ctx, year: number, end: ISODate): CitComputation | 
     rcit: dec(c.result.rcit),
     mcit: dec(c.result.mcit),
     tax: dec(c.result.tax_due),
-    steps: [step("Sales, net of VAT where applicable", "Total of sales records", sales), step("Less: cost of sales", "Expenses marked as goods for resale / cost of sales", cos), step("Allowable deductions", "Other expenses (net of input VAT) and payroll costs with employer contributions", deductions, "NIRC Sec. 34"), ...c.steps],
+    steps: [step("Sales, net of VAT where applicable", "Total of sales records", sales), step("Less: cost of sales", "Expenses marked as goods for resale / cost of sales", cos), step("Allowable deductions", "Other expenses (net of input VAT, equipment excluded), payroll costs with employer contributions, and depreciation journal entries", deductions, "NIRC Sec. 34"), ...c.steps],
     rules_used: c.rules_used,
     warnings,
   };
@@ -904,6 +919,26 @@ export function preparePacket(input: PrepareInput): Packet {
   const option = profile.income_tax_option;
   const itOption: ItOption | null = option === "eight_percent" || option === "graduated_osd" || option === "graduated_itemized" ? option : null;
   if (individual && !itOption) issues.push({ code: "income_tax_option", severity: "error", message: "Choose the income tax option (8%, graduated with OSD, or graduated with itemized deductions) in the client's profile before income tax returns can be prepared." });
+
+  if (input.month !== undefined && (individual || corporate)) {
+    const months = quarterMonths(q);
+    const m = months.find((x) => Number(x.start.slice(5, 7)) === input.month);
+    if (!m) throw new Error(`Month ${input.month} is not in ${quarterLabel(q)}.`);
+    const quarterEnd = m === months[2];
+    if (profile.withholds_expanded && !quarterEnd) documents.push(prepare0619E(ctx, m));
+    if (profile.has_employees) documents.push(prepare1601C(ctx, m), prepareContributions(ctx, q, m, monthLabel(m)));
+    if (!documents.length) notSupported.push({ form: "—", reason: quarterEnd ? "The quarter's last month is filed with the quarterly packet." : "Nothing is filed monthly for this client (no employees and no expanded withholding)." });
+    return {
+      client: input.client.name,
+      period: q,
+      month: input.month,
+      period_label: monthLabel(m),
+      issues: issues.filter((i) => i.code !== "no_sales_month"),
+      documents,
+      total_payable: money(sum(documents.map((d) => d.amount_payable))),
+      not_supported: notSupported,
+    };
+  }
 
   if (individual || corporate) {
     if (profile.vat_status === "vat") documents.push(prepare2550Q(ctx, q, range), prepareSalesList(ctx, q, range), preparePurchaseList(ctx, q, range));
