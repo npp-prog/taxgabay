@@ -1,6 +1,6 @@
 // TaxGabay service worker: offline access to guides and calculators.
 // Static assets: cache-first. Pages: network-first, falling back to cache.
-const VERSION = "v5";
+const VERSION = "v6";
 const CACHE = `taxgabay-${VERSION}`;
 const PRECACHE = [
   "/",
@@ -34,6 +34,11 @@ const PRECACHE = [
   "/guides/1801",
   "/guides/2000-ot",
   "/guides/1905",
+  "/guides/1700",
+  "/guides/1702-ex",
+  "/guides/1702-mx",
+  "/guides/2000",
+  "/guides/1906",
   "/calculators/corporate",
   "/calculators/withholding-compensation",
   "/calculators/ewt",

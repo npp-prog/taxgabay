@@ -242,7 +242,7 @@ Deadlines and forms mentioned in each flow:
 | Donating property | File and pay donor's tax | Within 30 days after the date of the gift | 1800 | NIRC Sec. 103 |
 | Moving to another RDO | File for transfer of registration |  | 1905 | NIRC Sec. 236(B), as amended by RA 11976; RR 7-2024 (to confirm) |
 
-## Forms (20)
+## Forms (25)
 
 | Code | Name | Who files | Frequency |
 | --- | --- | --- | --- |
@@ -266,6 +266,11 @@ Deadlines and forms mentioned in each flow:
 | 1801 | Estate Tax Return | The executor, administrator or heirs of the decedent. | one_time |
 | 2000-OT | Documentary Stamp Tax Declaration/Return (One-Time Transactions) | Parties to one-time taxable documents, such as the seller or buyer in a sale of real property. | one_time |
 | 1905 | Application for Registration Information Update/Correction/Cancellation | Registered taxpayers changing their registration details or closing their business. | one_time |
+| 1700 | Annual Income Tax Return for Individuals Earning Purely Compensation Income | Employees with purely compensation income who do not qualify for substituted filing, such as those with two or more employers in the year. | annual |
+| 1702-EX | Annual Income Tax Return for Corporations, Partnerships and Other Non-Individuals Exempt from Income Tax | Exempt corporations and organizations, such as qualified non-stock, non-profit organizations, with no taxable income. | annual |
+| 1702-MX | Annual Income Tax Return for Corporations, Partnerships and Other Non-Individuals with Mixed Income Subject to Multiple Rates | Corporations with mixed income, such as registered business enterprises with both incentive and regular income. | annual |
+| 2000 | Monthly Documentary Stamp Tax Declaration/Return | Persons who make, sign, issue, accept or transfer documents subject to documentary stamp tax. | monthly |
+| 1906 | Application for Authority to Print Invoices | Businesses before printing a new batch of invoices. | one_time |
 
 ## Seeded issuances (13)
 
@@ -303,7 +308,7 @@ The assistant answers only from content marked verified (rules with `last_verifi
 
 ## Filing guides
 
-All 10 guides in `packages/content/guides/` are skeletons (`status: skeleton`, `needs_verification: true`). Facts in them that need checking are marked "(to confirm)", and each has a `TODO(CPA)` field-by-field walkthrough to write.
+All 23 guides in `packages/content/guides/` are skeletons (`status: skeleton`, `needs_verification: true`). Facts in them that need checking are marked "(to confirm)", and each has a `TODO(CPA)` field-by-field walkthrough to write.
 
 ## Business guide
 

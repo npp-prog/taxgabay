@@ -199,7 +199,7 @@ The assistant answers only from content marked verified (rules with \`last_verif
 
 ## Filing guides
 
-All 10 guides in \`packages/content/guides/\` are skeletons (\`status: skeleton\`, \`needs_verification: true\`). Facts in them that need checking are marked "(to confirm)", and each has a \`TODO(CPA)\` field-by-field walkthrough to write.
+All 23 guides in \`packages/content/guides/\` are skeletons (\`status: skeleton\`, \`needs_verification: true\`). Facts in them that need checking are marked "(to confirm)", and each has a \`TODO(CPA)\` field-by-field walkthrough to write.
 
 ## Business guide
 

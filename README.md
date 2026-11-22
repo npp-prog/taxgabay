@@ -16,7 +16,7 @@ A Philippine BIR tax guide (web app, PWA). Users answer a short profile question
 | Compliance checklists (monthly, quarterly, annual, one-time) with a compliance score | `/checklists` |
 | Email and web-push reminders 7/3/1 days before (configurable; needs an account) | `/account`, `/api/cron/reminders` |
 | Life-event guides: start a business, hire, close, settle an estate, sell or donate property, move RDO | `/life-events` |
-| 10 filing guides (MDX skeletons): 1701Q, 1701, 1701A, 2551Q, 2550Q, 1601C, 0619E, 1601EQ, 1604C, 1604E | `/guides` |
+| 23 filing guides (MDX skeletons): 1700, 1701Q, 1701, 1701A, 1702Q, 1702-RT, 1702-EX, 1702-MX, 2551Q, 2550Q, 1601C, 0619E, 1601EQ, 1604C, 1604E, 1706, 1707, 1800, 1801, 2000, 2000-OT, 1905, 1906 | `/guides` |
 | Business guide: books of accounts, chart of accounts, invoices and receipts, bank reconciliation, hiring and payroll, SSS/PhilHealth/Pag-IBIG contributions, employer filings, LGU permits and local business tax, financial statements | `/business-guide` |
 | Accounting practice sets (freelancer, sari-sari store, VAT business, small corporation) with a business-owner track and an accounting-student track: auto-checked journal entries, ledger, trial balance, 10-column worksheet, statements, closing entries, books, tax returns from the books, worked solution and blank-form PDFs | `/practice`, `packages/accounting` |
 | Registration roadmaps for DTI, SEC and CDA paths with saved progress and print-to-PDF | `/roadmap` |

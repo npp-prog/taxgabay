@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getGuide, listGuides, parseGuide } from "../src";
 
-const FORMS = ["0619E", "1601C", "1601EQ", "1604C", "1604E", "1701", "1701A", "1701Q", "1702-RT", "1702Q", "1706", "1707", "1800", "1801", "1905", "2000-OT", "2550Q", "2551Q"];
+const FORMS = ["0619E", "1601C", "1601EQ", "1604C", "1604E", "1700", "1701", "1701A", "1701Q", "1702-EX", "1702-MX", "1702-RT", "1702Q", "1706", "1707", "1800", "1801", "1905", "1906", "2000", "2000-OT", "2550Q", "2551Q"];
 const SECTIONS = ["Who must file", "Deadline", "Where to file and pay", "Attachments", "Field-by-field walkthrough", "Common mistakes", "Related calculators", "Legal basis"];
 
 describe("filing guides", () => {
