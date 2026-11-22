@@ -16,14 +16,16 @@ test("answers with numbered, linked sources and an unverified warning", async ({
 
 test("refuses without calling the model when nothing relevant exists", async ({ page }) => {
   await page.goto("/assistant");
-  await page.getByLabel("Your question").fill("How do I get a passport?");
-  await page.getByRole("button", { name: "Ask" }).click();
-  await expect(page.getByTestId("assistant-refusal")).toContainText("none of it covers this question");
+  for (const q of ["How do I get a passport?", "What is the capital of France?"]) {
+    await page.getByLabel("Your question").fill(q);
+    await page.getByRole("button", { name: "Ask" }).click();
+    await expect(page.getByTestId("assistant-refusal").first()).toContainText("none of it covers this question");
+  }
 });
 
 test("refuses when the model says the documents don't answer, or cites nothing", async ({ page }) => {
   await page.goto("/assistant");
-  await page.getByLabel("Your question").fill("What is the capital of France?");
+  await page.getByLabel("Your question").fill("Please explain the VAT threshold");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByTestId("assistant-refusal")).toContainText("doesn't answer this question");
   await page.getByLabel("Your question").fill("uncited VAT threshold rate");

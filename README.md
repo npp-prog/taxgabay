@@ -99,7 +99,7 @@ When a local-mode user signs in for the first time, their browser profile, roadm
 - Set `ANTHROPIC_API_KEY` (server only). Without it, `/assistant` still refuses unanswerable questions and points to search, but cannot answer.
 - Each question makes one Claude API call (Claude Opus 5.5, with the server-side refusal fallback on) with the most relevant passages sent as documents with citations enabled. Questions with no relevant passage are refused without calling the API, and answers without citations are discarded.
 - Only **verified** content is used. Until the CPA review is done, set `ASSISTANT_ALLOW_UNVERIFIED=1` on preview deployments to try it; answers are then labelled unverified.
-- A simple rate limit (8 questions per minute per IP, per server instance) applies.
+- A simple rate limit applies: 8 questions per minute per IP, per server instance (`ASSISTANT_RATE_LIMIT` to change).
 
 ### Reminders
 

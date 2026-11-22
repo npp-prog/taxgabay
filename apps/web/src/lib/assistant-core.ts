@@ -52,11 +52,24 @@ export function chunkDocs(docs: readonly SourceDoc[]): Chunk[] {
 
 /** Words that carry no topic in a question. */
 const QUESTION_WORDS = new Set([
-  "how", "what", "when", "where", "who", "which", "why", "much", "many", "do", "does", "did", "is", "are", "was", "were",
+  "how", "what", "where", "who", "which", "why", "much", "many", "do", "does", "did", "is", "are", "was", "were",
   "i", "me", "my", "we", "our", "you", "your", "can", "could", "should", "would", "will", "need", "have", "has", "be",
   "if", "it", "this", "that", "there", "with", "about", "from", "by", "as", "pay", "get", "know", "tell", "please",
-  "po", "ba", "ko", "ako", "mo", "kailangan", "paano", "ano", "kailan", "magkano",
+  "po", "ba", "ko", "ako", "mo", "kailangan", "paano", "ano", "magkano",
 ]);
+
+/** Question words that mean the same as words used in TaxGabay's content. */
+const SYNONYMS: Record<string, string[]> = {
+  due: ["deadline"],
+  deadline: ["due"],
+  when: ["deadline", "due"],
+  kailan: ["deadline", "due"],
+  file: ["filing"],
+};
+
+function matchesTerm(token: string, term: string): boolean {
+  return [term, ...(SYNONYMS[term] ?? [])].some((alt) => token === alt || token.startsWith(alt));
+}
 
 export function questionTerms(question: string): string[] {
   return [...new Set(tokenize(question).filter((t) => !QUESTION_WORDS.has(t) && (t.length > 1 || /\d/.test(t))))];
@@ -69,14 +82,15 @@ export interface RetrievalOptions {
 
 export interface Retrieved {
   chunks: Chunk[];
-  /** Fraction of question terms found in the best chunk (0–1). */
+  /** Rarity-weighted share of the question's terms found in the best chunk (0–1). */
   coverage: number;
 }
 
 /**
- * Ranks chunks with a small IDF-weighted term match (title matches count double).
- * Returns nothing when the best chunk covers under half of the question's terms, so the
- * assistant refuses instead of answering from loosely related text.
+ * Ranks chunks by how much of the question they cover (weighted by how rare each term is),
+ * then by an IDF-weighted match score. Returns nothing when the best chunk covers under half
+ * of the question's weight, so the assistant refuses instead of answering from loosely
+ * related text.
  */
 export function retrieve(allChunks: readonly Chunk[], question: string, opts: RetrievalOptions): Retrieved {
   const terms = questionTerms(question);
@@ -86,27 +100,30 @@ export function retrieve(allChunks: readonly Chunk[], question: string, opts: Re
   const tokenized = pool.map((c) => ({ c, title: new Set(tokenize(c.title)), body: tokenize(c.text) }));
   const df = new Map<string, number>();
   for (const t of terms) {
-    df.set(t, tokenized.filter((x) => x.title.has(t) || x.body.some((b) => b === t || b.startsWith(t))).length);
+    df.set(t, tokenized.filter((x) => [...x.title].some((b) => matchesTerm(b, t)) || x.body.some((b) => matchesTerm(b, t))).length);
   }
   const N = tokenized.length;
+  const idf = new Map(terms.map((t) => [t, Math.log(1 + N / (1 + (df.get(t) ?? 0)))]));
+  const totalIdf = terms.reduce((a, t) => a + idf.get(t)!, 0);
   const scored = tokenized.map(({ c, title, body }) => {
     let score = 0;
-    let matched = 0;
+    let matchedIdf = 0;
     for (const t of terms) {
-      const tf = body.filter((b) => b === t || b.startsWith(t)).length;
-      const inTitle = title.has(t) || [...title].some((x) => x.startsWith(t));
+      const tf = body.filter((b) => matchesTerm(b, t)).length;
+      const inTitle = [...title].some((x) => matchesTerm(x, t));
       if (!tf && !inTitle) continue;
-      matched++;
-      const idf = Math.log(1 + N / (1 + (df.get(t) ?? 0)));
-      score += idf * ((tf ? 1 + Math.log(tf) : 0) + (inTitle ? 2 : 0));
+      matchedIdf += idf.get(t)!;
+      // Repetition helps only a little; a title match counts like a strong hit.
+      score += idf.get(t)! * ((tf ? 1 + 0.5 * Math.log(tf) : 0) + (inTitle ? 1.5 : 0));
     }
-    return { c, score, coverage: matched / terms.length };
+    // Coverage weighted by rarity: matching "1701Q" matters more than matching "due".
+    return { c, score, coverage: totalIdf ? matchedIdf / totalIdf : 0 };
   });
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => b.coverage - a.coverage || b.score - a.score);
   const best = scored[0];
   if (!best || best.score === 0 || best.coverage < 0.5) return { chunks: [], coverage: best?.coverage ?? 0 };
   const chunks = scored
-    .filter((s) => s.score >= best.score * 0.35 && s.coverage >= 0.34)
+    .filter((s) => s.coverage >= Math.max(0.34, best.coverage * 0.6))
     .slice(0, opts.limit ?? 6)
     .map((s) => s.c);
   return { chunks, coverage: best.coverage };

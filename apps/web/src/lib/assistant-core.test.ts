@@ -131,3 +131,19 @@ describe("validation and rate limiting", () => {
     expect([allow("a", 0), allow("a", 10), allow("a", 20), allow("b", 20), allow("a", 1500)]).toEqual([true, true, false, true, true]);
   });
 });
+
+describe("retrieve: rare terms and synonyms", () => {
+  const docs: SourceDoc[] = [
+    { id: "rule:comp", kind: "rule", title: "Compromise penalty schedule", href: "/calculators", text: Array.from({ length: 12 }, (_, i) => `tax due over ${i}000: ${i}00`).join("; "), verified: true },
+    { id: "guide:1701q", kind: "guide", title: "BIR Form 1701Q", href: "/guides/1701q", text: "Intro.\n\n## Deadline\n\nQ1: on or before 15 May.", verified: true },
+    { id: "glossary:x", kind: "glossary", title: "Glossary: capital", href: "/learn/glossary", text: "Capital: money used in a business.", verified: true },
+    ...Array.from({ length: 20 }, (_, i): SourceDoc => ({ id: `filler:${i}`, kind: "faq", title: `FAQ ${i}`, href: "/learn/faq", text: `Filler ${i} about registration and books.`, verified: true })),
+  ];
+  const chunks = chunkDocs(docs);
+  it("a rare form number outranks a common word repeated many times", () => {
+    expect(retrieve(chunks, "When is the 1701Q due?", { allowUnverified: false }).chunks[0]!.title).toBe("BIR Form 1701Q — Deadline");
+  });
+  it("matching only a common word in an unrelated question is not enough", () => {
+    expect(retrieve(chunks, "What is the capital of France?", { allowUnverified: false }).chunks).toEqual([]);
+  });
+});

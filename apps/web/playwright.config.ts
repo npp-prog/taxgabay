@@ -32,6 +32,7 @@ export default defineConfig({
         ANTHROPIC_BASE_URL: "http://localhost:3199",
         // Nothing is CPA-verified yet; let the assistant use unverified content in tests.
         ASSISTANT_ALLOW_UNVERIFIED: "1",
+        ASSISTANT_RATE_LIMIT: "1000",
       },
     },
   ],

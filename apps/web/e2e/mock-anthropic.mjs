@@ -1,7 +1,8 @@
 /* global process, console */
 // Minimal stand-in for POST /v1/messages used by the assistant e2e tests.
 // Answers by citing the first sentence of the first document; replies NO_ANSWER when the
-// question mentions "France", and answers without citations when it mentions "uncited".
+// question contains "please" (a word retrieval ignores), and answers without citations when
+// it mentions "uncited".
 import { createServer } from "node:http";
 
 const PORT = Number(process.env.MOCK_ANTHROPIC_PORT ?? 3199);
@@ -19,7 +20,7 @@ createServer((req, res) => {
       res.writeHead(200, { "content-type": "application/json" }).end(
         JSON.stringify({ id: "msg_mock", type: "message", role: "assistant", model: json.model, content: blocks, stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } }),
       );
-    if (/france/i.test(question)) return reply([{ type: "text", text: "NO_ANSWER", citations: null }]);
+    if (/\bplease\b/i.test(question)) return reply([{ type: "text", text: "NO_ANSWER", citations: null }]);
     if (/uncited/i.test(question)) return reply([{ type: "text", text: "It is 5%.", citations: null }]);
     const text = docs[0]?.source?.data ?? "";
     const sentence = (text.match(/[^.]*\./)?.[0] ?? text.slice(0, 60)).trim();

@@ -5,7 +5,8 @@ import { issuanceSourceDocs, staticSourceDocs } from "@/lib/assistant-sources";
 
 export const dynamic = "force-dynamic";
 
-const limiter = createRateLimiter(8, 60_000);
+// Questions per minute per IP (per server instance). Configurable for tests.
+const limiter = createRateLimiter(Number(process.env.ASSISTANT_RATE_LIMIT) || 8, 60_000);
 
 function configured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
