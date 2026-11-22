@@ -16,13 +16,32 @@ export default function PrivacyPage() {
         <li>Which deadlines you marked as filed and paid, and which registration steps you completed.</li>
         <li>If you create an account: your email address (and your Google account name and email if you sign in with Google).</li>
       </ul>
-      <p>We do <strong>not</strong> ask for or store your TIN. Calculator inputs are processed in your browser and are not sent to us.</p>
+      <p>For the tax guide, calculators and calendar we do <strong>not</strong> ask for or store your TIN. Calculator inputs are processed in your browser and are not sent to us. The document preparation service below is the only exception, and only with your consent.</p>
       <h2>Why we collect it</h2>
       <p>Only to show the registrations, returns, deadlines and guides that apply to you. We do not sell your data or use it for advertising.</p>
       <h2>Where it is stored</h2>
       <ul>
         <li>Without an account: only in your browser&apos;s local storage on this device.</li>
         <li>With an account: in our database (Supabase), protected so that only you can read or change your records.</li>
+      </ul>
+      <h2>Document preparation for clients of Neil Priolo, CPA</h2>
+      <p>If you are a client of Neil Priolo, CPA&apos;s firm and use TaxGabay to have your returns and supporting documents prepared:</p>
+      <ul>
+        <li>
+          <strong>What we keep:</strong> the business records you enter (sales, purchases, expenses, Form 2307s received, payroll), the receipts and documents you upload, the periods you submit, and the documents we prepare from them.
+        </li>
+        <li>
+          <strong>TINs:</strong> your TIN, and the TINs of your suppliers, customers and employees that must appear on returns, Form 2307 and Form 2316, are stored only after you give separate TIN consent. They are encrypted in our database; screens show only the last four digits. Withdrawing TIN consent deletes the stored TINs.
+        </li>
+        <li>
+          <strong>Who can see it:</strong> you (and other users you link to your business) and Neil Priolo, CPA and the firm's staff who prepare and review your documents. Nobody else. Prepared documents become visible to you once the firm has reviewed and released them.
+        </li>
+        <li>
+          <strong>What we do not do:</strong> TaxGabay prepares documents; it never files returns or pays taxes for you and never asks for your eBIRForms or eFPS password.
+        </li>
+        <li>
+          <strong>How long:</strong> we keep records and prepared documents while you are a client, and afterwards for as long as the law requires books and supporting documents to be kept (period to be confirmed by Neil Priolo, CPA). You may ask for a copy or for deletion at any time, subject to that legal retention period.
+        </li>
       </ul>
       <h2>Your rights</h2>
       <p>
