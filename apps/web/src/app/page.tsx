@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HomeFootnote, HomeHero } from "@/components/home-hero";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FEATURES = [
   { href: "/profile", title: "Find out what applies to you", body: "Answer a few questions about your work or business. We list the registrations, returns and taxes that apply." },
@@ -16,25 +15,34 @@ const FEATURES = [
 
 export default function Home() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-14">
       <HomeHero />
-      <section className="grid gap-4 sm:grid-cols-2">
-        {FEATURES.map((f) => (
-          <Link key={f.href} href={f.href} className="group">
-            <Card className="h-full transition-colors group-hover:border-primary">
-              <CardHeader>
-                <CardTitle>{f.title}</CardTitle>
-                <CardDescription>{f.body}</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        ))}
+      <section aria-labelledby="what-h">
+        <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-ink pb-2">
+          <h2 id="what-h" className="font-display text-xl font-bold tracking-tight">
+            What TaxGabay covers
+          </h2>
+          <span className="form-label">{FEATURES.length} tools</span>
+        </div>
+        <ul className="grid sm:grid-cols-2 sm:gap-x-10">
+          {FEATURES.map((f) => (
+            <li key={f.href} className="border-b border-border">
+              <Link href={f.href} className="group flex items-start gap-4 py-4">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold group-hover:text-primary">{f.title}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{f.body}</span>
+                </span>
+                <span className="mt-0.5 font-mono text-sm text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
-      <Card>
-        <CardContent className="pt-5 text-sm text-muted-foreground">
-          <HomeFootnote />
-        </CardContent>
-      </Card>
+      <p className="max-w-[80ch] border-l-2 border-sun pl-4 text-sm leading-relaxed text-muted-foreground">
+        <HomeFootnote />
+      </p>
     </div>
   );
 }

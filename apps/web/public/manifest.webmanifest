@@ -4,8 +4,8 @@
   "description": "Personalized BIR deadlines, calculators and filing guides.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0b6e4f",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1f3fa8",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

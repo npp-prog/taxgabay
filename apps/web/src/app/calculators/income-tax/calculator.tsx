@@ -124,7 +124,7 @@ export function IncomeTaxCalculator() {
           {r.options.length > 1 && (
             <div className="grid gap-3 sm:grid-cols-3" data-testid="options">
               {r.options.map((o) => (
-                <div key={o.key} className={cn("rounded-lg border p-4", o.key === r.recommended ? "border-primary" : "border-border", !o.eligible && "opacity-70")}>
+                <div key={o.key} className={cn("rounded-md border p-4", o.key === r.recommended ? "border-primary border-t-[3px] bg-secondary/40" : "border-border", !o.eligible && "opacity-70")}>
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold">{o.label}</h3>
                     {o.key === r.recommended && <Badge>Lowest</Badge>}

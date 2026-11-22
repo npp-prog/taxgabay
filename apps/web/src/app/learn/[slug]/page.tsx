@@ -44,7 +44,7 @@ export default async function HubArticlePage({ params }: { params: Promise<{ slu
         <MDXRemote source={article.body} />
       </div>
       {fm.related.length > 0 && (
-        <section aria-labelledby="related" className="mt-8 rounded-lg border border-border p-4">
+        <section aria-labelledby="related" className="mt-8 rounded-md border border-border p-4">
           <h2 id="related" className="font-semibold">
             Related
           </h2>

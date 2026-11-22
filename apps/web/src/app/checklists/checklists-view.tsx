@@ -112,8 +112,8 @@ export function ChecklistsView() {
                   {score.percent}% ({score.done} of {score.total})
                 </span>
               </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={score.percent} aria-label={c.score}>
-                <div className="h-2 rounded-full bg-primary" style={{ width: `${score.percent}%` }} />
+              <div className="mt-1 h-1.5 w-full rounded-[1px] bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={score.percent} aria-label={c.score}>
+                <div className="h-1.5 rounded-[1px] bg-primary" style={{ width: `${score.percent}%` }} />
               </div>
             </div>
           )}

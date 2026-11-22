@@ -56,14 +56,19 @@ function ObligationRow({
   const done = status === "filed_and_paid";
   const overdue = !done && o.due_date < today;
   return (
-    <li className="flex items-start gap-3 py-3" data-testid="obligation">
-      <input
-        type="checkbox"
-        checked={done}
-        onChange={onToggle}
-        aria-label={format(c.markDone, { form: o.form_code, period: o.period_label, client: showClient ? ` (${o.clientName})` : "" })}
-        className="mt-1 h-4 w-4 accent-[var(--color-primary)]"
-      />
+    <li className={cn("flex items-start gap-4 py-3.5", done && "opacity-70")} data-testid="obligation">
+      <time
+        dateTime={o.due_date}
+        title={fmtDate(o.due_date, loc, { day: "numeric", month: "short", year: "numeric", weekday: "short" })}
+        className={cn(
+          "flex w-14 shrink-0 flex-col items-center rounded-sm border py-1.5 leading-none",
+          overdue ? "border-sun bg-sun-soft" : done ? "border-border bg-muted" : "border-border bg-card",
+        )}
+      >
+        <span className="font-mono text-[0.6rem] font-bold uppercase tracking-wider text-muted-foreground">{fmtDate(o.due_date, loc, { month: "short" })}</span>
+        <span className="mt-1 font-display text-xl font-bold">{Number(o.due_date.slice(8))}</span>
+        <span className="mt-1 font-mono text-[0.58rem] uppercase text-muted-foreground">{fmtDate(o.due_date, loc, { weekday: "short" })}</span>
+      </time>
       <div className="min-w-0 flex-1">
         <div className={cn("flex flex-wrap items-center gap-2", done && "text-muted-foreground line-through")}>
           {showClient && (
@@ -71,22 +76,26 @@ function ObligationRow({
               {o.clientName}
             </Badge>
           )}
-          <span className="font-mono font-semibold">{o.form_code}</span>
-          <span className="text-sm">{o.period_label}</span>
+          <span className="code">{o.form_code}</span>
+          <span className="font-mono text-xs text-muted-foreground">{o.period_label}</span>
           {o.tentative && <Badge variant="warning">{c.depends}</Badge>}
           {overdue && <Badge variant="warning">{c.overdue}</Badge>}
           {done && <Badge variant="success">{c.done}</Badge>}
         </div>
-        <div className="text-sm text-muted-foreground">{o.title}</div>
+        <div className="mt-0.5 text-sm text-muted-foreground">{o.title}</div>
         {o.adjustments.map((a) => (
-          <div key={a} className="text-xs text-muted-foreground">
+          <div key={a} className="mt-0.5 text-xs text-muted-foreground">
             {a}
           </div>
         ))}
       </div>
-      <time dateTime={o.due_date} className="shrink-0 text-right text-sm font-medium">
-        {fmtDate(o.due_date, loc, { day: "numeric", month: "short", year: "numeric", weekday: "short" })}
-      </time>
+      <input
+        type="checkbox"
+        checked={done}
+        onChange={onToggle}
+        aria-label={format(c.markDone, { form: o.form_code, period: o.period_label, client: showClient ? ` (${o.clientName})` : "" })}
+        className="mt-1.5 h-5 w-5 shrink-0 accent-[var(--color-primary)]"
+      />
     </li>
   );
 }
@@ -244,7 +253,7 @@ export function CalendarView() {
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={downloadICS} disabled={obligations.length === 0}>
+          <Button variant="outline" size="sm" onClick={downloadICS} disabled={obligations.length === 0}>
             {c.export}
           </Button>
           {obligations.length > 0 && (

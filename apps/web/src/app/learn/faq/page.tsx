@@ -20,7 +20,7 @@ export default function FaqPage() {
         {categories.map((c) => (
           <section key={c} aria-label={c}>
             <h2 className="mb-2 text-lg font-semibold">{c}</h2>
-            <div className="divide-y divide-border rounded-lg border border-border">
+            <div className="divide-y divide-border rounded-md border border-border">
               {faqs
                 .filter((f) => f.category === c)
                 .map((f) => (

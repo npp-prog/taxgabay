@@ -154,14 +154,14 @@ function WizardForClient() {
         )}
       </div>
       <div
-        className="mb-6 h-2 w-full rounded-full bg-muted"
+        className="mb-6 h-1.5 w-full rounded-[1px] bg-muted"
         role="progressbar"
         aria-valuemin={1}
         aria-valuemax={steps.length}
         aria-valuenow={idx + 1}
         aria-label={w.progress}
       >
-        <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${((idx + 1) / steps.length) * 100}%` }} />
+        <div className="h-1.5 rounded-[1px] bg-primary transition-all" style={{ width: `${((idx + 1) / steps.length) * 100}%` }} />
       </div>
       <Card>
         <CardContent className="space-y-5 pt-5">

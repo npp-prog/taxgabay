@@ -70,7 +70,7 @@ export function SearchView({ docs }: { docs: SearchDoc[] }) {
                 type="button"
                 aria-pressed={kind === k}
                 onClick={() => setKind(k)}
-                className={cn("rounded-full border px-3 py-1 text-sm", kind === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted")}
+                className={cn("rounded-sm border px-3 py-1 text-sm", kind === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted")}
               >
                 {k === "all" ? "All" : KIND_LABEL[k]} ({n})
               </button>

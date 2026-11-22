@@ -4,6 +4,9 @@ import { SiteHeader } from "@/components/site-header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SkipLink } from "@/components/skip-link";
 import { UserDataProvider } from "@/lib/user-data";
+import "@fontsource-variable/public-sans";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b6e4f",
+  themeColor: "#1f3fa8",
   width: "device-width",
   initialScale: 1,
 };

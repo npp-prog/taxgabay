@@ -87,8 +87,8 @@ export function RoadmapView() {
           />
         </div>
       </div>
-      <div className="h-2 w-full rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Roadmap progress">
-        <div className="h-2 rounded-full bg-primary" style={{ width: `${(done / steps.length) * 100}%` }} />
+      <div className="h-1.5 w-full rounded-[1px] bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Roadmap progress">
+        <div className="h-1.5 rounded-[1px] bg-primary" style={{ width: `${(done / steps.length) * 100}%` }} />
       </div>
       <ol className="space-y-4">
         {steps.map((s, i) => {

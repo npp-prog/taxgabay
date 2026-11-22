@@ -48,12 +48,13 @@ export function CalcResultPanel({
   };
   return (
     <section aria-live="polite" aria-label="Result" className="space-y-5" data-testid="calc-result">
-      <div className="rounded-lg bg-secondary p-4 text-secondary-foreground">{headline}</div>
-      {pdfTitle && (
-        <div className="flex justify-end">
-          <PdfButton filename={slugifyFilename(pdfTitle)} build={buildDoc} />
+      <div className="form-box relative flex flex-wrap items-end justify-between gap-4 overflow-hidden p-5 pl-6">
+        <span className="absolute inset-y-0 left-0 w-1.5 bg-sun" aria-hidden="true" />
+        <div className="min-w-0 [&_[data-testid=headline-amount]]:mt-1 [&_[data-testid=headline-amount]]:block [&_[data-testid=headline-amount]]:font-mono [&_[data-testid=headline-amount]]:text-3xl [&_[data-testid=headline-amount]]:font-bold [&_[data-testid=headline-amount]]:tracking-tight [&_[data-testid=headline-amount]]:tabular-nums sm:[&_[data-testid=headline-amount]]:text-4xl">
+          {headline}
         </div>
-      )}
+        {pdfTitle && <PdfButton filename={slugifyFilename(pdfTitle)} build={buildDoc} />}
+      </div>
       {children}
       <div data-testid="main-steps">
         <StepsTable steps={steps} />
