@@ -2,7 +2,7 @@
 
 import { computeEstateTax, peso, type CalcResult, type EstateTaxResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export function EstateCalculator() {
   const [fh, setFh] = React.useState("");
   const [fhConj, setFhConj] = React.useState(false);
   const [out, setOut] = React.useState<CalcResult<EstateTaxResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -28,6 +29,7 @@ export function EstateCalculator() {
     if (![excl, conj, exclDed, conjDed, fh].every(isAmount)) return setError("Please fix the highlighted amounts.");
     if (!excl.trim() && !conj.trim()) return setError("Enter the decedent's exclusive or conjugal/community property.");
     try {
+      setPdfInputs([["Date of death", dod], ["Exclusive property", pdfMoney(excl)], ["Conjugal or community property", pdfMoney(conj)], ["Deductions charged to exclusive property", pdfMoney(exclDed)], ["Deductions charged to conjugal property", pdfMoney(conjDed)], ["Family home value", pdfMoney(fh)], ["Family home is conjugal", fhConj ? "Yes" : "No"]]);
       setOut(
         computeEstateTax(
           {
@@ -76,6 +78,9 @@ export function EstateCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Estate tax"}
+          pdfHeadline={`Estate tax due: ${peso(out.result.estate_tax)} (net taxable estate ${peso(out.result.net_taxable_estate)})`}
+          pdfInputs={pdfInputs}
           headline={<Headline label="Estate tax due" amount={peso(out.result.estate_tax)} extra={`Net taxable estate: ${peso(out.result.net_taxable_estate)}`} />}
           steps={out.steps}
           rulesUsed={out.rules_used}

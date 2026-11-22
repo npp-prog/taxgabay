@@ -2,7 +2,7 @@
 
 import { computeIndividualIncomeTax, peso, type CalcResult, type IndividualIncomeTaxResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { StepsTable } from "@/components/steps-table";
@@ -22,6 +22,7 @@ export function IncomeTaxCalculator() {
   const [itemized, setItemized] = React.useState("");
   const [vat, setVat] = React.useState(false);
   const [out, setOut] = React.useState<CalcResult<IndividualIncomeTaxResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -36,6 +37,7 @@ export function IncomeTaxCalculator() {
       return;
     }
     try {
+      setPdfInputs([["Taxable year", String(year)], ["VAT-registered", vat ? "Yes" : "No"], ["Gross sales or receipts", pdfMoney(gross)], ["Other non-operating income", pdfMoney(other)], ["Taxable compensation income", pdfMoney(comp)], ["Itemized deductions", itemized.trim() ? pdfMoney(itemized) : "Not compared"]]);
       setOut(
         computeIndividualIncomeTax(
           {
@@ -99,6 +101,9 @@ export function IncomeTaxCalculator() {
 
       {out && r && (
         <CalcResultPanel
+          pdfTitle={"Income tax: 8% vs graduated rates"}
+          pdfHeadline={rec ? `Lowest total tax: ${peso(rec.total_tax)} with ${rec.label.toLowerCase()}` : "No eligible option."}
+          pdfInputs={pdfInputs}
           headline={
             rec ? (
               <p>

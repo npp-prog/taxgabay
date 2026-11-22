@@ -2,7 +2,7 @@
 
 import { computeCgtRealProperty, computeCgtUnlistedShares, peso, type CalcResult, type CgtResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export function CgtCalculator() {
   const [cost, setCost] = React.useState("");
   const [expenses, setExpenses] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<CgtResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function switchTab(t: Tab) {
@@ -38,9 +39,11 @@ export function CgtCalculator() {
     try {
       if (tab === "property") {
         if (![gsp, zonal, assessor].every(isAmount) || (!gsp.trim() && !zonal.trim() && !assessor.trim())) return setError("Enter the selling price and property values.");
+        setPdfInputs([["Type of sale", "Real property"], ["Date of sale", date], ["Gross selling price", pdfMoney(gsp)], ["BIR zonal value", pdfMoney(zonal)], ["Assessor's fair market value", pdfMoney(assessor)]]);
         setOut(computeCgtRealProperty({ date_of_sale: date, gross_selling_price: gsp || "0", zonal_value: zonal || "0", assessor_fair_market_value: assessor || "0" }, rules));
       } else {
         if (!price.trim() || ![price, cost, expenses].every(isAmount)) return setError("Enter the selling price and check the amounts.");
+        setPdfInputs([["Type of sale", "Unlisted shares"], ["Date of sale", date], ["Selling price of the shares", pdfMoney(price)], ["Cost basis", pdfMoney(cost)], ["Selling expenses", pdfMoney(expenses)]]);
         setOut(computeCgtUnlistedShares({ date_of_sale: date, selling_price: price, cost_basis: cost || "0", selling_expenses: expenses || "0" }, rules));
       }
     } catch (err) {
@@ -83,6 +86,9 @@ export function CgtCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={tab === "property" ? "Capital gains tax on real property" : "Capital gains tax on unlisted shares"}
+          pdfHeadline={`Capital gains tax: ${peso(out.result.capital_gains_tax)} (tax base ${peso(out.result.tax_base)})`}
+          pdfInputs={pdfInputs}
           headline={<Headline label="Capital gains tax" amount={peso(out.result.capital_gains_tax)} extra={`Tax base: ${peso(out.result.tax_base)}`} />}
           steps={out.steps}
           rulesUsed={out.rules_used}

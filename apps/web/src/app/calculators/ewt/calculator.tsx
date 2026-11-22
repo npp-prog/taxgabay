@@ -2,7 +2,7 @@
 
 import { computeEwt, listAtcs, pct, peso, type CalcResult, type EwtResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export function EwtCalculator() {
   const [amount, setAmount] = React.useState("");
   const [vatIncl, setVatIncl] = React.useState(false);
   const [out, setOut] = React.useState<CalcResult<EwtResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -28,6 +29,7 @@ export function EwtCalculator() {
     if (!date) return setError("Enter the payment date.");
     if (!amount.trim() || !isAmount(amount)) return setError("Enter the amount of the payment.");
     try {
+      setPdfInputs([["ATC", atc], ["Payment date", date], ["Amount of the payment", pdfMoney(amount)], ["Amount includes VAT", vatIncl ? "Yes" : "No"]]);
       setOut(computeEwt({ atc, payment_date: date, amount, vat_inclusive: vatIncl }, rules));
     } catch (err) {
       setOut(null);
@@ -68,6 +70,9 @@ export function EwtCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Expanded withholding tax"}
+          pdfHeadline={`Expanded withholding tax: ${peso(out.result.ewt)}; net amount to pay the payee: ${peso(out.result.net_payment)}`}
+          pdfInputs={pdfInputs}
           headline={<Headline label="Expanded withholding tax" amount={peso(out.result.ewt)} extra={`Net amount to pay the payee: ${peso(out.result.net_payment)}`} />}
           steps={out.steps}
           rulesUsed={out.rules_used}

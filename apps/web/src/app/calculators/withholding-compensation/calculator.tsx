@@ -11,7 +11,7 @@ import {
   type PayrollPeriod,
 } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ function PerPayroll() {
   const [contrib, setContrib] = React.useState("");
   const [nonTax, setNonTax] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<CompensationWithholdingResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -38,6 +39,7 @@ function PerPayroll() {
     if (!payDate) return setError("Enter the pay date.");
     if (!gross.trim() || ![gross, contrib, nonTax].every(isAmount)) return setError("Enter the gross compensation and check the amounts.");
     try {
+      setPdfInputs([["Payroll period", period.replace("_", "-")], ["Pay date", payDate], ["Gross compensation for the period", pdfMoney(gross)], ["Mandatory contributions", pdfMoney(contrib)], ["Non-taxable pay", pdfMoney(nonTax)]]);
       setOut(computeCompensationWithholding({ period, pay_date: payDate, gross_compensation: gross, mandatory_contributions: contrib || "0", non_taxable_compensation: nonTax || "0" }, rules));
     } catch (err) {
       setOut(null);
@@ -72,6 +74,9 @@ function PerPayroll() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Withholding tax on compensation (per payroll)"}
+          pdfHeadline={`Tax to withhold this payroll: ${peso(out.result.withholding_tax)}`}
+          pdfInputs={pdfInputs}
           headline={<Headline label="Tax to withhold this payroll" amount={peso(out.result.withholding_tax)} />}
           steps={out.steps}
           rulesUsed={out.rules_used}
@@ -91,6 +96,7 @@ function YearEnd() {
   const [deMin, setDeMin] = React.useState("");
   const [withheld, setWithheld] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<AnnualCompensationResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -98,6 +104,7 @@ function YearEnd() {
     setError(null);
     if (!gross.trim() || ![gross, contrib, benefits, deMin, withheld].every(isAmount)) return setError("Enter basic pay and check the amounts.");
     try {
+      setPdfInputs([["Taxable year", String(year)], ["Basic pay and taxable allowances", pdfMoney(gross)], ["Mandatory contributions", pdfMoney(contrib)], ["13th month pay and other benefits", pdfMoney(benefits)], ["De minimis benefits", pdfMoney(deMin)], ["Tax withheld during the year", pdfMoney(withheld)]]);
       setOut(
         computeAnnualCompensationTax(
           {
@@ -148,6 +155,9 @@ function YearEnd() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Withholding tax on compensation (year-end)"}
+          pdfHeadline={`${refund ? "Refund to employee" : "Balance to withhold"}: ${peso(out.result.balance.replace(/^-/, ""))} (annual tax ${peso(out.result.annual_tax)}, withheld ${peso(out.result.tax_withheld)})`}
+          pdfInputs={pdfInputs}
           headline={
             <Headline
               label={refund ? "Refund to employee" : "Balance to withhold"}

@@ -4,11 +4,13 @@ import { businessForm, registrationSteps } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { Disclaimer } from "@/components/disclaimer";
 import { PageHeader } from "@/components/page-header";
+import { PdfButton } from "@/components/pdf-button";
+import type { PdfDoc } from "@/lib/pdf";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserData } from "@/lib/user-data";
-import { cn } from "@/lib/utils";
+import { cn, todayPH } from "@/lib/utils";
 
 type Path = "dti" | "sec" | "cda";
 
@@ -60,8 +62,27 @@ export function RoadmapView() {
             <input type="checkbox" checked={showEmployer} onChange={(e) => setShowEmployer(e.target.checked)} className="h-4 w-4 accent-[var(--color-primary)]" />I will hire employees
           </label>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
-            Print / save as PDF
+            Print
           </Button>
+          <PdfButton
+            filename={`taxgabay-roadmap-${path}.pdf`}
+            build={(): PdfDoc => ({
+              title: meta.title,
+              subtitle: `${done} of ${steps.length} steps done`,
+              generatedOn: todayPH(),
+              blocks: [
+                {
+                  kind: "checklist",
+                  items: steps.map((s, i) => ({
+                    text: `${i + 1}. ${s.title}`,
+                    done: data.roadmap.includes(s.id),
+                    note: `${s.agency} · ${s.where} · ${s.fees_note} Bring: ${s.requirements.join("; ")}. Basis: ${s.legal_basis}`,
+                  })),
+                },
+                { kind: "paragraph", text: "For guidance only. Verify with BIR issuances or consult a CPA. Steps and fees are pending CPA verification." },
+              ],
+            })}
+          />
         </div>
       </div>
       <div className="h-2 w-full rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Roadmap progress">

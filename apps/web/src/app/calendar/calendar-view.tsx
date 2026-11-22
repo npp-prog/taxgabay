@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { PageHeader } from "@/components/page-header";
+import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -198,9 +199,41 @@ export function CalendarView() {
             </button>
           ))}
         </div>
-        <Button variant="outline" onClick={downloadICS} disabled={obligations.length === 0}>
-          Export to calendar (.ics)
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={downloadICS} disabled={obligations.length === 0}>
+            Export to calendar (.ics)
+          </Button>
+          {obligations.length > 0 && (
+            <PdfButton
+              filename="taxgabay-calendar.pdf"
+              build={() => ({
+                title: "My BIR tax calendar",
+                subtitle: `Deadlines from ${from} to ${to}`,
+                generatedOn: today,
+                blocks: [
+                  {
+                    kind: "table",
+                    columns: [
+                      { label: "Due date", width: 0.15 },
+                      { label: "Form", width: 0.12 },
+                      { label: "Period", width: 0.18 },
+                      { label: "Title", width: 0.4 },
+                      { label: "Status", width: 0.15 },
+                    ],
+                    rows: obligations.map((o) => [
+                      o.due_date,
+                      o.form_code,
+                      o.period_label,
+                      o.tentative ? `${o.title} (depends on your answers)` : o.title,
+                      statusOf(o) === "filed_and_paid" ? "Filed & paid" : o.due_date < today ? "Overdue" : "Pending",
+                    ]),
+                  },
+                  { kind: "paragraph", text: "Dates falling on a weekend or holiday are moved to the next working day. Deadline rules and holidays are pending CPA verification." },
+                ],
+              })}
+            />
+          )}
+        </div>
       </div>
 
       {beyondHolidays && (

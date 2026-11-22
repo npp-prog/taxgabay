@@ -2,7 +2,7 @@
 
 import { computeCorporateIncomeTax, peso, type CalcResult, type CorporateIncomeTaxResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export function CorporateCalculator() {
   const [ded, setDed] = React.useState("");
   const [assets, setAssets] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<CorporateIncomeTaxResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -31,6 +32,7 @@ export function CorporateCalculator() {
     if (!/^\d{4}$/.test(commenced.trim())) return setError("Enter the year operations began, e.g. 2019.");
     if (!sales.trim() || ![sales, cos, other, ded, assets].every(isAmount)) return setError("Enter gross sales and check the amounts.");
     try {
+      setPdfInputs([["Last day of the taxable year", yearEnd], ["Year operations began", commenced], ["Gross sales", pdfMoney(sales)], ["Cost of sales", pdfMoney(cos)], ["Other taxable income", pdfMoney(other)], ["Itemized deductions", pdfMoney(ded)], ["Total assets excluding land", pdfMoney(assets)]]);
       setOut(
         computeCorporateIncomeTax(
           {
@@ -80,6 +82,9 @@ export function CorporateCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Corporate income tax: RCIT vs MCIT"}
+          pdfHeadline={`Income tax due (${out.result.basis.toUpperCase()}): ${peso(out.result.tax_due)} — RCIT ${peso(out.result.rcit)}, MCIT ${peso(out.result.mcit)}`}
+          pdfInputs={pdfInputs}
           headline={<Headline label={`Income tax due (${out.result.basis.toUpperCase()})`} amount={peso(out.result.tax_due)} extra={`RCIT ${peso(out.result.rcit)} · MCIT ${peso(out.result.mcit)}`} />}
           steps={out.steps}
           rulesUsed={out.rules_used}

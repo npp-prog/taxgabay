@@ -2,7 +2,7 @@
 
 import { computeVat, endOfMonth, peso, type CalcResult, type VatResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export function VatCalculator() {
   const [purchIncl, setPurchIncl] = React.useState(true);
   const [carry, setCarry] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<VatResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -32,6 +33,7 @@ export function VatCalculator() {
       return;
     }
     try {
+      setPdfInputs([["Year", String(year)], ["Quarter", `Q${quarter}`], ["Vatable sales", `${pdfMoney(sales)}${salesIncl ? " (VAT-inclusive)" : " (net of VAT)"}`], ["Vatable purchases", `${pdfMoney(purchases)}${purchIncl ? " (VAT-inclusive)" : " (net of VAT)"}`], ["Excess input VAT from last quarter", pdfMoney(carry)]]);
       setOut(
         computeVat(
           {
@@ -101,6 +103,9 @@ export function VatCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Quarterly VAT"}
+          pdfHeadline={out.result.vat_payable !== "0.00" ? `VAT payable: ${peso(out.result.vat_payable)}` : `Excess input VAT to carry forward: ${peso(out.result.excess_input_carried_forward)}`}
+          pdfInputs={pdfInputs}
           headline={
             <p>
               <span className="block text-sm">{out.result.vat_payable !== "0.00" ? "VAT payable" : "Excess input VAT to carry forward"}</span>

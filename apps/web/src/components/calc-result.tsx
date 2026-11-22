@@ -1,7 +1,10 @@
 "use client";
 
-import type { Step } from "@taxgabay/tax-engine";
-import { Disclaimer } from "@/components/disclaimer";
+import { peso, type Step } from "@taxgabay/tax-engine";
+import { Disclaimer, DISCLAIMER_TEXT } from "@/components/disclaimer";
+import { PdfButton } from "@/components/pdf-button";
+import { slugifyFilename, stepsToTable, type PdfBlock } from "@/lib/pdf";
+import { todayPH } from "@/lib/utils";
 import { StepsTable } from "@/components/steps-table";
 import { verificationFor } from "@/lib/rules";
 
@@ -11,17 +14,46 @@ export function CalcResultPanel({
   rulesUsed,
   warnings,
   children,
+  pdfTitle,
+  pdfHeadline,
+  pdfInputs,
 }: {
   headline: React.ReactNode;
   steps: readonly Step[];
   rulesUsed: readonly string[];
   warnings: readonly string[];
   children?: React.ReactNode;
+  /** When set, a "Download PDF" button exports this result. */
+  pdfTitle?: string;
+  /** Plain-text version of the headline for the PDF. */
+  pdfHeadline?: string;
+  /** What the user entered, as label/value pairs. */
+  pdfInputs?: [string, string][];
 }) {
   const v = verificationFor(rulesUsed);
+  const buildDoc = () => {
+    const today = todayPH();
+    const blocks: PdfBlock[] = [];
+    if (pdfInputs?.length) blocks.push({ kind: "heading", text: "What you entered" }, { kind: "keyValue", rows: pdfInputs });
+    blocks.push({ kind: "heading", text: "Result" });
+    if (pdfHeadline) blocks.push({ kind: "paragraph", text: pdfHeadline });
+    blocks.push(stepsToTable(steps));
+    for (const w of warnings) blocks.push({ kind: "paragraph", text: `Note: ${w}` });
+    blocks.push(
+      { kind: "heading", text: "Disclaimer" },
+      { kind: "paragraph", text: DISCLAIMER_TEXT },
+      { kind: "paragraph", text: v.lastVerified ? `Last verified: ${v.lastVerified}.` : "Last verified: not yet — the rates and dates are seed data awaiting CPA review." },
+    );
+    return { title: pdfTitle!, subtitle: `Computed on ${today}`, generatedOn: today, blocks };
+  };
   return (
     <section aria-live="polite" aria-label="Result" className="space-y-5" data-testid="calc-result">
       <div className="rounded-lg bg-secondary p-4 text-secondary-foreground">{headline}</div>
+      {pdfTitle && (
+        <div className="flex justify-end">
+          <PdfButton filename={slugifyFilename(pdfTitle)} build={buildDoc} />
+        </div>
+      )}
       {children}
       <div data-testid="main-steps">
         <StepsTable steps={steps} />
@@ -50,4 +82,9 @@ const AMOUNT_RE = /^\d{1,13}(,\d{3})*(\.\d{0,2})?$|^\d+(\.\d{0,2})?$/;
 
 export function isAmount(s: string): boolean {
   return s.trim() === "" || AMOUNT_RE.test(s.trim());
+}
+
+/** Formats an entered amount for PDF inputs ("—" when blank). */
+export function pdfMoney(v: string): string {
+  return v.trim() ? peso(v) : "—";
 }

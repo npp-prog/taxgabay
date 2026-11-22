@@ -2,7 +2,7 @@
 
 import { computeDst, peso, type CalcResult, type DstResult, type DstTransaction } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ const AMOUNT_LABEL: Record<DstTransaction, string> = {
   debt_instrument: "Loan amount / issue price",
 };
 
+const TX_LABEL: Record<DstTransaction, string> = {
+  sale_real_property: "Sale of real property",
+  original_issue_shares: "Original issue of shares",
+  debt_instrument: "Loan or other debt instrument",
+};
+
 export function DstCalculator() {
   const [tx, setTx] = React.useState<DstTransaction>("sale_real_property");
   const [date, setDate] = React.useState(todayPH());
@@ -25,6 +31,7 @@ export function DstCalculator() {
   const [fmv, setFmv] = React.useState("");
   const [term, setTerm] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<DstResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -34,6 +41,7 @@ export function DstCalculator() {
     if (!amount.trim() || ![amount, fmv].every(isAmount)) return setError("Enter the amount and check the values.");
     if (term.trim() && !/^\d+$/.test(term.trim())) return setError("Enter the term as a whole number of days.");
     try {
+      setPdfInputs([["Transaction", TX_LABEL[tx]], ["Date of the document", date], [AMOUNT_LABEL[tx], pdfMoney(amount)], ...(tx === "sale_real_property" ? [["Fair market value", pdfMoney(fmv)] as [string, string]] : []), ...(tx === "debt_instrument" ? [["Term in days", term || "—"] as [string, string]] : [])]);
       setOut(
         computeDst(
           {
@@ -97,6 +105,9 @@ export function DstCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Documentary stamp tax"}
+          pdfHeadline={`Documentary stamp tax due: ${peso(out.result.dst)} (tax base ${peso(out.result.tax_base)})`}
+          pdfInputs={pdfInputs}
           headline={<Headline label="Documentary stamp tax due" amount={peso(out.result.dst)} extra={`Tax base: ${peso(out.result.tax_base)}`} />}
           steps={out.steps}
           rulesUsed={out.rules_used}

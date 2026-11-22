@@ -2,7 +2,7 @@
 
 import { computePercentageTax, endOfMonth, peso, type CalcResult, type PercentageTaxResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export function PercentageTaxCalculator() {
   const [quarter, setQuarter] = React.useState(Math.ceil(Number(today.slice(5, 7)) / 3));
   const [gross, setGross] = React.useState("");
   const [out, setOut] = React.useState<CalcResult<PercentageTaxResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -28,6 +29,7 @@ export function PercentageTaxCalculator() {
       return;
     }
     try {
+      setPdfInputs([["Year", String(year)], ["Quarter", `Q${quarter}`], ["Gross sales/receipts for the quarter", pdfMoney(gross)]]);
       setOut(computePercentageTax({ period_end: endOfMonth(year, quarter * 3), gross_sales_receipts: gross }, rules));
     } catch (err) {
       setOut(null);
@@ -74,6 +76,9 @@ export function PercentageTaxCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Quarterly percentage tax"}
+          pdfHeadline={`Percentage tax due: ${peso(out.result.tax_due)}`}
+          pdfInputs={pdfInputs}
           headline={
             <p>
               <span className="block text-sm">Percentage tax due</span>

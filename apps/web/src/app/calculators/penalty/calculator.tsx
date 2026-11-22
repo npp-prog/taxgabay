@@ -2,7 +2,7 @@
 
 import { computePenalty, forms, peso, type CalcResult, type PenaltyInput, type PenaltyResult } from "@taxgabay/tax-engine";
 import * as React from "react";
-import { CalcError, CalcResultPanel, isAmount } from "@/components/calc-result";
+import { CalcError, CalcResultPanel, isAmount, pdfMoney } from "@/components/calc-result";
 import { MoneyField } from "@/components/money-field";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ export function PenaltyCalculator() {
   const [willful, setWillful] = React.useState(false);
   const [compromise, setCompromise] = React.useState(true);
   const [out, setOut] = React.useState<CalcResult<PenaltyResult> | null>(null);
+  const [pdfInputs, setPdfInputs] = React.useState<[string, string][]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   function compute(e: React.FormEvent) {
@@ -35,6 +36,7 @@ export function PenaltyCalculator() {
     if (!basic.trim() || !isAmount(basic)) return setError("Enter the basic tax due.");
     if (paid < due) return setError("The payment date is before the due date — no penalty applies.");
     try {
+      setPdfInputs([["Form", form || "—"], ["Taxpayer size", size], ["Original due date", due], ["Payment date", paid], ["Basic tax due", pdfMoney(basic)], ["Filed late", lateFiling ? "Yes" : "No"], ["Paid late", latePayment ? "Yes" : "No"], ["Willful", willful ? "Yes" : "No"], ["Compromise included", compromise ? "Yes" : "No"]]);
       setOut(
         computePenalty(
           {
@@ -120,6 +122,9 @@ export function PenaltyCalculator() {
       {error && <CalcError message={error} />}
       {out && (
         <CalcResultPanel
+          pdfTitle={"Late filing and payment penalties"}
+          pdfHeadline={`Total amount due: ${peso(out.result.total_amount_due)} (penalties ${peso(out.result.total_penalties)}, ${out.result.days_late} days late)`}
+          pdfInputs={pdfInputs}
           headline={
             <p>
               <span className="block text-sm">
