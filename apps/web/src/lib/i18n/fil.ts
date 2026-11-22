@@ -41,6 +41,7 @@ export const fil: Messages = {
       calculators: ["Calculator", "Bawat linya may paliwanag at batas"],
       guides: ["Gabay sa pag-file", "Hakbang-hakbang para sa 23 BIR form"],
       issuances: ["BIR issuance", "Bagong patakaran sa simpleng salita"],
+      prepare: ["Ihanda ang aking mga dokumento", "Mga return at 2307 mula sa iyong mga record"],
       roadmap: ["Magparehistro ng negosyo", "Roadmap para sa DTI, SEC o CDA"],
       businessGuide: ["Gabay sa negosyo", "Libro, payroll, permit, financial statements"],
       lifeEvents: ["Life events", "Pag-hire, pagsasara, paglipat ng RDO"],

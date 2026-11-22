@@ -35,6 +35,7 @@ export const en = {
       calculators: ["Calculators", "Every line explained, with the law"],
       guides: ["Filing guides", "Step by step for 23 BIR forms"],
       issuances: ["BIR issuances", "New rules in plain language"],
+      prepare: ["Prepare my documents", "Returns and 2307s from your records"],
       roadmap: ["Register a business", "DTI, SEC or CDA roadmaps"],
       businessGuide: ["Business guide", "Books, payroll, permits, statements"],
       lifeEvents: ["Life events", "Hiring, closing, moving RDO"],

@@ -6,7 +6,7 @@ import { useLocale } from "@/lib/i18n";
 
 const COLUMNS = [
   { key: "taxes", links: [["profile", "/profile"], ["calendar", "/calendar"], ["checklists", "/checklists"], ["calculators", "/calculators"], ["guides", "/guides"]] },
-  { key: "business", links: [["roadmap", "/roadmap"], ["businessGuide", "/business-guide"], ["practice", "/practice"], ["lifeEvents", "/life-events"], ["clients", "/clients"]] },
+  { key: "business", links: [["prepare", "/prepare"], ["roadmap", "/roadmap"], ["businessGuide", "/business-guide"], ["practice", "/practice"], ["lifeEvents", "/life-events"], ["clients", "/clients"]] },
   { key: "learn", links: [["articles", "/learn"], ["glossary", "/learn/glossary"], ["faq", "/learn/faq"], ["issuances", "/issuances"], ["assistant", "/assistant"]] },
 ] as const;
 

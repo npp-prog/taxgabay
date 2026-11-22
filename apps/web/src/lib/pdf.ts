@@ -1,5 +1,5 @@
 import { peso, type Step } from "@taxgabay/tax-engine";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 export type PdfBlock =
   | { kind: "heading"; text: string }
@@ -13,6 +13,8 @@ export interface PdfDoc {
   subtitle?: string;
   generatedOn: string;
   blocks: PdfBlock[];
+  /** Large diagonal text on every page, e.g. "DRAFT — NOT REVIEWED". */
+  watermark?: string;
 }
 
 const PAGE_W = 595.28; // A4
@@ -219,6 +221,12 @@ export async function buildPdf(doc: PdfDoc): Promise<Uint8Array> {
 
   const pages = pdf.getPages();
   pages.forEach((p, i) => {
+    if (doc.watermark) {
+      const w = pdfSafe(doc.watermark, bold);
+      const size = 42;
+      const tw = bold.widthOfTextAtSize(w, size);
+      p.drawText(w, { x: PAGE_W / 2 - (tw / 2) * Math.cos(Math.PI / 6), y: PAGE_H / 2 - (tw / 2) * Math.sin(Math.PI / 6), size, font: bold, color: rgb(0.85, 0.2, 0.15), opacity: 0.14, rotate: degrees(30) });
+    }
     const text = pdfSafe(`TaxGabay · For guidance only. Verify with BIR issuances or consult a CPA. · Page ${i + 1} of ${pages.length}`, font);
     p.drawText(text, { x: MARGIN, y: MARGIN / 2, size: 7, font, color: MUTED });
   });

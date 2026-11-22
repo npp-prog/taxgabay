@@ -41,6 +41,7 @@ const MENUS: { key: MenuKey; groups: { key: GroupKey; items: { key: ItemKey; hre
       {
         key: "run",
         items: [
+          { key: "prepare", href: "/prepare" },
           { key: "roadmap", href: "/roadmap" },
           { key: "businessGuide", href: "/business-guide" },
           { key: "lifeEvents", href: "/life-events" },

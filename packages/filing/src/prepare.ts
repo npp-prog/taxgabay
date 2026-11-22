@@ -300,6 +300,9 @@ function incomeTaxTo(ctx: Ctx, year: number, end: ISODate, option: ItOption): It
   const r: Range = { start: `${year}-01-01`, end };
   const gross = sum(salesIn(ctx.input.records, r).map((s) => s.amount));
   const itemized = option === "graduated_itemized" ? money(sum(expensesIn(ctx.input.records, r).map((e) => e.amount))) : undefined;
+  if (gross.isZero()) {
+    return { gross, deduction: dec(0), taxable: dec(0), tax: dec(0), steps: [step("Gross sales/receipts to date", "No sales recorded yet", "0")], rules_used: [], warnings: ["No sales are recorded for the year so far."] };
+  }
   const calc = computeIndividualIncomeTax({ taxable_year: year, gross_sales_receipts: money(gross), itemized_deductions: itemized, vat_registered: false }, ctx.rules);
   const opt = calc.result.options.find((o) => o.key === option)!;
   if (!opt.eligible) {

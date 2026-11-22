@@ -93,6 +93,9 @@ importers:
       '@taxgabay/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@taxgabay/filing':
+        specifier: workspace:*
+        version: link:../../packages/filing
       '@taxgabay/tax-engine':
         specifier: workspace:*
         version: link:../../packages/tax-engine

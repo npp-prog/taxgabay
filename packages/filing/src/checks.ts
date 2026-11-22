@@ -67,12 +67,16 @@ export function checkRecords(records: readonly ClientRecord[], q: QuarterRef, ru
   }
 
   // Expenses with tax withheld.
+  const warnedTin = new Set<string>();
   for (const e of inQ.filter(isExpense)) {
     if (!e.withholding) continue;
     if (!atcRule(rules, e.withholding.atc, e.date)) {
       issues.push({ code: "unknown_atc", severity: "error", message: `Record ${e.id}: ATC ${e.withholding.atc} is not in TaxGabay's withholding table.`, record_id: e.id });
     }
-    if (!e.supplier.tin) issues.push({ code: "missing_payee_tin", severity: "warning", message: `${e.supplier.name}: add the supplier's TIN — it is required on the Form 2307 and in the QAP.`, record_id: e.id });
+    if (!e.supplier.tin && !warnedTin.has(norm(e.supplier.name))) {
+      warnedTin.add(norm(e.supplier.name));
+      issues.push({ code: "missing_payee_tin", severity: "warning", message: `${e.supplier.name}: add the supplier's TIN — it is required on the Form 2307 and in the QAP.`, record_id: e.id });
+    }
   }
 
   // 2307s received.

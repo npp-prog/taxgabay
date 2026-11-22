@@ -70,6 +70,12 @@ describe("preparePacket", () => {
     expect(q4.not_supported.map((n) => n.form)).toContain("1701");
   });
 
+  it("prepares zero returns when nothing is recorded yet", () => {
+    const p = preparePacket({ client: { name: "A", profile: profile({}) }, records: [], period: { year: 2026, quarter: 1 } });
+    expect(p.documents.find((d) => d.form === "1701Q")!.amount_payable).toBe("0.00");
+    expect(p.total_payable).toBe("0.00");
+  });
+
   it("reports what it cannot prepare yet", () => {
     const p = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", vat_status: "vat", has_employees: true }) }, records: [], period: { year: 2026, quarter: 1 } });
     expect(p.documents).toEqual([]);
