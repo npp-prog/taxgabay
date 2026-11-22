@@ -1,0 +1,26 @@
+{
+  "description": "Corporate income tax: RCIT (regular/reduced) vs MCIT, higher is payable. Amounts in pesos.",
+  "cases": [
+    { "name": "Reduced 20% rate (taxable ≤ ₱5M, assets ≤ ₱100M), 2024",
+      "input": { "taxable_year_end": "2024-12-31", "year_commenced": 2015, "gross_sales": "10000000", "cost_of_sales": "6000000", "deductions": "2500000", "total_assets_excl_land": "50000000" },
+      "expected": { "gross_income": "4000000.00", "taxable_income": "1500000.00", "rcit_rate": "0.2", "rcit": "300000.00", "mcit": "80000.00", "tax_due": "300000.00", "basis": "rcit" } },
+    { "name": "Assets over ₱100M — regular 25%",
+      "input": { "taxable_year_end": "2024-12-31", "year_commenced": 2015, "gross_sales": "10000000", "cost_of_sales": "6000000", "deductions": "2500000", "total_assets_excl_land": "150000000" },
+      "expected": { "rcit_rate": "0.25", "rcit": "375000.00", "tax_due": "375000.00", "basis": "rcit" } },
+    { "name": "Thin margin — MCIT is higher",
+      "input": { "taxable_year_end": "2024-12-31", "year_commenced": 2015, "gross_sales": "50000000", "cost_of_sales": "40000000", "deductions": "9800000", "total_assets_excl_land": "200000000" },
+      "expected": { "gross_income": "10000000.00", "taxable_income": "200000.00", "rcit": "50000.00", "mcit_applies": true, "mcit": "200000.00", "tax_due": "200000.00", "basis": "mcit" } },
+    { "name": "MCIT not yet applicable (operations began 2022; MCIT from 2026)",
+      "input": { "taxable_year_end": "2024-12-31", "year_commenced": 2022, "gross_sales": "50000000", "cost_of_sales": "40000000", "deductions": "9800000", "total_assets_excl_land": "200000000" },
+      "expected": { "mcit_applies": false, "mcit": "0.00", "tax_due": "50000.00", "basis": "rcit" } },
+    { "name": "MCIT applies in the 4th year after commencement (began 2020 → 2024)",
+      "input": { "taxable_year_end": "2024-12-31", "year_commenced": 2020, "gross_sales": "50000000", "cost_of_sales": "40000000", "deductions": "9800000", "total_assets_excl_land": "200000000" },
+      "expected": { "mcit_applies": true, "tax_due": "200000.00" } },
+    { "name": "2022: temporary 1% MCIT under CREATE",
+      "input": { "taxable_year_end": "2022-12-31", "year_commenced": 2015, "gross_sales": "50000000", "cost_of_sales": "40000000", "deductions": "9800000", "total_assets_excl_land": "200000000" },
+      "expected": { "mcit": "100000.00", "tax_due": "100000.00", "basis": "mcit" } },
+    { "name": "2019: pre-CREATE 30% RCIT, no reduced rate",
+      "input": { "taxable_year_end": "2019-12-31", "year_commenced": 2015, "gross_sales": "10000000", "cost_of_sales": "6000000", "deductions": "2500000", "total_assets_excl_land": "50000000" },
+      "expected": { "rcit_rate": "0.3", "rcit": "450000.00", "mcit": "80000.00", "tax_due": "450000.00" } }
+  ]
+}

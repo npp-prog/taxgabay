@@ -25,8 +25,16 @@ Every value below was seeded from Claude's best understanding and **has not been
 - **1601C December** due 15 January applies to eFPS filers too.
 - **Individuals** are forced to the calendar year; fiscal quarters apply only to non-individuals (2551Q, 2550Q, 1702Q, 1702-RT).
 - **Cooperatives** get the same returns as other non-individuals (possible exemptions under RA 9520 not modeled).
+- **Corporate:** RCIT vs MCIT on itemized deductions only (corporate 40% OSD not modeled); no pro-rating for fiscal years straddling a rate change (warning instead); reduced 20% rate requires both taxable income ≤ ₱5M and assets (excl. land) ≤ ₱100M; MCIT from the 4th taxable year after commencement.
+- **Compensation withholding:** per-period table applied to (gross − mandatory contributions − non-taxable pay); minimum wage earner exemption not applied; only the monthly table is seeded for 2018–2022.
+- **Annualization:** taxable = basic pay − contributions + (13th month and other benefits above ₱90,000); de minimis excluded within ceilings entered by the user.
+- **EWT base** is the amount net of VAT when the payee is VAT-registered.
+- **Estate:** family home deduction = decedent's share (half if conjugal/community), capped at ₱10M; net share of surviving spouse = (conjugal property − conjugal deductions) ÷ 2; citizens/residents only.
+- **Donor's tax:** cumulative per calendar year, less tax already paid that year; exempt gifts excluded by the user.
+- **DST:** "or fractional part thereof" rounds the base up to the next whole unit; debt instruments under one year pro-rated by days/365.
+- **Reminders:** sent only on the exact configured day (7/3/1 days before); a day the job does not run is not caught up.
 
-## Tax rules (29)
+## Tax rules (51)
 
 | ID | Rule | Applies to | Value | Effective | Legal basis | Note |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -58,7 +66,29 @@ Every value below was seeded from Claude's best understanding and **has not been
 | cgt-unlisted-shares-train | cgt.unlisted_shares | all | rate = 15% | 2018-01-01 → open | NIRC Sec. 24(C), as amended by RA 10963 (TRAIN) — 15% of net capital gains |  |
 | dst-real-property-train | dst.sale_real_property | all | per = 1,000; amount = 15 | 2018-01-01 → open | NIRC Sec. 196, as amended by RA 10963 (TRAIN) — ₱15 per ₱1,000 of consideration or value |  |
 | dst-original-issue-shares-train | dst.original_issue_shares | all | per = 200; amount = 2 | 2018-01-01 → open | NIRC Sec. 174, as amended by RA 10963 (TRAIN) — ₱2 per ₱200 of par value |  |
-| dst-loan-train | dst.debt_instruments | all | per = 200; amount = 1.5 | 2018-01-01 → open | NIRC Sec. 179, as amended by RA 10963 (TRAIN) — ₱1.50 per ₱200 of issue price |  |
+| dst-loan-train | dst.debt_instruments | all | per = 200; amount = 1.50 | 2018-01-01 → open | NIRC Sec. 179, as amended by RA 10963 (TRAIN) — ₱1.50 per ₱200 of issue price |  |
+| cit-rcit-pre-create | corporate.rcit | corporation | regular = 30%; reduced = NaN; reduced_max_net_taxable_income = NaN; reduced_max_total_assets_excl_land = NaN | 2009-01-01 → 2020-06-30 | NIRC Sec. 27(A), as amended by RA 9337 (30% from 1 Jan 2009) |  |
+| cit-mcit-pre-create | corporate.mcit | corporation | rate = 2% | 1998-01-01 → 2020-06-30 | NIRC Sec. 27(E)(1) — 2% of gross income |  |
+| cit-mcit-start | corporate.mcit_start | corporation | years_after_commencement = 4 | 1998-01-01 → open | NIRC Sec. 27(E)(1): beginning on the fourth taxable year immediately following the year in which the corporation commenced its business operations |  |
+| wtc-monthly-2018 | withholding.compensation.monthly | individual | over 0 to 20,833: ₱0 + 0%; over 20,833 to 33,333: ₱0 + 20%; over 33,333 to 66,667: ₱2,500 + 25%; over 66,667 to 166,667: ₱10,833.33 + 30%; over 166,667 to 666,667: ₱40,833.33 + 32%; over 666,667: ₱200,833.33 + 35% | 2018-01-01 → 2022-12-31 | RR 11-2018, Annex 'E' (revised withholding tax table, 1 Jan 2018 to 31 Dec 2022) — monthly |  |
+| wtc-monthly-2023 | withholding.compensation.monthly | individual | over 0 to 20,833: ₱0 + 0%; over 20,833 to 33,333: ₱0 + 15%; over 33,333 to 66,667: ₱1,875 + 20%; over 66,667 to 166,667: ₱8,541.80 + 25%; over 166,667 to 666,667: ₱33,541.80 + 30%; over 666,667: ₱183,541.80 + 35% | 2023-01-01 → open | RR 11-2018, Annex 'E' (revised withholding tax table, 1 Jan 2023 onwards) — monthly |  |
+| wtc-semimonthly-2023 | withholding.compensation.semi_monthly | individual | over 0 to 10,417: ₱0 + 0%; over 10,417 to 16,667: ₱0 + 15%; over 16,667 to 33,333: ₱937.50 + 20%; over 33,333 to 83,333: ₱4,270.70 + 25%; over 83,333 to 333,333: ₱16,770.70 + 30%; over 333,333: ₱91,770.70 + 35% | 2023-01-01 → open | RR 11-2018, Annex 'E' (1 Jan 2023 onwards) — semi-monthly |  |
+| wtc-weekly-2023 | withholding.compensation.weekly | individual | over 0 to 4,808: ₱0 + 0%; over 4,808 to 7,692: ₱0 + 15%; over 7,692 to 15,385: ₱432.60 + 20%; over 15,385 to 38,462: ₱1,971.20 + 25%; over 38,462 to 153,846: ₱7,740.45 + 30%; over 153,846: ₱42,355.65 + 35% | 2023-01-01 → open | RR 11-2018, Annex 'E' (1 Jan 2023 onwards) — weekly |  |
+| wtc-daily-2023 | withholding.compensation.daily | individual | over 0 to 685: ₱0 + 0%; over 685 to 1,096: ₱0 + 15%; over 1,096 to 2,192: ₱61.65 + 20%; over 2,192 to 5,479: ₱280.85 + 25%; over 5,479 to 21,918: ₱1,102.60 + 30%; over 21,918: ₱6,034.30 + 35% | 2023-01-01 → open | RR 11-2018, Annex 'E' (1 Jan 2023 onwards) — daily |  |
+| wtc-benefits-exclusion-train | withholding.compensation.benefits_exclusion | individual | amount = 90,000 | 2018-01-01 → open | NIRC Sec. 32(B)(7)(e), as amended by RA 10963 (TRAIN) — 13th month pay and other benefits up to ₱90,000 |  |
+| wtc-de-minimis-rr11-2018 | withholding.compensation.de_minimis | individual | Rice subsidy: ₱2,000/month; Uniform and clothing allowance: ₱6,000/year; Medical cash allowance to dependents: ₱1,500/semester; Laundry allowance: ₱300/month; Employee achievement awards (tangible property): ₱10,000/year; Christmas and major anniversary gifts: ₱5,000/year; Actual medical assistance: ₱10,000/year; CBA and productivity incentive benefits (combined): ₱10,000/year | 2018-01-01 → open | RR 2-98 Sec. 2.78.1(A)(3), as amended by RR 11-2018 (de minimis benefits) | Ceilings and list to confirm; overtime meal allowance (25% of minimum wage) and monetized leave not modeled. |
+| ewt-wi010-2018 | ewt.atc.WI010 | all | WI010 — Professional fees — individual, gross income ₱3M or less and non-VAT: 5% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wi011-2018 | ewt.atc.WI011 | all | WI011 — Professional fees — individual, gross income over ₱3M or VAT-registered: 10% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc010-2018 | ewt.atc.WC010 | all | WC010 — Professional fees — juridical person, gross income ₱720,000 or less: 10% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc011-2018 | ewt.atc.WC011 | all | WC011 — Professional fees — juridical person, gross income over ₱720,000: 15% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wi100-2018 | ewt.atc.WI100 | all | WI100 — Rentals of real or personal property — individual payee: 5% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc100-2018 | ewt.atc.WC100 | all | WC100 — Rentals of real or personal property — juridical payee: 5% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wi120-2018 | ewt.atc.WI120 | all | WI120 — Payments to contractors (services) — individual payee: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc120-2018 | ewt.atc.WC120 | all | WC120 — Payments to contractors (services) — juridical payee: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wi158-2018 | ewt.atc.WI158 | all | WI158 — Purchases of goods by top withholding agents — individual supplier: 1% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc158-2018 | ewt.atc.WC158 | all | WC158 — Purchases of goods by top withholding agents — juridical supplier: 1% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wi160-2018 | ewt.atc.WI160 | all | WI160 — Purchases of services by top withholding agents — individual supplier: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
+| ewt-wc160-2018 | ewt.atc.WC160 | all | WC160 — Purchases of services by top withholding agents — juridical supplier: 2% | 2018-01-01 → open | RR 2-98 Sec. 2.57.2, as amended by RR 11-2018 | ATC code and rate to confirm against the current BIR ATC table. |
 
 ## Deadline rules (12)
 
@@ -120,18 +150,78 @@ Not seeded (admin must add each year): Eid'l Fitr (RA 9177); Eid'l Adha (RA 9849
 | 2027-12-30 | Rizal Day | regular | RA 9492 / annual Presidential proclamation (number to confirm) |  |
 | 2027-12-31 | Last Day of the Year | special_non_working | Annual Presidential proclamation (number to confirm) |  |
 
-## Sole proprietorship registration roadmap (8 steps)
+## Registration roadmaps (20 steps)
 
-| # | Step | Fees | Processing time | Legal basis |
+| Path | # | Step | Fees | Processing time | Legal basis |
+| --- | --- | --- | --- | --- | --- |
+| DTI | 1 | Register your business name with the DTI | Fee depends on territorial scope (from about ₱200 for barangay to ₱2,000 for national) plus ₱30 documentary stamp tax. Registration is valid for 5 years. | Same day (online) | Act No. 3883 (Business Name Law), as amended; DTI Department Administrative Order on BNRS (number to confirm) |
+| DTI | 2 | Get a barangay business clearance | Set by barangay ordinance; varies. | 1–3 days | RA 7160 (Local Government Code) Sec. 152(c) |
+| DTI | 3 | Secure your mayor's / business permit | Local business tax and regulatory fees set by the LGU's revenue code; based on capitalization for new businesses. | Up to 3 working days for simple transactions under the Ease of Doing Business Act (may be longer in practice) | RA 7160 Secs. 143 and 444; RA 11032 (Ease of Doing Business Act) |
+| DTI | 4 | Register with the BIR (Form 1901) and get your COR | The ₱500 annual registration fee was abolished by the Ease of Paying Taxes Act. Pay ₱30 documentary stamp tax where applicable (to confirm). | 1–3 days (varies by RDO) | NIRC Sec. 236, as amended by RA 11976 (EOPT); RR 7-2024 and RR 8-2024 (to confirm) |
+| DTI | 5 | Register your books of accounts | No BIR fee. | Same day to a few days | NIRC Sec. 232; RR 9-2009 (to confirm) |
+| DTI | 6 | Set up invoicing (Authority to Print or e-invoicing) | Printer charges vary. | Several days to weeks (printing) | NIRC Secs. 113 and 237, as amended by RA 11976 (EOPT); RR 7-2024 |
+| DTI | 7 | Post your COR and "Ask for an invoice" notice | None. | Same day | NIRC Sec. 236; RR 7-2024 (to confirm) |
+| DTI | 8 | Register as an employer (if you hire employees) | No registration fee; monthly contributions apply. | 1–5 days per agency | RA 11199 (Social Security Act of 2018); RA 11223 (Universal Health Care Act); RA 9679 (HDMF Law of 2009) |
+| SEC | 1 | Verify and reserve your company name with the SEC | Name reservation fee per SEC schedule (to confirm). | Same day (online) | RA 11232 (Revised Corporation Code) Sec. 17; SEC memorandum circulars on name verification (to confirm) |
+| SEC | 2 | File your articles and get your SEC Certificate of Incorporation/Registration | Filing fees are based on authorized capital stock (or partnership capital) per the SEC fee schedule; plus legal research fee and documentary stamp tax. | About 1–3 working days after complete submission (to confirm) | RA 11232 (Revised Corporation Code) Secs. 13–18 and 115–132 (OPC); Civil Code Arts. 1767–1867 (partnerships) |
+| SEC | 3 | Get a barangay business clearance | Set by barangay ordinance; varies. | 1–3 days | RA 7160 (Local Government Code) Sec. 152(c) |
+| SEC | 4 | Secure your mayor's / business permit | Local business tax and regulatory fees per the LGU revenue code. | Up to 3 working days for simple transactions under RA 11032 (may be longer in practice) | RA 7160 Secs. 143 and 444; RA 11032 (Ease of Doing Business Act) |
+| SEC | 5 | Register with the BIR (Form 1903), get your COR, register books and set up invoicing | The ₱500 annual registration fee was abolished by the Ease of Paying Taxes Act. | 1–3 days (varies by RDO) | NIRC Secs. 232, 236 and 237, as amended by RA 11976 (EOPT); RR 7-2024 and RR 8-2024 (to confirm) |
+| SEC | 6 | Register as an employer (if you hire employees) | No registration fee; monthly contributions apply. | 1–5 days per agency | RA 11199; RA 11223; RA 9679 |
+| CDA | 1 | Complete the Pre-Membership Education Seminar (PMES) | Varies by provider. | 1 day | RA 9520 (Philippine Cooperative Code of 2008) Art. 10 |
+| CDA | 2 | Reserve the cooperative's name with the CDA | Name reservation fee per CDA schedule (to confirm). | Same day | RA 9520 Art. 16 |
+| CDA | 3 | File for CDA registration and get your Certificate of Registration | Registration fee per CDA schedule (to confirm). | Up to 30 days under RA 9520 (to confirm) | RA 9520 Arts. 10–17 |
+| CDA | 4 | Get barangay clearance and mayor's/business permit | Per LGU ordinance; local tax exemptions may apply under RA 9520 Art. 61 (to confirm). | 1–5 days | RA 7160 Secs. 152(c) and 444; RA 9520 Art. 61 |
+| CDA | 5 | Register with the BIR (Form 1903) and apply for a Certificate of Tax Exemption | No annual registration fee. | Registration 1–3 days; CTE processing varies | RA 9520 Arts. 60–61; Joint Rules and Regulations Implementing Arts. 60, 61 and 144 of RA 9520; RMO 76-2010 (to confirm) |
+| CDA | 6 | Register as an employer (if you hire employees) | No registration fee; monthly contributions apply. | 1–5 days per agency | RA 11199; RA 11223; RA 9679 |
+
+## Checklist items (24)
+
+| ID | Frequency | Item | Due | Legal basis |
 | --- | --- | --- | --- | --- |
-| 1 | Register your business name with the DTI | Fee depends on territorial scope (from about ₱200 for barangay to ₱2,000 for national) plus ₱30 documentary stamp tax. Registration is valid for 5 years. | Same day (online) | Act No. 3883 (Business Name Law), as amended; DTI Department Administrative Order on BNRS (number to confirm) |
-| 2 | Get a barangay business clearance | Set by barangay ordinance; varies. | 1–3 days | RA 7160 (Local Government Code) Sec. 152(c) |
-| 3 | Secure your mayor's / business permit | Local business tax and regulatory fees set by the LGU's revenue code; based on capitalization for new businesses. | Up to 3 working days for simple transactions under the Ease of Doing Business Act (may be longer in practice) | RA 7160 Secs. 143 and 444; RA 11032 (Ease of Doing Business Act) |
-| 4 | Register with the BIR (Form 1901) and get your COR | The ₱500 annual registration fee was abolished by the Ease of Paying Taxes Act. Pay ₱30 documentary stamp tax where applicable (to confirm). | 1–3 days (varies by RDO) | NIRC Sec. 236, as amended by RA 11976 (EOPT); RR 7-2024 and RR 8-2024 (to confirm) |
-| 5 | Register your books of accounts | No BIR fee. | Same day to a few days | NIRC Sec. 232; RR 9-2009 (to confirm) |
-| 6 | Set up invoicing (Authority to Print or e-invoicing) | Printer charges vary. | Several days to weeks (printing) | NIRC Secs. 113 and 237, as amended by RA 11976 (EOPT); RR 7-2024 |
-| 7 | Post your COR and "Ask for an invoice" notice | None. | Same day | NIRC Sec. 236; RR 7-2024 (to confirm) |
-| 8 | Register as an employer (if you hire employees) | No registration fee; monthly contributions apply. | 1–5 days per agency | RA 11199 (Social Security Act of 2018); RA 11223 (Universal Health Care Act); RA 9679 (HDMF Law of 2009) |
+| m-books | monthly | Update your books of accounts | Throughout the month | NIRC Sec. 232 |
+| m-invoices | monthly | Check that every sale has an invoice | At each sale | NIRC Secs. 113 and 237, as amended by RA 11976 |
+| m-1601c | monthly | File and pay 1601C (tax withheld from employees) | 10th of next month (15 January for December) | NIRC Sec. 58(A); RR 2-98 |
+| m-contributions | monthly | Remit SSS, PhilHealth and Pag-IBIG contributions | Per each agency's schedule | RA 11199; RA 11223; RA 9679 |
+| m-0619e | monthly | File and pay 0619E (expanded withholding) | 10th of next month | NIRC Sec. 58(A); RR 11-2018 |
+| q-1701q | quarterly | File 1701Q (quarterly income tax) | 15 May, 15 Aug, 15 Nov | NIRC Sec. 74 |
+| q-1702q | quarterly | File 1702Q (quarterly corporate income tax) | Within 60 days after the quarter | NIRC Sec. 77(B) |
+| q-2551q | quarterly | File 2551Q (percentage tax) | 25 days after the quarter | NIRC Secs. 116 and 128 |
+| q-2550q | quarterly | File 2550Q (VAT) and the Summary List of Sales and Purchases | 25 days after the quarter | NIRC Sec. 114 |
+| q-1601eq | quarterly | File 1601EQ with the Quarterly Alphalist of Payees | Last day of the month after the quarter | NIRC Sec. 58(A); RR 11-2018 |
+| q-2307-issue | quarterly | Give BIR Form 2307 to the suppliers you withheld from | Within 20 days after the quarter (to confirm) | RR 2-98 Sec. 2.58(B), as amended |
+| q-2307-collect | quarterly | Collect BIR Form 2307 from clients who withheld from you | Before you file your quarterly income tax return | RR 2-98 Sec. 2.58.3 |
+| a-itr-ind | annual | File your annual income tax return (1701 or 1701A) for last year | 15 April | NIRC Sec. 51(C)(1) |
+| a-itr-corp | annual | File your annual corporate income tax return (1702) with financial statements | 15th day of the 4th month after year end | NIRC Sec. 77(B) |
+| a-1604c | annual | File 1604C with the alphalist of employees | 31 January | NIRC Sec. 58(C) |
+| a-2316 | annual | Give each employee their BIR Form 2316 | 31 January (to confirm) | NIRC Sec. 83, as amended by RA 10963 |
+| a-1604e | annual | File 1604E with the alphalist of payees | 1 March | NIRC Sec. 58(C) |
+| a-inventory | annual | Submit your year-end inventory list (if you sell goods) | Within 30 days after year end (to confirm) | RR 17-2013 (to confirm) |
+| a-books-close | annual | Close and keep your books for last year | Early in the year | NIRC Secs. 232 and 235, as amended by RA 11976 |
+| a-mayors-permit | annual | Renew your mayor's/business permit | By 20 January (LGU deadline varies) | RA 7160 Sec. 167 |
+| o-post-cor | one_time | Display your Certificate of Registration and "Ask for an invoice" notice | When you start operating | NIRC Sec. 236 |
+| o-books-register | one_time | Register your books of accounts | Before you start operating | NIRC Sec. 232 |
+| o-invoices | one_time | Get an Authority to Print or register your invoicing system | Before your first sale | NIRC Sec. 238; RR 7-2024 |
+| o-8pct-election | one_time | Elect the 8% option in your first quarterly return of the year | First quarterly return (15 May) | RR 8-2018 |
+
+## Life-event flows (7)
+
+Deadlines and forms mentioned in each flow:
+
+| Flow | Step | Deadline | Form | Legal basis |
+| --- | --- | --- | --- | --- |
+| Starting a business | Choose your income tax option (individuals) | First quarterly return of the year |  | RR 8-2018 |
+| Hiring your first employee | Register as an employer |  | 1905 | RA 11199; RA 11223; RA 9679; RR 7-2012 (to confirm) |
+| Hiring your first employee | Withhold tax every payroll |  |  | RR 11-2018 |
+| Hiring your first employee | Remit monthly | 10th of the following month (15 January for December) | 1601C |  |
+| Hiring your first employee | Year-end | 31 January | 1604C |  |
+| Closing a business | Apply for cancellation of registration |  | 1905 | NIRC Sec. 236(F), as amended by RA 11976; RR 7-2024 (to confirm) |
+| Closing a business | File your final returns and pay any tax due | Per RDO instructions (to confirm) |  |  |
+| Settling an estate | File the estate tax return and pay | Within one year from the date of death | 1801 | NIRC Secs. 90 and 91, as amended by RA 10963 |
+| Selling real property | File and pay capital gains tax | Within 30 days after the sale | 1706 | NIRC Sec. 24(D); RR 13-99 (to confirm) |
+| Selling real property | File and pay documentary stamp tax | Within 5 days after the end of the month of the sale | 2000-OT | NIRC Secs. 196 and 200 |
+| Donating property | File and pay donor's tax | Within 30 days after the date of the gift | 1800 | NIRC Sec. 103 |
+| Moving to another RDO | File for transfer of registration |  | 1905 | NIRC Sec. 236(B), as amended by RA 11976; RR 7-2024 (to confirm) |
 
 ## Forms (14)
 

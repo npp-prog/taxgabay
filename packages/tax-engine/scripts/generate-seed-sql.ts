@@ -5,7 +5,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deadlineRules, forms, holidays, registrationSteps, taxRules, validateRules } from "../src";
+import { checklistItems, deadlineRules, forms, holidays, registrationSteps, taxRules, validateRules } from "../src";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, "../../../supabase/seed.sql");
@@ -73,6 +73,18 @@ const sql = [
     "registration_steps",
     ["id", "business_form", "order", "agency", "title", "summary", "requirements_json", "where", "online_link", "fees_note", "est_days", "legal_basis", "only_if_employees", "needs_verification"],
     registrationSteps.map((s) => [s.id, s.business_form, s.order, s.agency, s.title, s.summary, new Json(s.requirements), s.where, s.online_link, s.fees_note, s.est_days, s.legal_basis, s.only_if_employees ?? false, s.needs_verification]),
+    "id",
+  ),
+  insert(
+    "checklist_templates",
+    ["id", "title", "frequency"],
+    [["monthly", "Monthly checklist", "monthly"], ["quarterly", "Quarterly checklist", "quarterly"], ["annual", "Annual checklist", "annual"], ["one_time", "One-time setup", "one_time"]],
+    "id",
+  ),
+  insert(
+    "checklist_items",
+    ["id", "template_id", "title", "frequency", "applies_when_json", "form_code", "detail", "months", "quarters", "due_hint", "legal_basis", "needs_verification"],
+    checklistItems.map((i) => [i.id, i.frequency, i.title, i.frequency, new Json(i.applies_when), i.form_code, i.detail, i.months ?? null, i.quarters ? `{${i.quarters.join(",")}}` : null, i.due_hint, i.legal_basis, i.needs_verification]),
     "id",
   ),
 ].join("\n");

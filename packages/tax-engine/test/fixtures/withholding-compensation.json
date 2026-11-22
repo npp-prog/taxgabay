@@ -1,0 +1,23 @@
+{
+  "description": "Withholding tax on compensation per payroll period (RR 11-2018 revised tables) and year-end annualization.",
+  "periodic": [
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "20833", "expected": "0.00" },
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "25000", "expected": "625.05" },
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "33333", "expected": "1875.00" },
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "50000", "expected": "5208.40" },
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "100000", "expected": "16875.05" },
+    { "period": "monthly", "pay_date": "2022-06-30", "gross": "50000", "expected": "6666.75" },
+    { "period": "monthly", "pay_date": "2024-06-30", "gross": "30000", "contributions": "1500", "non_taxable": "2000", "expected": "850.05" },
+    { "period": "semi_monthly", "pay_date": "2024-06-15", "gross": "25000", "expected": "2604.10" },
+    { "period": "weekly", "pay_date": "2024-06-07", "gross": "10000", "expected": "894.20" },
+    { "period": "daily", "pay_date": "2024-06-07", "gross": "1000", "expected": "47.25" }
+  ],
+  "annual": [
+    { "name": "Benefits over ₱90,000 — balance to withhold",
+      "input": { "taxable_year": 2024, "gross_compensation": "600000", "mandatory_contributions": "30000", "thirteenth_month_and_other_benefits": "100000", "de_minimis": "20000", "tax_withheld": "50000" },
+      "expected": { "taxable_compensation": "580000.00", "annual_tax": "58500.00", "balance": "8500.00" } },
+    { "name": "Over-withheld — refund",
+      "input": { "taxable_year": 2024, "gross_compensation": "600000", "mandatory_contributions": "30000", "thirteenth_month_and_other_benefits": "100000", "tax_withheld": "60000" },
+      "expected": { "annual_tax": "58500.00", "balance": "-1500.00" } }
+  ]
+}

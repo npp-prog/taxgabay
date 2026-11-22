@@ -1,0 +1,32 @@
+{
+  "description": "Estate, donor's, capital gains and documentary stamp tax worked examples.",
+  "estate": [
+    { "name": "Married decedent, conjugal family home",
+      "input": { "date_of_death": "2024-05-01", "exclusive_property": "3000000", "conjugal_property": "20000000", "conjugal_deductions": "2000000", "family_home_value": "12000000", "family_home_is_conjugal": true },
+      "expected": { "gross_estate": "23000000.00", "net_taxable_estate": "1000000.00", "estate_tax": "60000.00" } },
+    { "name": "Single decedent, family home over the ₱10M cap",
+      "input": { "date_of_death": "2024-05-01", "exclusive_property": "20000000", "family_home_value": "15000000" },
+      "expected": { "net_taxable_estate": "5000000.00", "estate_tax": "300000.00" } },
+    { "name": "Small estate fully covered by the standard deduction",
+      "input": { "date_of_death": "2024-05-01", "exclusive_property": "4000000" },
+      "expected": { "net_taxable_estate": "0.00", "estate_tax": "0.00" } }
+  ],
+  "donors": [
+    { "name": "First gift of the year", "input": { "date_of_gift": "2024-03-01", "gift_amount": "1000000" }, "expected": { "donors_tax_due": "45000.00" } },
+    { "name": "Second gift, cumulative", "input": { "date_of_gift": "2024-09-01", "gift_amount": "500000", "prior_gifts_this_year": "1000000", "prior_tax_paid_this_year": "45000" }, "expected": { "total_gifts_this_year": "1500000.00", "tax_on_total": "75000.00", "donors_tax_due": "30000.00" } },
+    { "name": "Within the ₱250,000 exemption", "input": { "date_of_gift": "2024-03-01", "gift_amount": "200000" }, "expected": { "donors_tax_due": "0.00" } }
+  ],
+  "cgt_real_property": [
+    { "input": { "date_of_sale": "2024-03-01", "gross_selling_price": "5000000", "zonal_value": "6000000", "assessor_fair_market_value": "4000000" }, "expected": { "tax_base": "6000000.00", "capital_gains_tax": "360000.00" } }
+  ],
+  "cgt_shares": [
+    { "input": { "date_of_sale": "2024-03-01", "selling_price": "1000000", "cost_basis": "600000", "selling_expenses": "20000" }, "expected": { "tax_base": "380000.00", "capital_gains_tax": "57000.00" } }
+  ],
+  "dst": [
+    { "name": "Sale of real property — fraction of ₱1,000 rounds up", "input": { "transaction": "sale_real_property", "date": "2024-03-01", "amount": "5000500", "fair_market_value": "4000000" }, "expected": { "tax_base": "5000500.00", "dst": "75015.00" } },
+    { "name": "Original issue of shares, exact multiple", "input": { "transaction": "original_issue_shares", "date": "2024-03-01", "amount": "1000000" }, "expected": { "dst": "10000.00" } },
+    { "name": "Original issue of shares, fraction of ₱200", "input": { "transaction": "original_issue_shares", "date": "2024-03-01", "amount": "1000100" }, "expected": { "dst": "10002.00" } },
+    { "name": "Loan, one year or more", "input": { "transaction": "debt_instrument", "date": "2024-03-01", "amount": "1000000" }, "expected": { "dst": "7500.00" } },
+    { "name": "Loan, 180-day term (pro-rated)", "input": { "transaction": "debt_instrument", "date": "2024-03-01", "amount": "1000000", "term_days": 180 }, "expected": { "dst": "3698.63" } }
+  ]
+}

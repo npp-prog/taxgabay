@@ -5,14 +5,14 @@
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HOLIDAYS_NOT_SEEDED, deadlineRules, forms, holidays, registrationSteps, taxRules, type Bracket, type DueLogic } from "../src";
+import { HOLIDAYS_NOT_SEEDED, checklistItems, deadlineRules, forms, holidays, lifeEvents, registrationSteps, taxRules, type Bracket, type DueLogic } from "../src";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, "../../../docs/VERIFY.md");
 
 const cell = (s: unknown) => String(s ?? "—").replace(/\|/g, "\\|").replace(/\n/g, " ");
 const row = (cols: unknown[]) => `| ${cols.map(cell).join(" | ")} |`;
-const pctOrNum = (v: string) => (/^0\.\d+$/.test(v) ? `${Number((Number(v) * 100).toFixed(4))}%` : Number(v).toLocaleString("en-US"));
+const pctOrNum = (v: string) => (/^0\.\d+$/.test(v) ? `${Number((Number(v) * 100).toFixed(4))}%` : Number(v).toLocaleString("en-US", { minimumFractionDigits: v.includes(".") ? 2 : 0, maximumFractionDigits: 2 }));
 
 function describeValue(v: unknown): string {
   if (v && typeof v === "object" && "brackets" in v && Array.isArray((v as { brackets: unknown[] }).brackets)) {
@@ -24,6 +24,16 @@ function describeValue(v: unknown): string {
           : `over ${pctOrNum(b.over)}${b.not_over ? ` to ${pctOrNum(b.not_over)}` : ""}: ₱${pctOrNum(b.base)} + ${Number((Number(b.rate) * 100).toFixed(4))}%`,
       )
       .join("; ");
+  }
+  if (v && typeof v === "object" && "items" in v) {
+    return (v as { items: { label: string; ceiling: string; per: string }[] }).items.map((i) => `${i.label}: ₱${pctOrNum(i.ceiling)}/${i.per}`).join("; ");
+  }
+  if (v && typeof v === "object" && "atc" in v) {
+    const e = v as { atc: string; description: string; rate: string };
+    return `${e.atc} — ${e.description}: ${pctOrNum(e.rate)}`;
+  }
+  if (v && typeof v === "object" && "period" in v && "brackets" in v) {
+    return describeValue({ brackets: (v as { brackets: unknown[] }).brackets });
   }
   if (v && typeof v === "object" && "classes" in v) {
     return (v as { classes: { size: string; from: string; below: string | null }[] }).classes
@@ -87,6 +97,14 @@ ${low.join("\n")}
 - **1601C December** due 15 January applies to eFPS filers too.
 - **Individuals** are forced to the calendar year; fiscal quarters apply only to non-individuals (2551Q, 2550Q, 1702Q, 1702-RT).
 - **Cooperatives** get the same returns as other non-individuals (possible exemptions under RA 9520 not modeled).
+- **Corporate:** RCIT vs MCIT on itemized deductions only (corporate 40% OSD not modeled); no pro-rating for fiscal years straddling a rate change (warning instead); reduced 20% rate requires both taxable income ≤ ₱5M and assets (excl. land) ≤ ₱100M; MCIT from the 4th taxable year after commencement.
+- **Compensation withholding:** per-period table applied to (gross − mandatory contributions − non-taxable pay); minimum wage earner exemption not applied; only the monthly table is seeded for 2018–2022.
+- **Annualization:** taxable = basic pay − contributions + (13th month and other benefits above ₱90,000); de minimis excluded within ceilings entered by the user.
+- **EWT base** is the amount net of VAT when the payee is VAT-registered.
+- **Estate:** family home deduction = decedent's share (half if conjugal/community), capped at ₱10M; net share of surviving spouse = (conjugal property − conjugal deductions) ÷ 2; citizens/residents only.
+- **Donor's tax:** cumulative per calendar year, less tax already paid that year; exempt gifts excluded by the user.
+- **DST:** "or fractional part thereof" rounds the base up to the next whole unit; debt instruments under one year pro-rated by days/365.
+- **Reminders:** sent only on the exact configured day (7/3/1 days before); a day the job does not run is not caught up.
 
 ## Tax rules (${taxRules.length})
 
@@ -112,11 +130,27 @@ ${row(["Date", "Name", "Type", "Legal basis", "Note"])}
 ${row(["---", "---", "---", "---", "---"])}
 ${holidays.map((h) => row([h.date, h.name, h.type, h.legal_basis, h.note ?? ""])).join("\n")}
 
-## Sole proprietorship registration roadmap (${registrationSteps.length} steps)
+## Registration roadmaps (${registrationSteps.length} steps)
 
-${row(["#", "Step", "Fees", "Processing time", "Legal basis"])}
+${row(["Path", "#", "Step", "Fees", "Processing time", "Legal basis"])}
+${row(["---", "---", "---", "---", "---", "---"])}
+${registrationSteps.map((s) => row([s.business_form.toUpperCase(), s.order, s.title, s.fees_note, s.est_days, s.legal_basis])).join("\n")}
+
+## Checklist items (${checklistItems.length})
+
+${row(["ID", "Frequency", "Item", "Due", "Legal basis"])}
 ${row(["---", "---", "---", "---", "---"])}
-${registrationSteps.map((s) => row([s.order, s.title, s.fees_note, s.est_days, s.legal_basis])).join("\n")}
+${checklistItems.map((i) => row([i.id, i.frequency, i.title, i.due_hint, i.legal_basis])).join("\n")}
+
+## Life-event flows (${lifeEvents.length})
+
+Deadlines and forms mentioned in each flow:
+
+${row(["Flow", "Step", "Deadline", "Form", "Legal basis"])}
+${row(["---", "---", "---", "---", "---"])}
+${lifeEvents
+  .flatMap((e) => e.steps.filter((st) => st.deadline || st.form_code || st.legal_basis).map((st) => row([e.title, st.title, st.deadline ?? "", st.form_code ?? "", st.legal_basis ?? ""])))
+  .join("\n")}
 
 ## Forms (${forms.length})
 

@@ -1,4 +1,6 @@
-import type { Bracket, TaxRule, TaxType, TaxpayerCategory } from "../types";
+import type { Bracket, TaxRule } from "../types";
+import { phase2Rules } from "./tax-rules-phase2";
+import { rule, TRAIN_URL } from "./rule-helper";
 
 /**
  * Seed tax rules. EVERY row is needs_verification: true until the CPA confirms it
@@ -7,33 +9,6 @@ import type { Bracket, TaxRule, TaxType, TaxpayerCategory } from "../types";
  * Amounts and rates are decimal strings (never JS floats).
  */
 
-function rule<V>(
-  id: string,
-  rule_key: string,
-  tax_type: TaxType,
-  taxpayer_category: TaxpayerCategory,
-  value: V,
-  effective_from: string,
-  effective_to: string | null,
-  legal_basis: string,
-  source_url: string | null = null,
-  note?: string,
-): TaxRule<V> {
-  return {
-    id,
-    rule_key,
-    tax_type,
-    taxpayer_category,
-    value,
-    effective_from,
-    effective_to,
-    legal_basis,
-    source_url,
-    last_verified_at: null,
-    needs_verification: true,
-    ...(note ? { note } : {}),
-  };
-}
 
 // ---------- Income tax: individuals ----------
 
@@ -50,7 +25,6 @@ export interface OsdValue {
   rate: string;
 }
 
-const TRAIN_URL = "https://www.bir.gov.ph/";
 
 const brackets2018: Bracket[] = [
   { over: "0", not_over: "250000", base: "0", rate: "0" },
@@ -102,7 +76,7 @@ export interface TaxpayerSizeValue {
   classes: { size: "micro" | "small" | "medium" | "large"; from: string; below: string | null }[];
 }
 
-export const taxRules: TaxRule[] = [
+const coreRules: TaxRule[] = [
   rule<{ brackets: Bracket[] }>(
     "it-grad-2018",
     "income_tax.individual.graduated",
@@ -463,3 +437,5 @@ export const taxRules: TaxRule[] = [
     TRAIN_URL,
   ),
 ];
+
+export const taxRules: TaxRule[] = [...coreRules, ...phase2Rules];

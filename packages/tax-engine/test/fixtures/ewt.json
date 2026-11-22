@@ -1,0 +1,9 @@
+{
+  "description": "Expanded withholding tax by ATC. VAT-inclusive amounts are reduced to the net-of-VAT base first.",
+  "cases": [
+    { "input": { "atc": "WI010", "payment_date": "2026-03-15", "amount": "100000", "vat_inclusive": false }, "expected": { "tax_base": "100000.00", "ewt": "5000.00", "net_payment": "95000.00" } },
+    { "input": { "atc": "WC011", "payment_date": "2026-03-15", "amount": "112000", "vat_inclusive": true }, "expected": { "tax_base": "100000.00", "ewt": "15000.00", "net_payment": "97000.00" } },
+    { "input": { "atc": "WI100", "payment_date": "2026-03-15", "amount": "50000", "vat_inclusive": false }, "expected": { "ewt": "2500.00" } },
+    { "input": { "atc": "WC158", "payment_date": "2026-03-15", "amount": "250000", "vat_inclusive": false }, "expected": { "ewt": "2500.00" } }
+  ]
+}
