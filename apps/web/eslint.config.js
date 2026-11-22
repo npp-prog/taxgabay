@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["public/pdfjs/**", "scripts/**", ".next/**", ".next-admin/**", "node_modules/**", "next-env.d.ts", "public/sw.js", "playwright-report/**", "test-results/**"] },
+  { ignores: ["public/pdfjs/**", "scripts/**", ".next/**", ".next-admin/**", ".next-dev/**", "node_modules/**", "next-env.d.ts", "public/sw.js", "playwright-report/**", "test-results/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
