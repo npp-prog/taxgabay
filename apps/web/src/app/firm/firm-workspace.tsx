@@ -1,6 +1,6 @@
 "use client";
 
-import { quarterLabel, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
+import { fiscalQuarterLabel, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
 import { peso, type IncomeTaxOption, type Profile, type TaxpayerType, type VatStatus } from "@taxgabay/tax-engine";
 import Link from "next/link";
 import * as React from "react";
@@ -35,9 +35,9 @@ import {
   type PeriodRow,
   type PrepClient,
 } from "@/lib/workspace";
-import { PERIOD_STATUS_LABEL } from "@/lib/workspace-core";
+import { PERIOD_STATUS_LABEL, taxableYearEnd } from "@/lib/workspace-core";
 import { BooksSection } from "../prepare/books-section";
-import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs, MONTH_NAMES, type RecordKind } from "../prepare/parts";
+import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs, MONTH_NAMES, quarterMonthNumbers, type RecordKind } from "../prepare/parts";
 
 const PACKET_STATUS: Record<PacketRow["status"], string> = { prepared: "Prepared — not reviewed", reviewed: "Reviewed", released: "Released to client" };
 const defaultProfile = (): Profile => ({ taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", has_employees: false, withholds_expanded: false, filing_channel: "ebirforms", efps_group: null, fiscal_year_end_month: 12, rdo_code: null, taxpayer_size: "micro", line_of_business: null });
@@ -238,7 +238,9 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
   const [tab, setTab] = React.useState<RecordKind>("sale");
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
   const [monthPick, setMonthPick] = React.useState(0);
-  const month = monthPick ? (period.quarter - 1) * 3 + monthPick : undefined;
+  const fy = taxableYearEnd(profile);
+  const qMonthNums = quarterMonthNumbers(period, fy);
+  const month = monthPick ? qMonthNums[monthPick - 1] : undefined;
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [nonce, setNonce] = React.useState(0);
@@ -298,7 +300,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
           </div>
           {isCorp ? (
             <div className="md:col-span-2">
-              <CorporateFields value={corporate} onChange={setCorporate} idPrefix="f" />
+              <CorporateFields value={corporate} onChange={setCorporate} idPrefix="f" fyEnd={profile.fiscal_year_end_month} onFyEnd={(m) => setProfile({ ...profile, fiscal_year_end_month: m })} />
             </div>
           ) : (
           <div>
@@ -366,12 +368,12 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
               <select aria-label="Packet" className={cn(input, "w-44")} value={monthPick} onChange={(e) => setMonthPick(Number(e.target.value))}>
                 {[0, 1, 2, 3].map((k) => (
                 <option key={k} value={k}>
-                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[(period.quarter - 1) * 3 + k - 1]} only`}
+                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[qMonthNums[k - 1]! - 1]} only`}
                 </option>
               ))}
               </select>
               <Button disabled={busy} onClick={() => run(() => createPacket({ ...client, profile, corporate }, period, month))}>
-                Prepare {month ? `${MONTH_NAMES[month - 1]} ${period.year}` : quarterLabel(period)} packet
+                Prepare {month ? MONTH_NAMES[month - 1] : fiscalQuarterLabel(fy, period)} packet
               </Button>
             </div>
             <ul className="space-y-1 text-sm">

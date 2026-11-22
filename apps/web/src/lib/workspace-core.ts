@@ -1,5 +1,6 @@
 import type { ClientRecord, Packet, Party, QuarterRef } from "@taxgabay/filing";
-import { quarterRange } from "@taxgabay/filing";
+import { fiscalQuarterRange } from "@taxgabay/filing";
+import type { Profile } from "@taxgabay/tax-engine";
 
 /** Database row of public.records. */
 export interface RecordRow {
@@ -100,8 +101,12 @@ export function fillTins(packet: Packet, tins: ReadonlyMap<string, string>): Pac
   };
 }
 
-export const quarterPeriod = (q: QuarterRef) => {
-  const r = quarterRange(q);
+/** Month the client's taxable year ends: fiscal years apply to corporations ending in Mar/Jun/Sep/Dec. */
+export const taxableYearEnd = (p: Pick<Profile, "taxpayer_type" | "fiscal_year_end_month">) =>
+  ["corporation", "opc", "partnership"].includes(p.taxpayer_type) && [3, 6, 9, 12].includes(p.fiscal_year_end_month) ? p.fiscal_year_end_month : 12;
+
+export const quarterPeriod = (q: QuarterRef, fy = 12) => {
+  const r = fiscalQuarterRange(fy, q);
   return { kind: "quarter" as const, start_date: r.start, end_date: r.end };
 };
 

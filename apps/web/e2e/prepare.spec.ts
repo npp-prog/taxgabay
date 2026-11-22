@@ -179,3 +179,21 @@ test("a mixed-income earner adds the 2316 and gets the annual 1701", async ({ pa
   await expect(annual).toContainText("₱400,000.00");
   await expect(annual).toContainText("₱41,700.00"); // ₱22,500 on compensation + 8% of ₱240,000
 });
+
+test("a corporation on a June fiscal year gets fiscal-quarter returns", async ({ page }) => {
+  await page.goto("/prepare");
+  await expect(async () => {
+    await page.getByLabel("You are a").selectOption("opc");
+    await expect(page.getByLabel("Taxable year ends")).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await page.getByLabel("Taxable year ends").selectOption("6");
+  await page.getByLabel("Year operations began").fill("2015");
+  await page.getByLabel("Date", { exact: true }).fill("2026-08-15");
+  await page.getByLabel("Invoice no.").fill("1");
+  await page.getByLabel("Customer", { exact: true }).fill("Client");
+  await page.getByLabel("Amount (₱)").fill("100000");
+  await page.getByRole("button", { name: "Add sale" }).click();
+  await page.getByLabel(/Fiscal year/).selectOption("2027");
+  const q = page.getByTestId("prepared-doc").filter({ hasText: "Quarterly income tax return (corporations" });
+  await expect(q).toContainText("Q1 FY2027 (Jul–Sep 2026)");
+});

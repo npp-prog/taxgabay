@@ -1,7 +1,7 @@
 import { preparePacket, type ClientRecord } from "@taxgabay/filing";
 import { DEFAULT_PROFILE } from "@taxgabay/tax-engine";
 import { describe, expect, it } from "vitest";
-import { fillTins, monthPeriod, packetTinNeeds, quarterPeriod, recordTin, recordToRow, rowToRecord, tinRef } from "./workspace-core";
+import { fillTins, monthPeriod, packetTinNeeds, quarterPeriod, taxableYearEnd, recordTin, recordToRow, rowToRecord, tinRef } from "./workspace-core";
 
 const exp: ClientRecord = { kind: "expense", id: "e1", date: "2026-01-31", supplier: { name: "Jose  Cruz", tin: "301-555-666-000" }, category: "rent", amount: "10000.00", withholding: { atc: "WI100" } };
 const sale: ClientRecord = { kind: "sale", id: "s1", date: "2026-01-10", document_no: "1", customer: { name: "Kape Co.", tin: "201" }, amount: "30000.00" };
@@ -59,6 +59,10 @@ describe("workspace mapping", () => {
     expect(filled.documents.find((d) => d.form === "QAP")!.schedule!.rows[0]!.tin).toBe("301555666000");
     expect(filled.documents.find((d) => d.form === "SAWT")!.schedule!.rows[0]!.tin).toBe("201111");
     expect(tinRef("  A   B ")).toBe("a b");
+    expect(quarterPeriod({ year: 2027, quarter: 1 }, 6)).toEqual({ kind: "quarter", start_date: "2026-07-01", end_date: "2026-09-30" });
+    expect(taxableYearEnd({ taxpayer_type: "opc", fiscal_year_end_month: 6 })).toBe(6);
+    expect(taxableYearEnd({ taxpayer_type: "opc", fiscal_year_end_month: 5 })).toBe(12);
+    expect(taxableYearEnd({ taxpayer_type: "self_employed", fiscal_year_end_month: 6 })).toBe(12);
     expect(monthPeriod(2028, 2)).toEqual({ kind: "month", start_date: "2028-02-01", end_date: "2028-02-29" });
     expect(quarterPeriod({ year: 2026, quarter: 2 })).toEqual({ kind: "quarter", start_date: "2026-04-01", end_date: "2026-06-30" });
   });

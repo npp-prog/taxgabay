@@ -1,10 +1,10 @@
 "use client";
 
-import { preparePacket, redactTins, type ClientInfo, type ClientRecord, type Packet, type QuarterRef } from "@taxgabay/filing";
+import { fiscalQuarterRange, preparePacket, redactTins, type ClientInfo, type ClientRecord, type Packet, type QuarterRef } from "@taxgabay/filing";
 import { DEFAULT_PROFILE, type Profile } from "@taxgabay/tax-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "./supabase";
-import { fillTins, monthPeriod, packetTinNeeds, quarterPeriod, recordTin, recordToRow, rowToRecord, tinKey, type RecordRow } from "./workspace-core";
+import { fillTins, monthPeriod, packetTinNeeds, quarterPeriod, taxableYearEnd, recordTin, recordToRow, rowToRecord, tinKey, type RecordRow } from "./workspace-core";
 
 /** Data access for the firm workspace and the client portal. RLS in the database is the security boundary. */
 
@@ -187,8 +187,8 @@ export async function loadPeriods(cid: string): Promise<PeriodRow[]> {
   return check(await sb().from("periods").select("id,prep_client_id,kind,start_date,end_date,status").eq("prep_client_id", cid).order("start_date", { ascending: false })) as PeriodRow[];
 }
 
-export async function setPeriodStatus(cid: string, q: QuarterRef, status: string, month?: number): Promise<PeriodRow> {
-  const p = month ? monthPeriod(q.year, month) : quarterPeriod(q);
+export async function setPeriodStatus(cid: string, q: QuarterRef, status: string, month?: number, fy = 12): Promise<PeriodRow> {
+  const p = month ? monthPeriod(Number(fiscalQuarterRange(fy, q).start.slice(0, 4)) + (month < Number(fiscalQuarterRange(fy, q).start.slice(5, 7)) ? 1 : 0), month) : quarterPeriod(q, fy);
   const existing = (check(await sb().from("periods").select("id,prep_client_id,kind,start_date,end_date,status").eq("prep_client_id", cid).eq("kind", p.kind).eq("start_date", p.start_date)) as PeriodRow[])[0];
   if (existing) {
     const rows = check(await sb().from("periods").update({ status }).eq("id", existing.id).select("id,prep_client_id,kind,start_date,end_date,status")) as PeriodRow[];
@@ -206,7 +206,7 @@ export async function loadPackets(cid: string): Promise<PacketRow[]> {
 export async function createPacket(client: PrepClient, q: QuarterRef, month?: number): Promise<PacketRow> {
   const records = await loadRecords(client.id);
   const packet = preparePacket({ client: { name: client.name, profile: client.profile, corporate: client.corporate }, records, period: q, month });
-  const period = await setPeriodStatus(client.id, q, "prepared", month);
+  const period = await setPeriodStatus(client.id, q, "prepared", month, taxableYearEnd(client.profile));
   const rows = check(await sb().from("packets").insert({ period_id: period.id, prep_client_id: client.id, payload: redactTins(packet), status: "prepared" }).select("id,period_id,prep_client_id,payload,status,prepared_at,reviewed_by,reviewed_at,released_at")) as PacketRow[];
   return rows[0]!;
 }

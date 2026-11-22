@@ -10,7 +10,8 @@ import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { usePrepare } from "@/lib/prepare-store";
 import { todayPH } from "@/lib/utils";
 import { BooksSection } from "./books-section";
-import { MONTH_NAMES } from "./parts";
+import { MONTH_NAMES, quarterMonthNumbers } from "./parts";
+import { taxableYearEnd } from "@/lib/workspace-core";
 import { CorporateFields, CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs, type RecordKind } from "./parts";
 
 const EXAMPLE: ClientRecord[] = [
@@ -31,7 +32,9 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
   const [tab, setTab] = React.useState<RecordKind>("sale");
   const isCorp = ["corporation", "opc", "partnership"].includes(client.profile.taxpayer_type);
   const [monthPick, setMonthPick] = React.useState(0);
-  const month = monthPick ? (period.quarter - 1) * 3 + monthPick : undefined;
+  const fy = taxableYearEnd(client.profile);
+  const qMonthNums = quarterMonthNumbers(period, fy);
+  const month = monthPick ? qMonthNums[monthPick - 1] : undefined;
   const packet = React.useMemo(() => preparePacket({ client, records, period, month }), [client, records, period, month]);
   const setProfile = (patch: Partial<typeof client.profile>) => update((s) => ({ ...s, client: { ...s.client, profile: { ...s.client.profile, ...patch } } }));
   const addRecord = (r: ClientRecord) => update((s) => ({ ...s, records: [...s.records, r] }));
@@ -76,7 +79,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             </select>
           </div>
           {isCorp ? (
-            <CorporateFields value={client.corporate} onChange={(corporate) => update((s) => ({ ...s, client: { ...s.client, corporate } }))} idPrefix="p" />
+            <CorporateFields value={client.corporate} onChange={(corporate) => update((s) => ({ ...s, client: { ...s.client, corporate } }))} idPrefix="p" fyEnd={client.profile.fiscal_year_end_month} onFyEnd={(m) => setProfile({ fiscal_year_end_month: m })} />
           ) : (
           <div>
             <label className={label} htmlFor="p-option">
@@ -151,7 +154,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
           </h2>
           <div>
             <label className={label} htmlFor="q-year">
-              Year
+              {fy === 12 ? "Year" : "Fiscal year (named by the year it ends)"}
             </label>
             <select id="q-year" className={input} value={period.year} onChange={(e) => setPeriod((p) => ({ ...p, year: Number(e.target.value) }))}>
               {[2025, 2026, 2027].map((y) => (
@@ -177,7 +180,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             <select id="q-month" className={input} value={monthPick} onChange={(e) => setMonthPick(Number(e.target.value))}>
               {[0, 1, 2, 3].map((k) => (
                 <option key={k} value={k}>
-                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[(period.quarter - 1) * 3 + k - 1]} only`}
+                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[qMonthNums[k - 1]! - 1]} only`}
                 </option>
               ))}
             </select>

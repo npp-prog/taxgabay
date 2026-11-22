@@ -1,6 +1,6 @@
 "use client";
 
-import { preparePacket, quarterLabel, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
+import { fiscalQuarterLabel, preparePacket, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
 import { peso } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { PdfButton } from "@/components/pdf-button";
@@ -32,7 +32,7 @@ import {
   type PeriodRow,
   type PrepClient,
 } from "@/lib/workspace";
-import { PERIOD_STATUS_LABEL, quarterPeriod } from "@/lib/workspace-core";
+import { PERIOD_STATUS_LABEL, quarterPeriod, taxableYearEnd } from "@/lib/workspace-core";
 import { BooksSection } from "./books-section";
 import { CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs, type RecordKind } from "./parts";
 
@@ -90,7 +90,8 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
     if (tin) await giveConsent(clientId, userId, "tin");
   })} error={error} />;
 
-  const qp = quarterPeriod(period);
+  const fy = taxableYearEnd(data.client.profile);
+  const qp = quarterPeriod(period, fy);
   const status = data.periods.find((p) => p.kind === "quarter" && p.start_date === qp.start_date)?.status ?? "records_incomplete";
   const editable = status === "records_incomplete" || status === "ready";
 
@@ -160,9 +161,9 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
               ))}
             </select>
           </div>
-          {status === "records_incomplete" && <Button onClick={() => run(() => setPeriodStatus(clientId, period, "ready"))}>My records for {quarterLabel(period)} are complete</Button>}
+          {status === "records_incomplete" && <Button onClick={() => run(() => setPeriodStatus(clientId, period, "ready", undefined, fy))}>My records for {fiscalQuarterLabel(fy, period)} are complete</Button>}
           {status === "ready" && (
-            <Button variant="outline" onClick={() => run(() => setPeriodStatus(clientId, period, "records_incomplete"))}>
+            <Button variant="outline" onClick={() => run(() => setPeriodStatus(clientId, period, "records_incomplete", undefined, fy))}>
               I need to add more records
             </Button>
           )}

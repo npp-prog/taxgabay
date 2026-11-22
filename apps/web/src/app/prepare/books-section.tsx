@@ -1,7 +1,8 @@
 "use client";
 
 import { BOOK_NAMES, type BookCode } from "@taxgabay/accounting";
-import { buildBooks, quarterRange, type ClientInfo, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
+import { buildBooks, fiscalQuarterLabel, fiscalQuarterRange, fiscalYearRange, type ClientInfo, type ClientRecord, type QuarterRef } from "@taxgabay/filing";
+import { taxableYearEnd } from "@/lib/workspace-core";
 import * as React from "react";
 import { PdfButton } from "@/components/pdf-button";
 import { booksPdf } from "@/lib/books-pdf";
@@ -14,10 +15,12 @@ type View = "journal" | "ledger" | "tb" | "fs";
 export function BooksSection({ client, records, period }: { client: ClientInfo; records: readonly ClientRecord[]; period: QuarterRef }) {
   const [scope, setScope] = React.useState<"quarter" | "ytd">("quarter");
   const [view, setView] = React.useState<View>("journal");
-  const q = quarterRange(period);
-  const from = scope === "quarter" ? q.start : `${period.year}-01-01`;
-  const books = React.useMemo(() => buildBooks({ client, records, from, to: q.end }), [client, records, from, q.end]);
-  const label = scope === "quarter" ? `Q${period.quarter} ${period.year}` : `1 January to ${q.end}, ${period.year}`;
+  const fy = taxableYearEnd(client.profile);
+  const q = fiscalQuarterRange(fy, period);
+  const from = scope === "quarter" ? q.start : fiscalYearRange(fy, period.year).start;
+  const to = q.end;
+  const books = buildBooks({ client, records, from, to });
+  const label = scope === "quarter" ? fiscalQuarterLabel(fy, period) : `${from} to ${q.end}`;
   const corporate = ["corporation", "opc", "partnership"].includes(client.profile.taxpayer_type);
   const tabs: [View, string][] = [
     ["journal", "Books"],

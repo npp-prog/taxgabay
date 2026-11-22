@@ -1,6 +1,6 @@
 "use client";
 
-import { clientChart, journalProblem, type ClientRecord, type ExpenseCategory, type JournalRecord, type Packet, type PreparedDocument } from "@taxgabay/filing";
+import { clientChart, fiscalQuarterRange, journalProblem, monthsOfRange, type ClientRecord, type ExpenseCategory, type JournalRecord, type Packet, type PreparedDocument } from "@taxgabay/filing";
 import { dec, money, peso } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { StepsTable } from "@/components/steps-table";
@@ -38,12 +38,30 @@ function download(name: string, text: string) {
   a.remove();
 }
 
+/** The months of a (fiscal) quarter as calendar month numbers, for the monthly-packet choice. */
+export function quarterMonthNumbers(q: { year: number; quarter: 1 | 2 | 3 | 4 }, fy: number): number[] {
+  return monthsOfRange(fiscalQuarterRange(fy, q)).map((m) => Number(m.start.slice(5, 7)));
+}
+
 export type CorporateInfo = { year_commenced?: number | null; total_assets_excl_land?: string | null } | undefined;
 
 /** Year operations began and total assets excluding land (corporations, OPCs, partnerships). */
-export function CorporateFields({ value, onChange, idPrefix }: { value: CorporateInfo; onChange: (v: NonNullable<CorporateInfo>) => void; idPrefix: string }) {
+export function CorporateFields({ value, onChange, idPrefix, fyEnd, onFyEnd }: { value: CorporateInfo; onChange: (v: NonNullable<CorporateInfo>) => void; idPrefix: string; fyEnd?: number; onFyEnd?: (m: number) => void }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {onFyEnd && (
+        <div>
+          <label className={label} htmlFor={`${idPrefix}-fy`}>
+            Taxable year ends
+          </label>
+          <select id={`${idPrefix}-fy`} className={input} value={fyEnd ?? 12} onChange={(e) => onFyEnd(Number(e.target.value))}>
+            <option value={12}>December (calendar year)</option>
+            <option value={3}>March (fiscal year)</option>
+            <option value={6}>June (fiscal year)</option>
+            <option value={9}>September (fiscal year)</option>
+          </select>
+        </div>
+      )}
       <div>
         <label className={label} htmlFor={`${idPrefix}-commenced`}>
           Year operations began
