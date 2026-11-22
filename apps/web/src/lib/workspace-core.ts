@@ -20,6 +20,7 @@ const noTin = (p: Party): Party => ({ name: p.name, ...(p.address ? { address: p
 /** The TIN to save separately (encrypted) for a record, if one was typed in. */
 export function recordTin(r: ClientRecord): { subject: TinSubject; ref: string; tin: string } | null {
   if (r.kind === "journal") return null;
+  if (r.kind === "form_2316_received") return r.employer.tin ? { subject: "payor", ref: tinRef(r.employer.name), tin: r.employer.tin } : null;
   const [subject, party]: [TinSubject, Party] = r.kind === "sale" ? ["customer", r.customer] : r.kind === "expense" ? ["supplier", r.supplier] : r.kind === "payroll" ? ["employee", r.employee] : ["payor", r.payor];
   return party.tin ? { subject, ref: tinRef(party.name), tin: party.tin } : null;
 }
@@ -31,6 +32,7 @@ export function recordToRow(r: ClientRecord, prepClientId: string): Omit<RecordR
   const data: Record<string, unknown> = { ...rest };
   // Manual journal entries are stored as kind "other" (the database's catch-all kind).
   if (r.kind === "journal") return { prep_client_id: prepClientId, record_date: date, kind: "other", data: { ...data, journal: true } };
+  if (r.kind === "form_2316_received") return { prep_client_id: prepClientId, record_date: date, kind: "other", data: { ...data, employer: noTin(r.employer), form_2316: true } };
   if (r.kind === "sale") data.customer = noTin(r.customer);
   if (r.kind === "expense") data.supplier = noTin(r.supplier);
   if (r.kind === "form_2307_received") data.payor = noTin(r.payor);
@@ -43,6 +45,13 @@ export function recordToRow(r: ClientRecord, prepClientId: string): Omit<RecordR
  * checks do not ask for a TIN that is already on file.
  */
 export function rowToRecord(row: RecordRow, tinsOnFile: ReadonlyMap<string, string> = new Map()): ClientRecord | null {
+  if (row.kind === "other" && row.data.form_2316) {
+    const { form_2316: _f, ...d } = row.data;
+    void _f;
+    const r = { ...d, kind: "form_2316_received", id: row.id, date: row.record_date } as unknown as Extract<ClientRecord, { kind: "form_2316_received" }>;
+    const last4 = tinsOnFile.get(`payor|${tinRef(r.employer.name)}`);
+    return { ...r, employer: { ...r.employer, tin: last4 ? `•••${last4}` : null } };
+  }
   if (row.kind === "other" && row.data.journal) {
     const { journal: _j, ...d } = row.data;
     void _j;
@@ -57,7 +66,7 @@ export function rowToRecord(row: RecordRow, tinsOnFile: ReadonlyMap<string, stri
   if (r.kind === "sale") return { ...r, customer: mark("customer", r.customer) };
   if (r.kind === "expense") return { ...r, supplier: mark("supplier", r.supplier) };
   if (r.kind === "payroll") return { ...r, employee: mark("employee", r.employee) };
-  if (r.kind === "journal") return r;
+  if (r.kind === "journal" || r.kind === "form_2316_received") return r;
   return { ...r, payor: mark("payor", r.payor) };
 }
 

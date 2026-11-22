@@ -215,7 +215,8 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 - Fifth batch done: books of accounts posted from the records (cash receipts, cash disbursements, general journal), general ledger, trial balance and financial statements for the quarter or year to date, with a books PDF.
 - Sixth batch done: manual journal entries (opening balances, tax and contribution payments, depreciation, withdrawals/dividends, other) with balance checks, depreciation deducted on the returns (equipment no longer expensed), and monthly packets (0619E, 1601C and contributions for one month).
 - Seventh batch done: 1701 annual return for individuals on itemized deductions; CSV download of every prepared schedule (SAWT, QAP, summary lists, alphalist, contributions).
-- Next batches: fiscal-year corporations, mixed-income individuals, BIR data-file formats once confirmed, books of accounts and financial statements, monthly packets.
+- Eighth batch done: mixed-income individuals (Forms 2316 from employers, 1701Q on business income, annual 1701 combining compensation and business); TINs filled into the firm's CSV downloads.
+- Next batches: fiscal-year corporations, BIR data-file formats once confirmed, books of accounts and financial statements, monthly packets.
 - Known limitation: packets are quarterly, but 0619E is monthly and falls due before the quarter ends. The firm can prepare a quarter's packet early (e.g. in February for January's 0619E); later batches should add monthly packets.
 
 ## Out of scope for Phase 6

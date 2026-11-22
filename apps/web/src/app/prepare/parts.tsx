@@ -18,13 +18,14 @@ export const label = "mb-1 block text-sm font-medium";
 export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /** Record tabs: the CSV-importable kinds plus manual journal entries. */
-export type RecordKind = TemplateKind | "journal";
+export type RecordKind = TemplateKind | "journal" | "form_2316_received";
 
-const TABS: { kind: RecordKind; label: string }[] = [
+const ALL_TABS: { kind: RecordKind; label: string }[] = [
   { kind: "sale", label: "Sales" },
   { kind: "expense", label: "Expenses" },
   { kind: "form_2307_received", label: "2307s received" },
   { kind: "payroll", label: "Payroll" },
+  { kind: "form_2316_received", label: "2316s (salary)" },
   { kind: "journal", label: "Journal entries" },
 ];
 
@@ -59,7 +60,8 @@ export function CorporateFields({ value, onChange, idPrefix }: { value: Corporat
   );
 }
 
-export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRecord[]; tab: RecordKind; onTab: (t: RecordKind) => void }) {
+export function RecordTabs({ records, tab, onTab, mixed = false }: { records: readonly ClientRecord[]; tab: RecordKind; onTab: (t: RecordKind) => void; mixed?: boolean }) {
+  const TABS = ALL_TABS.filter((t) => t.kind !== "form_2316_received" || mixed);
   return (
         <div role="tablist" className="flex gap-1 border-b border-border">
           {TABS.map((t) => (
@@ -73,7 +75,7 @@ export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRe
 
 export function CsvImport({ kind, onRecords }: { kind: RecordKind; onRecords: (r: ClientRecord[]) => void | Promise<void> }) {
   const [importMsg, setImportMsg] = React.useState<{ ok: number; errors: string[] } | null>(null);
-  if (kind === "journal") return null;
+  if (kind === "journal" || kind === "form_2316_received") return null;
   const tab = kind;
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -130,8 +132,8 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
             <thead className="border-b border-border text-left">
               <tr className="form-label">
                 <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : tab === "payroll" ? "Employee" : tab === "journal" ? "Entry" : "Customer who withheld"}</th>
-                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : tab === "payroll" ? "Basic pay" : tab === "journal" ? "Total debits" : "Amount"}</th>
+                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : tab === "payroll" ? "Employee" : tab === "journal" ? "Entry" : tab === "form_2316_received" ? "Employer" : "Customer who withheld"}</th>
+                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" || tab === "form_2316_received" ? "Income · tax withheld" : tab === "payroll" ? "Basic pay" : tab === "journal" ? "Total debits" : "Amount"}</th>
                 {receipts && <th className="py-2 pr-3">Receipt</th>}
                 <th className="w-10" />
               </tr>
@@ -160,6 +162,11 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                         {r.withholding && <Badge variant="muted" className="ml-2">{r.withholding.atc}</Badge>}
                       </>
                     )}
+                    {r.kind === "form_2316_received" && (
+                      <>
+                        {r.employer.name} <span className="text-muted-foreground">· year {r.year}</span>
+                      </>
+                    )}
                     {r.kind === "journal" && (
                       <>
                         {r.memo} <Badge variant="muted" className="ml-2">{JOURNAL_TYPES[r.entry_type]}</Badge>
@@ -178,7 +185,7 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                       </>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : r.kind === "payroll" ? peso(r.basic_pay) : r.kind === "journal" ? peso(money(r.lines.reduce((a, l) => (l.debit ? a.plus(l.debit) : a), dec(0)))) : peso(r.amount)}</td>
+                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : r.kind === "form_2316_received" ? `${peso(r.taxable_compensation)} · ${peso(r.tax_withheld)}` : r.kind === "payroll" ? peso(r.basic_pay) : r.kind === "journal" ? peso(money(r.lines.reduce((a, l) => (l.debit ? a.plus(l.debit) : a), dec(0)))) : peso(r.amount)}</td>
                   {receipts && (
                     <td className="py-2 pr-3 text-sm">
                       {receipts.attachments.get(r.id) ? (
@@ -212,7 +219,7 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
   );
 }
 
-export function PacketResults({ packet, status }: { packet: Packet; status: React.ReactNode }) {
+export function PacketResults({ packet, status, csvSchedule }: { packet: Packet; status: React.ReactNode; csvSchedule?: (d: PreparedDocument) => Promise<NonNullable<PreparedDocument["schedule"]>> }) {
   return (
     <>
         <div className="grid gap-4 md:grid-cols-3">
@@ -259,14 +266,14 @@ export function PacketResults({ packet, status }: { packet: Packet; status: Reac
 
         <div className="space-y-4">
           {packet.documents.map((d) => (
-            <DocumentCard key={d.id} d={d} />
+            <DocumentCard key={d.id} d={d} csvSchedule={csvSchedule} />
           ))}
         </div>
     </>
   );
 }
 
-export function DocumentCard({ d }: { d: PreparedDocument }) {
+export function DocumentCard({ d, csvSchedule }: { d: PreparedDocument; csvSchedule?: (d: PreparedDocument) => Promise<NonNullable<PreparedDocument["schedule"]>> }) {
   return (
     <article className="form-box overflow-hidden" data-testid="prepared-doc">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3">
@@ -332,7 +339,7 @@ export function DocumentCard({ d }: { d: PreparedDocument }) {
           </div>
         )}
         {d.schedule && d.schedule.rows.length > 0 && (
-          <button type="button" className="text-sm font-medium text-primary underline" onClick={() => download(`taxgabay-${d.form.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${d.period_end}.csv`, scheduleCsv(d.schedule!))}>
+          <button type="button" className="text-sm font-medium text-primary underline" onClick={async () => download(`taxgabay-${d.form.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${d.period_end}.csv`, scheduleCsv(csvSchedule ? await csvSchedule(d) : d.schedule!))}>
             Download this list as CSV
           </button>
         )}
@@ -374,6 +381,9 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false, corporate = f
     } else if (kind === "expense") {
       if (!v("name") || !ok(v("amount"))) return setError("Enter the supplier and an amount.");
       onAdd({ kind: "expense", id: newId(), date: v("date"), document_no: v("no") || undefined, supplier: { name: v("name"), tin: tin("tin") }, category: (v("category") || "other") as ExpenseCategory, amount: amt(v("amount")), supplier_vat_registered: v("vat") === "yes", withholding: v("atc") ? { atc: v("atc") } : null });
+    } else if (kind === "form_2316_received") {
+      if (!v("name") || !/^\d{4}$/.test(v("year")) || !ok(v("comp")) || !/^\d+(\.\d{1,2})?$/.test(amt(v("tax") || "x"))) return setError("Enter the employer, the year, the taxable compensation and the tax withheld.");
+      onAdd({ kind: "form_2316_received", id: newId(), date: v("date"), employer: { name: v("name"), tin: tin("tin") }, year: Number(v("year")), taxable_compensation: amt(v("comp")), tax_withheld: amt(v("tax")) });
     } else if (kind === "payroll") {
       if (!v("name") || !ok(v("basic"))) return setError("Enter the employee and the basic pay.");
       if ((v("benefits") && !ok(v("benefits"))) || (v("demin") && !ok(v("demin")))) return setError("Benefits and de minimis must be amounts.");
@@ -397,7 +407,15 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false, corporate = f
 
   return (
     <form onSubmit={submit} className="grid gap-3 rounded-md bg-lavender p-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Add a record">
-      {field("date", kind === "form_2307_received" ? "Date received" : kind === "payroll" ? "Month's last payday" : "Date", { type: "date" })}
+      {field("date", kind === "form_2307_received" || kind === "form_2316_received" ? "Date received" : kind === "payroll" ? "Month's last payday" : "Date", { type: "date" })}
+      {kind === "form_2316_received" && (
+        <>
+          {field("name", "Employer")}
+          {field("year", "Year of the compensation", { inputMode: "numeric", placeholder: "e.g. 2026" })}
+          {field("comp", "Taxable compensation (₱)", { inputMode: "decimal" })}
+          {field("tax", "Tax withheld (₱)", { inputMode: "decimal" })}
+        </>
+      )}
       {kind === "payroll" && (
         <>
           {field("name", "Employee")}
@@ -487,10 +505,10 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false, corporate = f
           {field("tax", "Tax withheld (₱)", { inputMode: "decimal" })}
         </>
       )}
-      {tinConsent && field("tin", kind === "sale" ? "Customer TIN (optional)" : kind === "expense" ? "Supplier TIN" : kind === "payroll" ? "Employee TIN" : "Customer TIN")}
+      {tinConsent && field("tin", kind === "sale" ? "Customer TIN (optional)" : kind === "expense" ? "Supplier TIN" : kind === "payroll" ? "Employee TIN" : kind === "form_2316_received" ? "Employer TIN" : "Customer TIN")}
       <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-4">
         <Button type="submit" size="sm">
-          Add {kind === "sale" ? "sale" : kind === "expense" ? "expense" : kind === "payroll" ? "payroll" : "certificate"}
+          Add {kind === "sale" ? "sale" : kind === "expense" ? "expense" : kind === "payroll" ? "payroll" : kind === "form_2316_received" ? "2316" : "certificate"}
         </Button>
         {error && (
           <span role="alert" className="text-sm text-destructive">

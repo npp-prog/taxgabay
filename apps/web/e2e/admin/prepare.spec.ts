@@ -31,6 +31,14 @@ test("firm: create a client, prepare, review and release a packet", async ({ pag
   expect(JSON.stringify(db.tables.packets)).not.toMatch(/"tin":"\d/);
   expect(db.tables.periods![0]).toMatchObject({ status: "prepared", start_date: "2026-01-01" });
 
+  // The firm's CSV of the QAP carries the supplier TIN from the encrypted store.
+  db.tins.set("pc1|supplier|jose cruz", "301555666000");
+  await card.getByText("Open the documents").click();
+  const qapCsv = page.waitForEvent("download");
+  await card.getByTestId("prepared-doc").filter({ hasText: "Quarterly alphalist of payees" }).getByRole("button", { name: "Download this list as CSV" }).click();
+  const qapText = Buffer.concat(await (await (await qapCsv).createReadStream()).toArray()).toString("utf8");
+  expect(qapText).toContain("301555666000,Jose Cruz,WI100");
+
   await card.getByRole("button", { name: "Mark reviewed" }).click();
   await expect(card).toContainText("Reviewed");
   await card.getByRole("button", { name: "Release to client" }).click();

@@ -290,6 +290,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
             <select id="f-type" className={input} value={profile.taxpayer_type} onChange={(e) => setProfile({ ...profile, taxpayer_type: e.target.value as TaxpayerType })}>
               <option value="self_employed">Self-employed / professional</option>
               <option value="sole_proprietorship">Sole proprietor</option>
+              <option value="mixed_income">Mixed income (employee with a business or profession)</option>
               <option value="corporation">Corporation</option>
               <option value="opc">One-person corporation (OPC)</option>
               <option value="partnership">Partnership</option>
@@ -343,7 +344,7 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
         <>
           <section className="form-box space-y-4 p-6">
             <h3 className="font-semibold">Records ({d.records.length})</h3>
-            <RecordTabs records={d.records} tab={tab} onTab={setTab} />
+            <RecordTabs records={d.records} tab={tab} onTab={setTab} mixed={profile.taxpayer_type === "mixed_income"} />
             <RecordsTable records={d.records} kind={tab} receipts={{ attachments: d.attachments, onOpen: (path) => run(async () => window.open(await openReceipt(path), "_blank", "noopener")) }} />
           </section>
 
@@ -456,7 +457,11 @@ function PacketCard({ client, packet, canReview, busy, onStatus }: { client: Pre
       <details>
         <summary className="cursor-pointer text-sm font-medium text-primary">Open the documents</summary>
         <div className="mt-4 space-y-4">
-          <PacketResults packet={p} status={<Badge variant={packet.status === "prepared" ? "warning" : "success"}>{PACKET_STATUS[packet.status]}</Badge>} />
+          <PacketResults
+            packet={p}
+            status={<Badge variant={packet.status === "prepared" ? "warning" : "success"}>{PACKET_STATUS[packet.status]}</Badge>}
+            csvSchedule={async (d) => (await printablePacket(client.id, client, p)).packet.documents.find((x) => x.id === d.id)?.schedule ?? d.schedule!}
+          />
         </div>
       </details>
     </article>

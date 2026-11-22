@@ -39,6 +39,16 @@ describe("workspace mapping", () => {
     expect(rowToRecord({ id: "db", ...row })).toEqual({ ...j, id: "db" });
     expect(rowToRecord({ id: "x", prep_client_id: "c", record_date: "2026-01-01", kind: "other", data: {} })).toBeNull();
   });
+  it("stores Forms 2316 as kind other with the employer TIN kept apart", () => {
+    const w: ClientRecord = { kind: "form_2316_received", id: "w", date: "2027-01-20", employer: { name: "Acme", tin: "200111" }, year: 2026, taxable_compensation: "400000.00", tax_withheld: "22500.00" };
+    const row = recordToRow(w, "c");
+    expect(row.kind).toBe("other");
+    expect(JSON.stringify(row)).not.toContain("200111");
+    expect(recordTin(w)).toEqual({ subject: "payor", ref: "acme", tin: "200111" });
+    expect(rowToRecord({ id: "db", ...row }, new Map([["payor|acme", "0111"]]))).toMatchObject({ kind: "form_2316_received", employer: { tin: "•••0111" }, year: 2026 });
+    expect(recordTin({ ...w, employer: { name: "Acme" } } as ClientRecord)).toBeNull();
+    expect(rowToRecord({ id: "db", ...row })).toMatchObject({ employer: { tin: null } });
+  });
   it("finds and fills the TINs a packet needs", () => {
     const profile = { ...DEFAULT_PROFILE, taxpayer_type: "self_employed" as const, income_tax_option: "eight_percent" as const, withholds_expanded: true };
     const p = preparePacket({ client: { name: "A", profile }, records: [sale, exp, cert], period: { year: 2026, quarter: 1 } });

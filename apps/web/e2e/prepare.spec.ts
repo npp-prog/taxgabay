@@ -155,3 +155,27 @@ test("schedules download as CSV", async ({ page }) => {
   expect(text.split("\n")[0]).toBe("TIN,Payee,ATC,Income payment,Rate,Tax withheld");
   expect(text).toContain("Jose Cruz,WI100,30000.00,5%,1500.00");
 });
+
+test("a mixed-income earner adds the 2316 and gets the annual 1701", async ({ page }) => {
+  await page.goto("/prepare");
+  await expect(async () => {
+    await page.getByLabel("You are a").selectOption("mixed_income");
+    await expect(page.getByRole("tab", { name: /2316s \(salary\)/ })).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await page.getByLabel("Date", { exact: true }).fill("2026-11-15");
+  await page.getByLabel("Invoice no.").fill("1");
+  await page.getByLabel("Customer", { exact: true }).fill("Client");
+  await page.getByLabel("Amount (₱)").fill("240000");
+  await page.getByRole("button", { name: "Add sale" }).click();
+  await page.getByRole("tab", { name: /2316s \(salary\)/ }).click();
+  await page.getByLabel("Date received").fill("2027-01-20");
+  await page.getByLabel("Employer", { exact: true }).fill("Acme Philippines, Inc.");
+  await page.getByLabel("Year of the compensation").fill("2026");
+  await page.getByLabel("Taxable compensation (₱)").fill("400000");
+  await page.getByLabel("Tax withheld (₱)").fill("22500");
+  await page.getByRole("button", { name: "Add 2316" }).click();
+  await page.getByLabel("Quarter").selectOption("4");
+  const annual = page.getByTestId("prepared-doc").filter({ hasText: "mixed income" });
+  await expect(annual).toContainText("₱400,000.00");
+  await expect(annual).toContainText("₱41,700.00"); // ₱22,500 on compensation + 8% of ₱240,000
+});

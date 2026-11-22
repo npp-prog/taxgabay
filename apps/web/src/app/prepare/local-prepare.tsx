@@ -69,6 +69,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             <select id="p-type" className={input} value={client.profile.taxpayer_type} onChange={(e) => setProfile({ taxpayer_type: e.target.value as TaxpayerType })}>
               <option value="self_employed">Self-employed professional or freelancer</option>
               <option value="sole_proprietorship">Sole proprietor (DTI-registered business)</option>
+              <option value="mixed_income">Mixed income (employee with a business or profession)</option>
               <option value="corporation">Corporation</option>
               <option value="opc">One-person corporation (OPC)</option>
               <option value="partnership">Partnership</option>
@@ -134,7 +135,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
             )}
           </div>
         </div>
-        <RecordTabs records={records} tab={tab} onTab={setTab} />
+        <RecordTabs records={records} tab={tab} onTab={setTab} mixed={client.profile.taxpayer_type === "mixed_income"} />
 
         <RecordForm kind={tab} tinConsent={tinConsent} onAdd={addRecord} vat={client.profile.vat_status === "vat"} corporate={isCorp} />
 
