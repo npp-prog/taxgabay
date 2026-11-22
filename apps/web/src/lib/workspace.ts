@@ -215,3 +215,80 @@ export async function firmMemberName(userId: string | null): Promise<string | nu
   const rows = check(await sb().from("firm_members").select("user_id,display_name").eq("user_id", userId)) as { display_name: string | null }[];
   return rows[0]?.display_name ?? null;
 }
+
+// ---------- Receipts (private storage bucket "receipts", folder per client) ----------
+
+export const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"];
+export const RECEIPT_MAX_BYTES = 10 * 1024 * 1024;
+
+export function receiptProblem(file: { type: string; size: number }): string | null {
+  if (!RECEIPT_TYPES.includes(file.type)) return "Upload a photo (JPG, PNG, WebP, HEIC) or a PDF.";
+  if (file.size > RECEIPT_MAX_BYTES) return "The file is larger than 10 MB.";
+  return null;
+}
+
+export async function loadAttachments(cid: string): Promise<Map<string, string>> {
+  const rows = check(await sb().from("records").select("id,attachment_path").eq("prep_client_id", cid)) as { id: string; attachment_path: string | null }[];
+  return new Map(rows.filter((r) => r.attachment_path).map((r) => [r.id, r.attachment_path!]));
+}
+
+export async function attachReceipt(cid: string, recordId: string, file: File): Promise<void> {
+  const problem = receiptProblem(file);
+  if (problem) throw new Error(problem);
+  const safe = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+  // A fresh name per upload: storage policies allow insert and delete, not overwrite.
+  const path = `${cid}/${recordId}/${Date.now()}-${safe}`;
+  const up = await sb().storage.from("receipts").upload(path, file, { upsert: false, contentType: file.type });
+  if (up.error) throw new Error(up.error.message);
+  check(await sb().from("records").update({ attachment_path: path }).eq("id", recordId));
+}
+
+export async function openReceipt(path: string): Promise<string> {
+  const r = await sb().storage.from("receipts").createSignedUrl(path, 300);
+  if (r.error || !r.data) throw new Error(r.error?.message ?? "Could not open the receipt.");
+  return r.data.signedUrl;
+}
+
+// ---------- Firm overview ----------
+
+export async function loadAllQuarterPeriods(): Promise<PeriodRow[]> {
+  return check(await sb().from("periods").select("id,prep_client_id,kind,start_date,end_date,status").eq("kind", "quarter")) as PeriodRow[];
+}
+
+// ---------- Export and deletion ----------
+
+/** Everything stored for a client, as JSON (TINs shown masked). */
+export async function exportClientData(cid: string): Promise<string> {
+  const [client, consents, records, periods, packets, tins] = await Promise.all([
+    getClient(cid),
+    sb().from("client_consents").select("consent_type,version,accepted_at,withdrawn_at").eq("prep_client_id", cid),
+    sb().from("records").select("id,record_date,kind,data,attachment_path,created_at").eq("prep_client_id", cid),
+    loadPeriods(cid),
+    loadPackets(cid),
+    loadTinsOnFile(cid),
+  ]);
+  const data = {
+    exported_at: new Date().toISOString(),
+    business: { name: client.name, profile: client.profile },
+    consents: consents.data ?? [],
+    records: records.data ?? [],
+    tins_on_file: [...tins].map(([k, last4]) => ({ who: k, last4 })),
+    periods,
+    packets: packets.map((p) => ({ status: p.status, period: p.payload.period_label, prepared_at: p.prepared_at, reviewed_at: p.reviewed_at, released_at: p.released_at, documents: p.payload.documents })),
+  };
+  return JSON.stringify(data, null, 2);
+}
+
+/** Firm: deletes a client with all records, TINs, periods, packets, consents and receipts. */
+export async function deleteClientCompletely(cid: string): Promise<void> {
+  const bucket = sb().storage.from("receipts");
+  const top = await bucket.list(cid, { limit: 1000 });
+  if (!top.error) {
+    for (const folder of top.data ?? []) {
+      const inner = await bucket.list(`${cid}/${folder.name}`, { limit: 1000 });
+      const paths = inner.error ? [] : (inner.data ?? []).map((f) => `${cid}/${folder.name}/${f.name}`);
+      if (paths.length) await bucket.remove(paths);
+    }
+  }
+  check(await sb().from("prep_clients").delete().eq("id", cid));
+}

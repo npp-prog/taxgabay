@@ -9,8 +9,13 @@ import { Button } from "@/components/ui/button";
 import { type TemplateKind } from "@/lib/prepare-csv";
 import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { formatDatePH, todayPH } from "@/lib/utils";
+import { nextRecordRequests } from "@/lib/prep-schedule";
 import {
   addRecords,
+  attachReceipt,
+  exportClientData,
+  loadAttachments,
+  openReceipt,
   deleteRecord,
   firmMemberName,
   getClient,
@@ -37,12 +42,15 @@ interface Data {
   records: ClientRecord[];
   periods: PeriodRow[];
   packets: PacketRow[];
+  attachments: Map<string, string>;
 }
 
 async function loadAll(cid: string): Promise<Data> {
   const [client, consents] = await Promise.all([getClient(cid), loadConsents(cid)]);
-  const [records, periods, packets] = consents.records_storage ? await Promise.all([loadRecords(cid), loadPeriods(cid), loadPackets(cid)]) : [[], [], []];
-  return { client, consents, records, periods, packets };
+  const [records, periods, packets, attachments] = consents.records_storage
+    ? await Promise.all([loadRecords(cid), loadPeriods(cid), loadPackets(cid), loadAttachments(cid)])
+    : [[], [], [], new Map<string, string>()];
+  return { client, consents, records, periods, packets, attachments };
 }
 
 export function ClientPortal({ clientId, userId }: { clientId: string; userId: string }) {
@@ -103,6 +111,8 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
       </div>
       {error && <p role="alert" className="rounded-sm border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
 
+      <NextNeeded client={data.client} />
+
       <section className="form-box space-y-4 p-6" aria-labelledby="records-h">
         <h2 id="records-h" className="text-lg font-semibold">
           Your records
@@ -110,7 +120,12 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
         <RecordTabs records={data.records} tab={tab} onTab={setTab} />
         <RecordForm kind={tab} tinConsent={data.consents.tin} onAdd={(r) => run(() => addRecords(clientId, [r], data.consents.tin))} />
         <CsvImport kind={tab} onRecords={(rs) => run(() => addRecords(clientId, rs, data.consents.tin))} />
-        <RecordsTable records={data.records} kind={tab} onDelete={(id) => run(() => deleteRecord(id))} />
+        <RecordsTable
+          records={data.records}
+          kind={tab}
+          onDelete={(id) => run(() => deleteRecord(id))}
+          receipts={{ attachments: data.attachments, onAttach: (id, f) => run(() => attachReceipt(clientId, id, f)), onOpen: (path) => run(async () => window.open(await openReceipt(path), "_blank", "noopener")) }}
+        />
       </section>
 
       <section className="space-y-4" aria-labelledby="quarter-h">
@@ -165,7 +180,52 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
       </section>
 
       <ReleasedPackets client={data.client} packets={data.packets} />
+
+      <section className="form-box flex flex-wrap items-center justify-between gap-3 p-5 text-sm" aria-label="Your data">
+        <p className="max-w-[60ch] text-muted-foreground">
+          Download everything stored for your business. To stop using the service, delete your sign-in on the <a href="/account" className="text-primary underline">account page</a> and ask the firm to delete your business records.
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            run(async () => {
+              const json = await exportClientData(clientId);
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+              a.download = "taxgabay-my-business-data.json";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            })
+          }
+        >
+          Download my data
+        </Button>
+      </section>
     </div>
+  );
+}
+
+function NextNeeded({ client }: { client: PrepClient }) {
+  const requests = nextRecordRequests(client.profile, todayPH());
+  if (!requests.length) return null;
+  return (
+    <section className="form-box p-6" aria-labelledby="next-h" data-testid="next-needed">
+      <h2 id="next-h" className="text-lg font-semibold">
+        What the firm needs next
+      </h2>
+      <ul className="mt-3 divide-y divide-border">
+        {requests.map((r) => (
+          <li key={r.form + r.period_end} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5 text-sm">
+            <span>
+              <strong>{r.form}</strong> for {r.period_label} <span className="text-muted-foreground">· due to the BIR {formatDatePH(r.due_date)}</span>
+            </span>
+            <span className="font-medium text-primary">Records by {formatDatePH(r.records_by)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

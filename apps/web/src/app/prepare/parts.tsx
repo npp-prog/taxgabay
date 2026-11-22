@@ -85,7 +85,13 @@ export function CsvImport({ kind, onRecords }: { kind: TemplateKind; onRecords: 
   );
 }
 
-export function RecordsTable({ records, kind, onDelete }: { records: readonly ClientRecord[]; kind: TemplateKind; onDelete?: (id: string) => void }) {
+export interface ReceiptActions {
+  attachments: ReadonlyMap<string, string>;
+  onAttach?: (recordId: string, file: File) => void;
+  onOpen: (path: string) => void;
+}
+
+export function RecordsTable({ records, kind, onDelete, receipts }: { records: readonly ClientRecord[]; kind: TemplateKind; onDelete?: (id: string) => void; receipts?: ReceiptActions }) {
   const tab = kind;
   const shown = records.filter((r) => r.kind === kind).sort((a, b) => a.date.localeCompare(b.date));
   return (
@@ -96,13 +102,14 @@ export function RecordsTable({ records, kind, onDelete }: { records: readonly Cl
                 <th className="py-2 pr-3">Date</th>
                 <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : "Customer who withheld"}</th>
                 <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : "Amount"}</th>
+                {receipts && <th className="py-2 pr-3">Receipt</th>}
                 <th className="w-10" />
               </tr>
             </thead>
             <tbody>
               {shown.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
                     Nothing recorded yet.
                   </td>
                 </tr>
@@ -129,6 +136,26 @@ export function RecordsTable({ records, kind, onDelete }: { records: readonly Cl
                     )}
                   </td>
                   <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : peso(r.amount)}</td>
+                  {receipts && (
+                    <td className="py-2 pr-3 text-sm">
+                      {receipts.attachments.get(r.id) ? (
+                        <button type="button" className="text-primary underline" onClick={() => receipts.onOpen(receipts.attachments.get(r.id)!)}>
+                          View
+                        </button>
+                      ) : receipts.onAttach ? (
+                        <label className="cursor-pointer text-primary underline">
+                          Attach
+                          <input type="file" accept="image/*,application/pdf" className="sr-only" aria-label={`Attach receipt for ${r.date}`} onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (f) receipts.onAttach!(r.id, f);
+                          }} />
+                        </label>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="py-2 text-right">
                     {onDelete && <button type="button" aria-label="Delete record" onClick={() => onDelete(r.id)} className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-destructive">
                       ×
