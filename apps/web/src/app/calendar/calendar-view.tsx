@@ -23,10 +23,16 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label, Select } from "@/components/ui/input";
 import { useCalendarData } from "@/lib/calendar-data";
+import { format, useLocale } from "@/lib/i18n";
 import { useUserData, type ObligationStatus } from "@/lib/user-data";
-import { cn, formatDatePH, todayPH } from "@/lib/utils";
+import { cn, todayPH } from "@/lib/utils";
 
 type View = "upcoming" | "month" | "form";
+
+/** Like formatDatePH, in the UI language. */
+function fmtDate(iso: string, loc: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(loc, { ...opts, timeZone: "UTC" });
+}
 
 /** An obligation tagged with the client it belongs to. */
 type Row = Obligation & { clientId: string; clientName: string; key: string };
@@ -44,6 +50,9 @@ function ObligationRow({
   today: string;
   showClient: boolean;
 }) {
+  const { locale, t } = useLocale();
+  const c = t.calendar;
+  const loc = locale === "fil" ? "fil-PH" : "en-PH";
   const done = status === "filed_and_paid";
   const overdue = !done && o.due_date < today;
   return (
@@ -52,7 +61,7 @@ function ObligationRow({
         type="checkbox"
         checked={done}
         onChange={onToggle}
-        aria-label={`Mark BIR ${o.form_code} for ${o.period_label}${showClient ? ` (${o.clientName})` : ""} as filed and paid`}
+        aria-label={format(c.markDone, { form: o.form_code, period: o.period_label, client: showClient ? ` (${o.clientName})` : "" })}
         className="mt-1 h-4 w-4 accent-[var(--color-primary)]"
       />
       <div className="min-w-0 flex-1">
@@ -64,9 +73,9 @@ function ObligationRow({
           )}
           <span className="font-mono font-semibold">{o.form_code}</span>
           <span className="text-sm">{o.period_label}</span>
-          {o.tentative && <Badge variant="warning">Depends on your answers</Badge>}
-          {overdue && <Badge variant="warning">Overdue</Badge>}
-          {done && <Badge variant="success">Filed & paid</Badge>}
+          {o.tentative && <Badge variant="warning">{c.depends}</Badge>}
+          {overdue && <Badge variant="warning">{c.overdue}</Badge>}
+          {done && <Badge variant="success">{c.done}</Badge>}
         </div>
         <div className="text-sm text-muted-foreground">{o.title}</div>
         {o.adjustments.map((a) => (
@@ -76,13 +85,16 @@ function ObligationRow({
         ))}
       </div>
       <time dateTime={o.due_date} className="shrink-0 text-right text-sm font-medium">
-        {formatDatePH(o.due_date, { day: "numeric", month: "short", year: "numeric", weekday: "short" })}
+        {fmtDate(o.due_date, loc, { day: "numeric", month: "short", year: "numeric", weekday: "short" })}
       </time>
     </li>
   );
 }
 
 function MonthGrid({ month, obligations, holidays, showClient }: { month: string; obligations: Row[]; holidays: readonly Holiday[]; showClient: boolean }) {
+  const { locale } = useLocale();
+  const loc = locale === "fil" ? "fil-PH" : "en-PH";
+  const days = Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2023, 0, 1 + i)).toLocaleDateString(loc, { weekday: "short", timeZone: "UTC" }));
   const { y, m } = parseISO(`${month}-01`);
   const first = toISO(y, m, 1);
   const lead = weekday(first);
@@ -94,10 +106,10 @@ function MonthGrid({ month, obligations, holidays, showClient }: { month: string
   const holidayByDate = new Map(holidays.map((h) => [h.date, h.name]));
   return (
     <div className="overflow-x-auto">
-      <table className="w-full table-fixed border-collapse text-xs sm:text-sm" aria-label={formatDatePH(first, { month: "long", year: "numeric" })}>
+      <table className="w-full table-fixed border-collapse text-xs sm:text-sm" aria-label={fmtDate(first, loc, { month: "long", year: "numeric" })}>
         <thead>
           <tr>
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            {days.map((d) => (
               <th key={d} scope="col" className="py-1 font-medium text-muted-foreground">
                 {d}
               </th>
@@ -132,6 +144,9 @@ function MonthGrid({ month, obligations, holidays, showClient }: { month: string
 
 export function CalendarView() {
   const { data, ready, setObligation, clients, activeClientId } = useUserData();
+  const { locale, t } = useLocale();
+  const c = t.calendar;
+  const loc = locale === "fil" ? "fil-PH" : "en-PH";
   const [view, setView] = React.useState<View>("upcoming");
   const [scope, setScope] = React.useState<"client" | "all">("client");
   const multi = clients.length > 1;
@@ -155,15 +170,15 @@ export function CalendarView() {
       .sort((a, b) => (a.due_date === b.due_date ? a.clientName.localeCompare(b.clientName) || a.form_code.localeCompare(b.form_code) : a.due_date < b.due_date ? -1 : 1));
   }, [showAll, clients, activeClientId, from, to, holidays, extensions]);
 
-  if (!ready) return <p>Loading…</p>;
+  if (!ready) return <p>{c.loading}</p>;
   if (!data.profile && !showAll) {
     return (
       <div className="space-y-4">
         <ClientSwitcher />
-        <PageHeader title="My tax calendar" description="Your personalized deadlines for the next 12 months." />
-        <p>Create your profile first so we know which returns apply to you.</p>
+        <PageHeader title={c.title} description={c.emptyDescription} />
+        <p>{c.needProfile}</p>
         <Link href="/profile" className={buttonVariants()}>
-          Start my profile
+          {t.home.start}
         </Link>
       </div>
     );
@@ -196,25 +211,25 @@ export function CalendarView() {
     <div className="space-y-6">
       {!showAll && <ClientSwitcher />}
       <PageHeader
-        title={showAll ? "Tax calendar: all clients" : "My tax calendar"}
-        description={`Deadlines from ${formatDatePH(from)} to ${formatDatePH(to)}. Dates falling on a weekend or holiday move to the next working day.`}
+        title={showAll ? c.titleAll : c.title}
+        description={format(c.range, { from: fmtDate(from, loc), to: fmtDate(to, loc) })}
       />
       {multi && (
         <div className="flex max-w-xs flex-col gap-1">
-          <Label htmlFor="cal-scope">Show</Label>
+          <Label htmlFor="cal-scope">{c.show}</Label>
           <Select id="cal-scope" value={scope} onChange={(e) => setScope(e.target.value as "client" | "all")}>
-            <option value="client">{clients.find((c) => c.id === activeClientId)?.name ?? "This client"} only</option>
-            <option value="all">All clients</option>
+            <option value="client">{format(c.only, { name: clients.find((x) => x.id === activeClientId)?.name ?? c.thisClient })}</option>
+            <option value="all">{c.allClients}</option>
           </Select>
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Calendar view" className="inline-flex rounded-md border border-border p-1">
+        <div role="tablist" aria-label={c.viewLabel} className="inline-flex rounded-md border border-border p-1">
           {(
             [
-              ["upcoming", "Upcoming"],
-              ["month", "Month"],
-              ["form", "By form"],
+              ["upcoming", c.upcoming],
+              ["month", c.month],
+              ["form", c.byForm],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -230,7 +245,7 @@ export function CalendarView() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={downloadICS} disabled={obligations.length === 0}>
-            Export to calendar (.ics)
+            {c.export}
           </Button>
           {obligations.length > 0 && (
             <PdfButton
@@ -267,7 +282,7 @@ export function CalendarView() {
 
       {beyondHolidays && (
         <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-          Holidays are loaded only through {lastHolidayYear}. Dates after that are moved for weekends only, until the holiday list is updated.
+          {format(c.holidaysLimit, { year: lastHolidayYear })}
         </p>
       )}
 
@@ -275,11 +290,11 @@ export function CalendarView() {
         <CardContent className="pt-2">
           {obligations.length === 0 ? (
             <p className="py-6 text-center text-muted-foreground">
-              No BIR returns to file based on {showAll ? "your clients' profiles" : "your profile"}.{" "}
-              {!showAll && data.profile?.taxpayer_type === "employee" && "Your employer files and withholds for you; ask for your Form 2316 each year."}
+              {showAll ? c.noReturnsAll : c.noReturns}{" "}
+              {!showAll && data.profile?.taxpayer_type === "employee" && c.employeeNote}
             </p>
           ) : view === "upcoming" ? (
-            <ul className="divide-y divide-border" aria-label="Upcoming deadlines">
+            <ul className="divide-y divide-border" aria-label={c.upcomingLabel}>
               {obligations.map((o) => (
                 <ObligationRow key={o.key} o={o} status={statusOf(o)} onToggle={() => toggle(o)} today={today} showClient={showAll} />
               ))}
@@ -288,11 +303,11 @@ export function CalendarView() {
             <div className="space-y-4 pt-3">
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="sm" disabled={month <= firstMonth} onClick={() => setMonth(addMonths(`${month}-01`, -1).slice(0, 7))}>
-                  ← Previous
+                  {c.previous}
                 </Button>
-                <h2 className="font-semibold">{formatDatePH(`${month}-01`, { month: "long", year: "numeric" })}</h2>
+                <h2 className="font-semibold">{fmtDate(`${month}-01`, loc, { month: "long", year: "numeric" })}</h2>
                 <Button variant="outline" size="sm" disabled={month >= lastMonth} onClick={() => setMonth(addMonths(`${month}-01`, 1).slice(0, 7))}>
-                  Next →
+                  {c.next}
                 </Button>
               </div>
               <MonthGrid month={month} obligations={monthObligations} holidays={holidays} showClient={showAll} />
@@ -321,9 +336,9 @@ export function CalendarView() {
         </CardContent>
       </Card>
       <p className="text-sm text-muted-foreground">
-        For guidance only. Verify with BIR issuances or consult a CPA. Deadline rules and holidays are pending CPA verification.{" "}
+        {c.footnote}{" "}
         <Link href="/account" className="underline">
-          Set up email or push reminders
+          {c.reminders}
         </Link>
         .
       </p>

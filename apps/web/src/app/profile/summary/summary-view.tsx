@@ -7,21 +7,22 @@ import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/lib/i18n";
 import { useUserData } from "@/lib/user-data";
 import { todayPH } from "@/lib/utils";
 
-const FREQ: Record<string, string> = { monthly: "Monthly", quarterly: "Quarterly", annual: "Annual", one_time: "One-time", event: "When it happens" };
-
 export function ProfileSummaryView() {
   const { data, ready } = useUserData();
-  if (!ready) return <p>Loading…</p>;
+  const { t: tr } = useLocale();
+  const m = tr.summary;
+  if (!ready) return <p>{m.loading}</p>;
   if (!data.profile) {
     return (
       <div className="space-y-4">
         <ClientSwitcher />
-        <PageHeader title="What applies to you" description="Create your profile first so we can personalize this page." />
+        <PageHeader title={m.emptyTitle} description={m.emptyDescription} />
         <Link href="/profile" className={buttonVariants()}>
-          Start my profile
+          {tr.home.start}
         </Link>
       </div>
     );
@@ -32,26 +33,26 @@ export function ProfileSummaryView() {
   return (
     <div className="space-y-6">
       <ClientSwitcher />
-      <PageHeader title="Here is what applies to you" description="Based on your profile. Items marked “Depends” need an answer you weren’t sure about." />
+      <PageHeader title={m.title} description={m.description} />
       <div className="flex flex-wrap gap-3">
         <Link href="/calendar" className={buttonVariants()}>
-          See my tax calendar
+          {m.seeCalendar}
         </Link>
         <Link href="/checklists" className={buttonVariants({ variant: "outline" })}>
-          My checklists
+          {m.checklists}
         </Link>
         <Link href="/profile" className={buttonVariants({ variant: "outline" })}>
-          Edit profile
+          {m.edit}
         </Link>
       </div>
 
       {s.tax_types.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Taxes you deal with</CardTitle>
+            <CardTitle>{m.taxes}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="flex flex-wrap gap-2" aria-label="Tax types">
+            <ul className="flex flex-wrap gap-2" aria-label={m.taxTypesLabel}>
               {s.tax_types.map((t) => (
                 <li key={t}>
                   <Badge variant="outline">{t}</Badge>
@@ -65,7 +66,7 @@ export function ProfileSummaryView() {
       {s.registrations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Registrations</CardTitle>
+            <CardTitle>{m.registrations}</CardTitle>
           </CardHeader>
           <CardContent>
             <ol className="list-decimal space-y-2 pl-5">
@@ -77,7 +78,7 @@ export function ProfileSummaryView() {
             </ol>
             {form && (
               <Link href="/roadmap" className={buttonVariants({ variant: "link", className: "mt-2 px-0" })}>
-                Open the step-by-step registration roadmap →
+                {m.roadmap}
               </Link>
             )}
           </CardContent>
@@ -87,7 +88,7 @@ export function ProfileSummaryView() {
       {s.returns.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Returns you file</CardTitle>
+            <CardTitle>{m.returns}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="divide-y divide-border" data-testid="returns-list">
@@ -96,16 +97,16 @@ export function ProfileSummaryView() {
                   <div>
                     <span className="font-mono font-semibold">{r.code}</span> — {r.title}
                     <div className="mt-1 flex gap-2">
-                      <Badge variant="muted">{FREQ[r.frequency]}</Badge>
-                      {r.applicability === "maybe" && <Badge variant="warning">Depends</Badge>}
+                      <Badge variant="muted">{m.freq[r.frequency]}</Badge>
+                      {r.applicability === "maybe" && <Badge variant="warning">{m.depends}</Badge>}
                     </div>
                   </div>
                   {r.guide_slug ? (
                     <Link href={`/guides/${r.guide_slug}`} className="text-sm text-primary underline">
-                      Filing guide
+                      {m.guide}
                     </Link>
                   ) : (
-                    <span className="text-sm text-muted-foreground">Guide coming soon</span>
+                    <span className="text-sm text-muted-foreground">{m.guideSoon}</span>
                   )}
                 </li>
               ))}
@@ -117,7 +118,7 @@ export function ProfileSummaryView() {
       {s.notes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Good to know</CardTitle>
+            <CardTitle>{m.goodToKnow}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="list-disc space-y-2 pl-5 text-sm">
@@ -128,7 +129,7 @@ export function ProfileSummaryView() {
           </CardContent>
         </Card>
       )}
-      <p className="text-sm text-muted-foreground">For guidance only. Verify with BIR issuances or consult a CPA. Rules shown are pending CPA verification.</p>
+      <p className="text-sm text-muted-foreground">{m.footnote}</p>
     </div>
   );
 }
