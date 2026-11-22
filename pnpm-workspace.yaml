@@ -5,3 +5,7 @@ onlyBuiltDependencies:
   - sharp
   - unrs-resolver
   - esbuild
+overrides:
+  # Mobile app: keep Expo SDK 58's native modules on one version (expo-doctor
+  # duplicate check). expo-asset 58.0.20 matches expo-constants 58.0.15.
+  expo-asset: 58.0.20
