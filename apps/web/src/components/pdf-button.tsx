@@ -4,14 +4,14 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { buildPdf, downloadPdf, type PdfDoc } from "@/lib/pdf";
 
-export function PdfButton({ filename, build, label = "Download PDF", className }: { filename: string; build: () => PdfDoc; label?: string; className?: string }) {
+export function PdfButton({ filename, build, label = "Download PDF", className }: { filename: string; build: () => PdfDoc | Promise<PdfDoc>; label?: string; className?: string }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   async function onClick() {
     setBusy(true);
     setError(null);
     try {
-      downloadPdf(await buildPdf(build()), filename);
+      downloadPdf(await buildPdf(await build()), filename);
     } catch (e) {
       setError(`Could not create the PDF: ${(e as Error).message}`);
     } finally {
