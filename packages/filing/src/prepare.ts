@@ -742,10 +742,11 @@ function prepare1701A(ctx: Ctx, year: number, option: ItOption): PreparedDocumen
   const quarterly = priorQuarterPayments(ctx, year, 4, option);
   const cwt = cwtTo(ctx, year, yr.end);
   const payable = round2(it.tax.minus(quarterly).minus(cwt));
+  const itemized = option === "graduated_itemized";
   return doc(ctx, {
-    id: `1701A-${year}`,
-    form: "1701A",
-    title: "Annual income tax return (purely business or profession, 8% or OSD)",
+    id: `${itemized ? "1701" : "1701A"}-${year}`,
+    form: itemized ? "1701" : "1701A",
+    title: itemized ? "Annual income tax return (individuals, itemized deductions)" : "Annual income tax return (purely business or profession, 8% or OSD)",
     period_label: `Taxable year ${year}`,
     period_start: yr.start,
     period_end: yr.end,
@@ -765,7 +766,7 @@ function prepare1701A(ctx: Ctx, year: number, option: ItOption): PreparedDocumen
       step(payable.isNegative() ? "Overpayment (choose refund, tax credit certificate or carry-over on the return)" : "Income tax payable", `${peso(it.tax)} − ${peso(quarterly)} − ${peso(cwt)}`, payable.abs()),
     ],
     amount_payable: money(max0(payable)),
-    warnings: it.warnings,
+    warnings: itemized ? [...it.warnings, "Attach the financial statements (audited where gross sales exceed the threshold), and the schedule of itemized deductions."] : it.warnings,
     rules_used: it.rules_used,
   });
 }
@@ -959,8 +960,6 @@ export function preparePacket(input: PrepareInput): Packet {
       if (q.quarter < 4) {
         const d = prepare1701Q(ctx, q, range, itOption);
         if (d) documents.push(d);
-      } else if (itOption === "graduated_itemized") {
-        notSupported.push({ form: "1701", reason: "Itemized deductions are filed on the 1701 (not the 1701A), planned for a later batch." });
       } else {
         const d = prepare1701A(ctx, q.year, itOption);
         if (d) documents.push(d);

@@ -66,8 +66,11 @@ describe("preparePacket", () => {
     const q1 = preparePacket({ client: { name: "A", profile: profile({ income_tax_option: "graduated_itemized" }) }, records: recs, period: { year: 2026, quarter: 1 } });
     expect(q1.documents.find((d) => d.form === "1701Q")!.fields.find((f) => f.key === "deductions")!.value).toBe("100000.00");
     expect(q1.documents.some((d) => d.form === "2551Q")).toBe(true);
+    // ₱1,000,000 sales less ₱100,000 itemized = ₱900,000: ₱102,500 + 25% of ₱100,000 = ₱127,500.
     const q4 = preparePacket({ client: { name: "A", profile: profile({ income_tax_option: "graduated_itemized" }) }, records: recs, period: { year: 2026, quarter: 4 } });
-    expect(q4.not_supported.map((n) => n.form)).toContain("1701");
+    const f1701 = Object.fromEntries(q4.documents.find((d) => d.form === "1701")!.fields.map((f) => [f.key, f.value]));
+    expect(f1701).toMatchObject({ gross: "1000000.00", deductions: "100000.00", taxable_income: "900000.00", tax_due: "127500.00" });
+    expect(q4.documents.find((d) => d.form === "1701")!.due_date).toBe("2027-04-15");
   });
 
   it("prepares zero returns when nothing is recorded yet", () => {
@@ -212,7 +215,7 @@ describe("payroll", () => {
     expect(Number(dec1601.fields.find((f) => f.key === "tax_withheld")!.value)).toBeLessThan(0);
     expect(dec1601.amount_payable).toBe("0.00");
     expect(dec1601.warnings.some((w) => w.includes("refund"))).toBe(true);
-    expect(p.not_supported.map((n) => n.form)).toContain("1701");
+    expect(p.documents.some((d) => d.form === "1701")).toBe(true);
     const q1 = preparePacket({ client: { name: "S", profile: emp({ income_tax_option: "graduated_itemized" }) }, records: [...recs, { kind: "sale", id: "s", date: "2026-01-02", document_no: "1", customer: { name: "X" }, amount: "1000000.00" }], period: { year: 2026, quarter: 1 } });
     expect(Number(q1.documents.find((d) => d.form === "1701Q")!.fields.find((f) => f.key === "deductions")!.value)).toBeGreaterThan(200000);
   });
