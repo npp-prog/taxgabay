@@ -151,3 +151,57 @@ Requested by the product owner on 2026-11-22: "a complete guide for business and
 | 3 | Business guide | Chapters and flagged payroll/LGU data; pages. |
 | 4 | Practice UI | Set picker, tracks, interactive journal with feedback, ledger, trial balance, worksheet, statements, books, returns, worked example, printable forms. |
 | 5 | Tests and docs | Unit + e2e; README; VERIFY.md. |
+
+---
+
+# Phase 6 Plan — Client records in, prepared documents out (DRAFT, awaiting approval)
+
+Requested by the product owner on 2026-11-22: clients put in all their records, TaxGabay **automatically prepares** the returns and supporting documents, and the client sends or files them. TaxGabay only prepares; it never files or pays on the client's behalf.
+
+## How it works (one period, one client)
+
+1. **Client enters records** in a client portal: sales, purchases and expenses, Form 2307s received, payroll, assets, bank balances. They can type them in, upload the TaxGabay Excel/CSV template, or attach photos/PDFs of receipts.
+2. **TaxGabay checks the records**: missing months, gaps in invoice number series, 2307s with no matching sale, VAT on non-VAT purchases, totals that do not tie to the bank. Problems are shown as a to-do list for the client.
+3. **TaxGabay posts the records to the books** with the accounting engine (Phase 5): journal, cash receipts and disbursements books, ledger, trial balance.
+4. **TaxGabay prepares the documents** due for the period, from the client's profile and the deadline calendar (Phase 1):
+   - **Returns, line by line** (values ready to type into eBIRForms/eFPS): 2551Q, 2550Q, 1701Q, 1701A/1701, 1702Q/1702-RT, 0619E, 1601EQ, 1601C, 1604C, 1604E.
+   - **Schedules**: SAWT (creditable taxes withheld from you), QAP (taxes you withheld), summary list of sales and purchases (VAT), alphalist of employees and of payees.
+   - **Certificates to give out**: Form 2307 to each supplier you withheld from; Form 2316 to each employee.
+   - **Books and statements**: printed books of accounts for the period, financial statements, payroll register and SSS/PhilHealth/Pag-IBIG contribution summaries.
+5. **The firm reviews (optional)**: a preparer at the accounting firm checks the package and marks it *Reviewed*. Nothing reaches the client as final until it is released.
+6. **The client receives a filing packet**: one PDF per document, plus data files where BIR needs them, and a cover checklist: what to file, where (eBIRForms/eFPS/RDO), the deadline, how much to pay and where to pay, and what to keep. The client (or the firm, outside TaxGabay) files and pays.
+
+## Assumptions
+
+1. **Prepare, never file.** There is no public BIR filing API, and holding clients' eFPS/eBIRForms passwords is a security and liability risk. TaxGabay produces the documents and the step-by-step "copy this value into this field" guide; filing stays with the client.
+2. **Form line maps are data**, effective-dated like rules: for each form version, which computed value goes in which item number. All start `needs_verification: true` and go into VERIFY.md and the review worksheet. A form version change (new BIR release) is a new data row, not new code.
+3. **Data file formats** (SAWT, QAP, alphalist DAT files for the BIR's validation modules) are added only after the CPA confirms the current format specs. Until then the packet contains the schedules as PDF and CSV.
+4. **New package `packages/filing`** (pure TS, no UI): record types, validation checks, record-to-entry posting rules (category → account), the preparation engine (period + records + profile → documents with `{ values, steps, warnings }`), and packet assembly. It reuses tax-engine calculators and the accounting engine, so every amount stays explainable.
+5. **Accounts and server storage are required** for this feature (records are too important to live only in a browser). Explicit consent before saving; data in Supabase with row-level security; receipts in private storage buckets; full export and deletion (RA 10173).
+6. **Two kinds of users**: *firm staff* (preparer, reviewer, admin) who see all of the firm's clients, and *client users* who see only their own business. The existing multi-client mode becomes the firm's client list.
+7. **Receipt photos**: Phase 6 stores them as attachments. Automatic reading of receipts (AI extraction into records, always confirmed by a person) is a later, optional step.
+8. **Worked examples are fixtures**: one complete client-period per business type (the four Phase 5 businesses), with the expected packet values, for the CPA to review — the same pattern as the calculator fixtures.
+
+## Decisions needed from the product owner
+
+1. **TIN.** Returns, 2307s and 2316s need TINs (the client's, suppliers', employees'). The current rule is "no TIN stored". Options: (a) store TINs encrypted, only with consent, shown only to the firm and the client — recommended; (b) leave TIN fields blank on every document for the client to fill in by hand.
+2. **Who enters the records?** (a) Clients enter, the firm reviews — recommended; (b) only firm staff enter; (c) clients only, no firm review.
+3. **Which documents first?** Recommended first batch: 2551Q, 1701Q and 1701A for non-VAT individuals, plus 0619E/1601EQ with 2307s and SAWT/QAP. Then VAT (2550Q + sales/purchase lists), payroll (1601C, 1604C, 2316, alphalist), corporations (1702Q, 1702-RT), books and financial statements.
+4. **Is this for your firm only, or for other firms too?** This changes sign-up, branding on the packets, and billing.
+
+## Tasks (first batch)
+
+| # | Task | Acceptance criteria |
+|---|------|---------------------|
+| 1 | Data model and migrations | Firms, members and roles, clients, client users, periods, records, attachments, packets, review status, audit log; RLS tests prove a client cannot see another client and staff only see their firm. |
+| 2 | Records intake | Forms for each record type; Excel/CSV template download and import with row-level errors; receipt upload; consent screen; e2e. |
+| 3 | Validation checks | Each check unit-tested with fixtures; to-do list in the portal. |
+| 4 | `packages/filing` engine | Posting rules, preparation for the first-batch forms, schedules, 2307s; fixtures per worked example; 95%+ coverage. |
+| 5 | Form line maps | Flagged data rows per form version; generated VERIFY.md section; review worksheet items. |
+| 6 | Filing packet | PDF per document with item numbers and values, cover checklist with deadline/where to file/pay, CSV schedules, ZIP download; e2e. |
+| 7 | Firm workflow | Staff dashboard by deadline and status (records incomplete → ready → prepared → reviewed → released → client marked filed); reminders to clients for missing records; audit log. |
+| 8 | Docs | README, privacy notice update, VERIFY.md, PLAN. |
+
+## Out of scope for Phase 6
+
+Filing or paying on the client's behalf, storing BIR portal passwords, payment collection or billing for the firm, automatic receipt reading, and LGU (local business tax) returns.
