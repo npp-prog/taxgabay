@@ -23,15 +23,24 @@ const PROFILE = {
 
 const toggle = (page: Page) => page.getByRole("button", { name: /^(Language|Wika):/ });
 
+/** On phones the language switch lives in the menu: open it, check the label, optionally switch, close. */
+async function lang(page: Page, expected: string, click = false) {
+  const burger = page.locator('button[aria-controls="mobile-nav"]');
+  const mobile = await burger.isVisible();
+  if (mobile) await burger.click();
+  await expect(toggle(page)).toHaveText(expected);
+  if (click) await toggle(page).click();
+  if (mobile) await page.keyboard.press("Escape");
+}
+
 test("switch to Filipino, see translated pages, persist, switch back", async ({ page }) => {
   await page.addInitScript((data) => {
     if (!localStorage.getItem("taxgabay:v1")) localStorage.setItem("taxgabay:v1", JSON.stringify(data));
   }, PROFILE);
 
   await page.goto("/profile");
-  await expect(toggle(page)).toHaveText("FIL");
-  await toggle(page).click();
-  await expect(toggle(page)).toHaveText("EN");
+  await lang(page, "FIL", true);
+  await lang(page, "EN");
 
   await expect(page.getByRole("heading", { name: "Ang iyong taxpayer profile" })).toBeVisible();
   await expect(page.getByText("Alin ang pinakanaglalarawan sa iyo?")).toBeVisible();
@@ -44,9 +53,7 @@ test("switch to Filipino, see translated pages, persist, switch back", async ({ 
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Aking tax calendar" })).toBeVisible();
-  await expect(toggle(page)).toHaveText("EN");
-
-  await toggle(page).click();
+  await lang(page, "EN", true);
   await expect(page.getByRole("heading", { name: "My tax calendar" })).toBeVisible();
-  await expect(toggle(page)).toHaveText("FIL");
+  await lang(page, "FIL");
 });

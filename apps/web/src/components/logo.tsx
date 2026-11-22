@@ -15,7 +15,7 @@ export function Wordmark() {
   return (
     <span className="inline-flex items-center gap-2">
       <LogoMark />
-      <span className="font-display text-[1.15rem] font-extrabold tracking-tight text-foreground">
+      <span className="font-display text-[1.15rem] font-semibold tracking-tight text-foreground">
         Tax<span className="text-primary">Gabay</span>
       </span>
     </span>

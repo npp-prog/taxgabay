@@ -1,85 +1,90 @@
 @import "tailwindcss";
 
 /*
- * TaxGabay visual system: the BIR form and the ledger.
- * Ink-blue "official" primary, a sun-yellow signal used sparingly (deadlines, highlights),
- * cool paper ground, crisp hairline boxes instead of soft cards, numbered form lines,
- * monospace for amounts and form codes.
+ * TaxGabay visual system: friendly SaaS.
+ * Deep navy-violet ink on a soft lavender ground, a vivid violet for actions,
+ * rounded white cards with soft long shadows, pill buttons, Poppins throughout.
+ * Sun-yellow stays as TaxGabay's signal colour (deadlines, highlights).
  */
 @theme {
-  --color-background: #f5f7fa;
-  --color-foreground: #0e1a2b;
+  --color-background: #f7f5fc;
+  --color-foreground: #281752;
   --color-card: #ffffff;
-  --color-card-foreground: #0e1a2b;
-  --color-muted: #eceff4;
-  --color-muted-foreground: #4b596c;
-  --color-border: #d5dbe4;
-  --color-input: #b9c3d1;
-  --color-ring: #1f3fa8;
-  --color-primary: #1f3fa8;
+  --color-card-foreground: #281752;
+  --color-muted: #f3f0fa;
+  --color-muted-foreground: #5a5675;
+  --color-border: #e1dcee;
+  --color-input: #cfc8e3;
+  --color-ring: #7f00ff;
+  --color-primary: #7f00ff;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e5ebfa;
-  --color-secondary-foreground: #18307f;
+  --color-secondary: #f5ebff;
+  --color-secondary-foreground: #5b00b8;
+  --color-lavender: #f5f1fe;
   --color-sun: #f2b705;
   --color-sun-foreground: #3b2b00;
   --color-sun-soft: #fff4cc;
-  --color-ink: #0e1a2b;
+  --color-ink: #281752;
   --color-destructive: #c42b1c;
   --color-warning: #a35f00;
   --color-warning-foreground: #6b3d00;
   --color-success: #1e7b45;
-  --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 2px 4px rgb(40 23 82 / 0.05), 0 40px 80px -46px rgb(40 23 82 / 0.45);
+  --shadow-pop: 0 30px 70px -30px rgb(40 23 82 / 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #0a111d;
-    --color-foreground: #e6ecf5;
-    --color-card: #101a2a;
-    --color-card-foreground: #e6ecf5;
-    --color-muted: #172237;
-    --color-muted-foreground: #9aa8bd;
-    --color-border: #26344c;
-    --color-input: #3a4a66;
-    --color-ring: #9db2ff;
-    --color-primary: #9db2ff;
-    --color-primary-foreground: #0a111d;
-    --color-secondary: #1a2a52;
-    --color-secondary-foreground: #c9d6ff;
+    --color-background: #120a24;
+    --color-foreground: #ece8f7;
+    --color-card: #1b1233;
+    --color-card-foreground: #ece8f7;
+    --color-muted: #231940;
+    --color-muted-foreground: #aaa1c6;
+    --color-border: #33295a;
+    --color-input: #4a3e78;
+    --color-ring: #b98cff;
+    --color-primary: #b98cff;
+    --color-primary-foreground: #1a0b33;
+    --color-secondary: #2a1a4d;
+    --color-secondary-foreground: #dcc8ff;
+    --color-lavender: #1e1438;
     --color-sun: #f5c542;
     --color-sun-foreground: #2a1f00;
     --color-sun-soft: #3a2f0d;
-    --color-ink: #e6ecf5;
+    --color-ink: #ece8f7;
     --color-warning: #f2b14a;
     --color-warning-foreground: #f8d38f;
     --color-success: #5ccf8a;
+    --shadow-card: 0 2px 4px rgb(0 0 0 / 0.3), 0 40px 80px -46px rgb(0 0 0 / 0.8);
+    --shadow-pop: 0 30px 70px -30px rgb(0 0 0 / 0.8);
     color-scheme: dark;
   }
 }
 
 body {
-  background: var(--color-background);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 9%, var(--color-background)) 0, var(--color-background) 560px) no-repeat, var(--color-background);
   color: var(--color-foreground);
-  font-feature-settings: "ss01", "cv11";
 }
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
+h1 { letter-spacing: -0.035em; }
 
 /* Small caps label used on form boxes ("ITEM 12 · TOTAL TAX DUE") */
 .form-label {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
@@ -88,26 +93,24 @@ h1, h2, h3 {
 .code { font-family: var(--font-mono); font-weight: 600; letter-spacing: -0.01em; }
 .amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
-/* A "paper" box with a thick ink top rule, like a section of a BIR form */
+/* Rounded white card with a soft, long shadow */
 .form-box {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-top: 3px solid var(--color-ink);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
 /* Faint ruled-paper background for heroes */
-.ruled {
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, color-mix(in oklab, var(--color-border) 70%, transparent) 31px, color-mix(in oklab, var(--color-border) 70%, transparent) 32px);
-}
+.ruled { background: transparent; }
 
 /* Readable long-form guide content */
-.prose-guide h2 { font-size: 1.3rem; font-weight: 650; margin-top: 2.25rem; margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); }
+.prose-guide h2 { font-size: 1.35rem; font-weight: 600; margin-top: 2.25rem; margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); }
 .prose-guide p { margin: 0.75rem 0; line-height: 1.7; max-width: 68ch; }
 .prose-guide ul { list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
 .prose-guide li { margin: 0.35rem 0; line-height: 1.6; }
 .prose-guide a { color: var(--color-primary); text-decoration: underline; }
-.prose-guide blockquote { border-left: 3px solid var(--color-sun); background: var(--color-sun-soft); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: var(--radius-sm); }
+.prose-guide blockquote { border-left: 3px solid var(--color-sun); background: var(--color-sun-soft); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: var(--radius-md); }
 
 @media print {
   header, footer, nav, .no-print { display: none !important; }

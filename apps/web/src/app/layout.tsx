@@ -4,8 +4,10 @@ import { SiteHeader } from "@/components/site-header";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SkipLink } from "@/components/skip-link";
 import { UserDataProvider } from "@/lib/user-data";
-import "@fontsource-variable/public-sans";
-import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/500.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
 import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1f3fa8",
+  themeColor: "#7f00ff",
   width: "device-width",
   initialScale: 1,
 };

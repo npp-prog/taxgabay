@@ -17,32 +17,30 @@ const FEATURES = [
 
 export default function Home() {
   return (
-    <div className="space-y-14">
+    <div className="space-y-20">
       <HomeHero />
       <section aria-labelledby="what-h">
-        <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-ink pb-2">
-          <h2 id="what-h" className="font-display text-xl font-bold tracking-tight">
-            What TaxGabay covers
+        <div className="mx-auto mb-10 max-w-2xl text-center">
+          <h2 id="what-h" className="font-display text-[1.9rem] font-semibold leading-tight sm:text-[2.4rem]">
+            Everything the BIR expects, <span className="text-primary">in one place.</span>
           </h2>
-          <span className="form-label">{FEATURES.length} tools</span>
+          <p className="mt-3 text-muted-foreground">{FEATURES.length} tools for taxpayers, business owners and bookkeepers.</p>
         </div>
-        <ul className="grid sm:grid-cols-2 sm:gap-x-10">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <li key={f.href} className="border-b border-border">
-              <Link href={f.href} className="group flex items-start gap-4 py-4">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold group-hover:text-primary">{f.title}</span>
-                  <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{f.body}</span>
-                </span>
-                <span className="mt-0.5 font-mono text-sm text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true">
-                  →
+            <li key={f.href}>
+              <Link href={f.href} className="group flex h-full flex-col rounded-lg border border-border bg-card p-6 shadow-[var(--shadow-card)] transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/40">
+                <span className="font-semibold group-hover:text-primary">{f.title}</span>
+                <span className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{f.body}</span>
+                <span className="mt-4 text-sm font-medium text-primary" aria-hidden="true">
+                  Open →
                 </span>
               </Link>
             </li>
           ))}
         </ul>
       </section>
-      <p className="max-w-[80ch] border-l-2 border-sun pl-4 text-sm leading-relaxed text-muted-foreground">
+      <p className="mx-auto max-w-[80ch] text-center text-sm leading-relaxed text-muted-foreground">
         <HomeFootnote />
       </p>
     </div>

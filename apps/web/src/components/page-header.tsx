@@ -1,10 +1,9 @@
 export function PageHeader({ title, description, eyebrow }: { title: string; description?: React.ReactNode; eyebrow?: string }) {
   return (
-    <div className="mb-8">
-      {eyebrow && <p className="form-label mb-2">{eyebrow}</p>}
-      <h1 className="font-display text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl">{title}</h1>
-      <div className="mt-3 h-[3px] w-12 bg-ink" aria-hidden="true" />
-      {description && <p className="mt-3 max-w-[68ch] text-[1.02rem] leading-relaxed text-muted-foreground">{description}</p>}
+    <div className="mb-10 pt-2">
+      {eyebrow && <p className="mb-3 inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-secondary-foreground">{eyebrow}</p>}
+      <h1 className="font-display text-[2rem] font-semibold leading-[1.08] sm:text-[2.6rem]">{title}</h1>
+      {description && <p className="mt-4 max-w-[64ch] text-[1.05rem] leading-relaxed text-muted-foreground">{description}</p>}
     </div>
   );
 }

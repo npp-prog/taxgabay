@@ -21,12 +21,12 @@ export function SampleSchedule() {
   }, [today]);
 
   return (
-    <div className="form-box overflow-hidden shadow-[0_1px_0_var(--color-border),0_24px_48px_-24px_rgb(14_26_43/0.25)]">
+    <div className="overflow-hidden rounded-[16px] border border-border bg-card">
       <div className="flex items-baseline justify-between gap-3 border-b border-border px-5 py-3">
         <span className="form-label">Example: a sole proprietor</span>
         <span className="form-label text-primary">Next deadlines</span>
       </div>
-      <ol className="divide-y divide-dashed divide-border">
+      <ol className="divide-y divide-border">
         {(rows ?? Array.from({ length: 5 }, () => null)).map((o, i) => {
           if (!o) {
             return (
@@ -39,9 +39,9 @@ export function SampleSchedule() {
           const d = parseISO(o.due_date);
           return (
             <li key={o.id} className="flex items-center gap-4 px-5 py-3">
-              <span className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm border ${i === 0 ? "border-sun bg-sun-soft" : "border-border bg-card"}`}>
-                <span className="font-mono text-[0.6rem] font-bold uppercase tracking-wider text-muted-foreground">{MONTHS[d.m - 1]}</span>
-                <span className="font-display text-lg font-bold leading-none">{d.day}</span>
+              <span className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-md border ${i === 0 ? "border-sun bg-sun-soft" : "border-border bg-card"}`}>
+                <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-muted-foreground">{MONTHS[d.m - 1]}</span>
+                <span className="text-lg font-semibold leading-none">{d.day}</span>
               </span>
               <span className="min-w-0 flex-1">
                 <span className="code text-sm">{o.form_code}</span>
