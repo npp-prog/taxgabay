@@ -316,6 +316,14 @@ All 23 guides in `packages/content/guides/` are skeletons (`status: skeleton`, `
 
 The chapters in `packages/content/business/` are flagged `needs_verification: true`. Facts the rule data does not support are marked "(to confirm)" in the text (remittance due dates for SSS, PhilHealth and Pag-IBIG; loose-leaf binding deadline; eAFS; how LGUs compute local business tax; RR 9-2009 as the books regulation).
 
+## Prepared documents (Phase 6)
+
+`packages/filing` prepares returns, schedules and certificates from client records. To review:
+
+- **Form line maps** (`packages/filing/src/data/form-lines.ts`): every box is described in words and its **BIR item number is empty** — fill in the item number for the current version of 2551Q, 0619E, 1601EQ, 1701Q, 1701A and 2307, then set `needs_verification: false`.
+- **Worked examples** (`packages/filing/test/fixtures/*.json`): a freelancer on 8% (Q1, with 2307s, rent withholding, 0619E/1601EQ/QAP/SAWT) and a store on graduated rates with OSD (Q2, cumulative 1701Q and 2551Q). Check every expected value.
+- **Assumptions to confirm**: sales counted by invoice date; 1701Q prior-quarter payments assumed paid as prepared; 1601EQ assumes the 0619E were paid as prepared; whether a zero 0619E must be filed; SAWT/QAP data-file formats (lists only for now).
+
 ## Practice sets
 
 The practice sets in `packages/accounting/src/sets/` are fictional businesses. Check that each journal entry and explanation follows Philippine practice (accounts used, treatment of withholding taxes and VAT, depreciation method), and that the tax returns at the end use the right forms. Their tax figures come from the rules above, so they change automatically when a rule is corrected; the tests in `packages/accounting/test/sets.test.ts` hold the hand-checked totals and will fail if a correction changes them.

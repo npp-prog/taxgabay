@@ -1,0 +1,26 @@
+{
+  "description": "Non-VAT sari-sari store, sole proprietor on graduated rates with the 40% OSD, Q2 2026. Shows the cumulative 1701Q and the quarterly 2551Q at 3%. No withholding agent duties.",
+  "client": {
+    "name": "Nena Santos",
+    "profile": { "taxpayer_type": "sole_proprietorship", "vat_status": "non_vat", "income_tax_option": "graduated_osd", "has_employees": false, "withholds_expanded": false, "filing_channel": "ebirforms", "efps_group": null, "fiscal_year_end_month": 12, "rdo_code": null, "taxpayer_size": "micro", "line_of_business": "Retail" }
+  },
+  "period": { "year": 2026, "quarter": 2 },
+  "records": [
+    { "kind": "sale", "id": "s1", "date": "2026-01-31", "document_no": "1001", "customer": { "name": "Walk-in customers" }, "amount": "100000.00" },
+    { "kind": "sale", "id": "s2", "date": "2026-02-28", "document_no": "1002", "customer": { "name": "Walk-in customers" }, "amount": "100000.00" },
+    { "kind": "sale", "id": "s3", "date": "2026-03-31", "document_no": "1003", "customer": { "name": "Walk-in customers" }, "amount": "100000.00" },
+    { "kind": "sale", "id": "s4", "date": "2026-04-30", "document_no": "1004", "customer": { "name": "Walk-in customers" }, "amount": "150000.00" },
+    { "kind": "sale", "id": "s5", "date": "2026-05-31", "document_no": "1005", "customer": { "name": "Walk-in customers" }, "amount": "150000.00" },
+    { "kind": "sale", "id": "s6", "date": "2026-06-30", "document_no": "1006", "customer": { "name": "Walk-in customers" }, "amount": "200000.00" },
+    { "kind": "expense", "id": "e1", "date": "2026-04-15", "supplier": { "name": "Puregold" }, "category": "cost_of_sales", "amount": "300000.00" }
+  ],
+  "expected": {
+    "forms": ["2551Q", "1701Q"],
+    "issue_codes": [],
+    "values": {
+      "2551Q-2026-06-30": { "gross_sales": "500000.00", "tax_due": "15000.00", "payable": "15000.00" },
+      "1701Q-2026-06-30": { "gross_cumulative": "800000.00", "deductions": "320000.00", "taxable_income": "480000.00", "tax_due": "38500.00", "prior_payments": "0.00", "cwt": "0.00", "payable": "38500.00" }
+    },
+    "total_payable": "53500.00"
+  }
+}

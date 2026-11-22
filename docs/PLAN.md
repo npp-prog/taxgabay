@@ -154,7 +154,7 @@ Requested by the product owner on 2026-11-22: "a complete guide for business and
 
 ---
 
-# Phase 6 Plan — Client records in, prepared documents out (DRAFT, awaiting approval)
+# Phase 6 Plan — Client records in, prepared documents out
 
 Reviewing CPA: **Neil Priolo, CPA**.
 
@@ -184,12 +184,13 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 7. **Receipt photos**: Phase 6 stores them as attachments. Automatic reading of receipts (AI extraction into records, always confirmed by a person) is a later, optional step.
 8. **Worked examples are fixtures**: one complete client-period per business type (the four Phase 5 businesses), with the expected packet values, for the CPA to review — the same pattern as the calculator fixtures.
 
-## Decisions needed from the product owner
+## Decisions (Neil Priolo, CPA, 2026-11-22)
 
-1. **TIN.** Returns, 2307s and 2316s need TINs (the client's, suppliers', employees'). The current rule is "no TIN stored". Options: (a) store TINs encrypted, only with consent, shown only to the firm and the client — recommended; (b) leave TIN fields blank on every document for the client to fill in by hand.
-2. **Who enters the records?** (a) Clients enter, the firm reviews — recommended; (b) only firm staff enter; (c) clients only, no firm review.
-3. **Which documents first?** Recommended first batch: 2551Q, 1701Q and 1701A for non-VAT individuals, plus 0619E/1601EQ with 2307s and SAWT/QAP. Then VAT (2550Q + sales/purchase lists), payroll (1601C, 1604C, 2316, alphalist), corporations (1702Q, 1702-RT), books and financial statements.
-4. **Is this for your firm only, or for other firms too?** This changes sign-up, branding on the packets, and billing.
+1. **TIN**: stored **encrypted**, only after the client consents, visible only to the firm and that client, printed on prepared documents. Exception to the general "no TIN" rule, recorded in the privacy notice.
+2. **Records**: **clients enter** them in their portal; the firm (Neil Priolo, CPA, or assigned staff) reviews and releases the packet.
+3. **First batch**: **non-VAT individuals** — 2551Q, 1701Q, 1701A, 0619E, 1601EQ, Form 2307s to issue, SAWT and QAP.
+4. **One firm**: Neil Priolo, CPA's firm, its staff and its clients. Multi-firm sign-up is out of scope.
+5. **Form item numbers** are not invented: each line map row describes the field in words, and its BIR item number stays empty (`TODO(CPA)`) until confirmed against the current form version.
 
 ## Tasks (first batch)
 

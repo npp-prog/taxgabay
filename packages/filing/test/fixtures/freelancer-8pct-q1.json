@@ -1,0 +1,33 @@
+{
+  "description": "Non-VAT freelance designer on the 8% option, Q1 2026. Clients withhold 5% (WI010); she pays monthly rent to an individual landlord and withholds 5% (WI100). Invoice SI-0004 is missing from the series.",
+  "client": {
+    "name": "Ligaya Reyes",
+    "tin": "123-456-789-000",
+    "profile": { "taxpayer_type": "self_employed", "vat_status": "non_vat", "income_tax_option": "eight_percent", "has_employees": false, "withholds_expanded": true, "filing_channel": "ebirforms", "efps_group": null, "fiscal_year_end_month": 12, "rdo_code": "043", "taxpayer_size": "micro", "line_of_business": "Graphic design" }
+  },
+  "period": { "year": 2026, "quarter": 1 },
+  "records": [
+    { "kind": "sale", "id": "s1", "date": "2026-01-10", "document_no": "SI-0001", "customer": { "name": "Kape Co., Inc.", "tin": "201-111-222-000" }, "amount": "30000.00" },
+    { "kind": "sale", "id": "s2", "date": "2026-01-25", "document_no": "SI-0002", "customer": { "name": "Maria Dizon" }, "amount": "6000.00" },
+    { "kind": "sale", "id": "s3", "date": "2026-02-12", "document_no": "SI-0003", "customer": { "name": "Kape Co., Inc.", "tin": "201-111-222-000" }, "amount": "40000.00" },
+    { "kind": "sale", "id": "s5", "date": "2026-03-05", "document_no": "SI-0005", "customer": { "name": "Bright Corp." , "tin": "202-333-444-000" }, "amount": "50000.00" },
+    { "kind": "expense", "id": "e1", "date": "2026-01-31", "supplier": { "name": "Jose Cruz", "tin": "301-555-666-000" }, "category": "rent", "amount": "10000.00", "withholding": { "atc": "WI100" } },
+    { "kind": "expense", "id": "e2", "date": "2026-02-03", "supplier": { "name": "National Book Store" }, "category": "supplies", "amount": "2000.00" },
+    { "kind": "expense", "id": "e3", "date": "2026-02-28", "supplier": { "name": "Jose Cruz", "tin": "301-555-666-000" }, "category": "rent", "amount": "10000.00", "withholding": { "atc": "WI100" } },
+    { "kind": "expense", "id": "e4", "date": "2026-03-31", "supplier": { "name": "Jose Cruz", "tin": "301-555-666-000" }, "category": "rent", "amount": "10000.00", "withholding": { "atc": "WI100" } },
+    { "kind": "form_2307_received", "id": "c1", "date": "2026-04-05", "payor": { "name": "Kape Co., Inc.", "tin": "201-111-222-000" }, "period_from": "2026-01-01", "period_to": "2026-03-31", "atc": "WI010", "income_payment": "70000.00", "tax_withheld": "3500.00" },
+    { "kind": "form_2307_received", "id": "c2", "date": "2026-04-08", "payor": { "name": "Bright Corp.", "tin": "202-333-444-000" }, "period_from": "2026-01-01", "period_to": "2026-03-31", "atc": "WI010", "income_payment": "50000.00", "tax_withheld": "2500.00" }
+  ],
+  "expected": {
+    "forms": ["0619E", "0619E", "1601EQ", "QAP", "2307", "SAWT", "1701Q"],
+    "issue_codes": ["invoice_gap"],
+    "values": {
+      "0619E-2026-01-31": { "total_withheld": "500.00", "payable": "500.00" },
+      "0619E-2026-02-28": { "total_withheld": "500.00", "payable": "500.00" },
+      "1601EQ-2026-03-31": { "total_withheld": "1500.00", "remitted_month1": "500.00", "remitted_month2": "500.00", "payable": "500.00" },
+      "2307-2026-03-31-1": { "income_month1": "10000.00", "income_month2": "10000.00", "income_month3": "10000.00", "total_income": "30000.00", "tax_withheld": "1500.00" },
+      "1701Q-2026-03-31": { "gross_cumulative": "126000.00", "deductions": "126000.00", "taxable_income": "0.00", "tax_due": "0.00", "prior_payments": "0.00", "cwt": "6000.00", "payable": "-6000.00" }
+    },
+    "total_payable": "1500.00"
+  }
+}
