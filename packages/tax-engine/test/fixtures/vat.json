@@ -1,0 +1,20 @@
+{
+  "description": "Quarterly VAT: output less input, inclusive/exclusive conversion, carry-over.",
+  "cases": [
+    {
+      "name": "VAT-inclusive sales and purchases",
+      "input": { "period_end": "2026-03-31", "vatable_sales": "1120000", "sales_vat_inclusive": true, "vatable_purchases": "560000", "purchases_vat_inclusive": true },
+      "expected": { "output_vat": "120000.00", "input_vat": "60000.00", "vat_payable": "60000.00", "excess_input_carried_forward": "0.00" }
+    },
+    {
+      "name": "Excess input VAT with carry-over",
+      "input": { "period_end": "2026-06-30", "vatable_sales": "1000000", "sales_vat_inclusive": false, "vatable_purchases": "1200000", "purchases_vat_inclusive": false, "input_tax_carried_over": "10000" },
+      "expected": { "output_vat": "120000.00", "input_vat": "154000.00", "vat_payable": "0.00", "excess_input_carried_forward": "34000.00" }
+    },
+    {
+      "name": "Rounding on a small inclusive amount",
+      "input": { "period_end": "2026-06-30", "vatable_sales": "100", "sales_vat_inclusive": true, "vatable_purchases": "0", "purchases_vat_inclusive": false },
+      "expected": { "output_vat": "10.71", "input_vat": "0.00", "vat_payable": "10.71", "excess_input_carried_forward": "0.00" }
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+export interface BirForm {
+  code: string;
+  name: string;
+  description: string;
+  who_files: string;
+  frequency: "monthly" | "quarterly" | "annual" | "one_time";
+  filing_channels: ("eBIRForms" | "eFPS" | "ORUS" | "manual")[];
+  guide_slug: string | null;
+  needs_verification: boolean;
+}
+
+export const forms: BirForm[] = [
+  {
+    code: "1701Q",
+    name: "Quarterly Income Tax Return for Individuals, Estates and Trusts",
+    description: "Reports income and pays income tax for the first three quarters of the year.",
+    who_files: "Self-employed individuals, professionals, sole proprietors and mixed-income earners.",
+    frequency: "quarterly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1701q",
+    needs_verification: true,
+  },
+  {
+    code: "1701",
+    name: "Annual Income Tax Return for Individuals (including Mixed-Income), Estates and Trusts",
+    description: "Annual return for mixed-income earners and for individuals using itemized deductions.",
+    who_files: "Mixed-income earners; self-employed individuals using itemized deductions; estates and trusts.",
+    frequency: "annual",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1701",
+    needs_verification: true,
+  },
+  {
+    code: "1701A",
+    name: "Annual Income Tax Return for Individuals Earning Income Purely from Business/Profession",
+    description: "Simplified annual return for those on the 8% option or graduated rates with OSD.",
+    who_files: "Purely self-employed individuals and professionals using the 8% rate or OSD.",
+    frequency: "annual",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1701a",
+    needs_verification: true,
+  },
+  {
+    code: "2551Q",
+    name: "Quarterly Percentage Tax Return",
+    description: "Reports gross sales/receipts and pays percentage tax for non-VAT taxpayers.",
+    who_files: "Non-VAT-registered persons not on the 8% income tax option, and others subject to percentage tax.",
+    frequency: "quarterly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "2551q",
+    needs_verification: true,
+  },
+  {
+    code: "2550Q",
+    name: "Quarterly Value-Added Tax Return",
+    description: "Reports output VAT less input VAT for the quarter.",
+    who_files: "VAT-registered persons.",
+    frequency: "quarterly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "2550q",
+    needs_verification: true,
+  },
+  {
+    code: "1601C",
+    name: "Monthly Remittance Return of Income Taxes Withheld on Compensation",
+    description: "Remits tax withheld from employees' salaries for the month.",
+    who_files: "Employers (withholding agents) with employees.",
+    frequency: "monthly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1601c",
+    needs_verification: true,
+  },
+  {
+    code: "0619E",
+    name: "Monthly Remittance Form of Creditable Income Taxes Withheld (Expanded)",
+    description: "Remits expanded withholding tax for the first two months of each quarter.",
+    who_files: "Withholding agents paying income subject to expanded withholding (e.g. rent, professional fees, contractors).",
+    frequency: "monthly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "0619e",
+    needs_verification: true,
+  },
+  {
+    code: "1601EQ",
+    name: "Quarterly Remittance Return of Creditable Income Taxes Withheld (Expanded)",
+    description: "Quarterly summary and remittance of expanded withholding tax, with the QAP attachment.",
+    who_files: "Withholding agents for expanded withholding tax.",
+    frequency: "quarterly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1601eq",
+    needs_verification: true,
+  },
+  {
+    code: "1604C",
+    name: "Annual Information Return of Income Taxes Withheld on Compensation",
+    description: "Annual summary of compensation paid and taxes withheld, with the alphalist of employees.",
+    who_files: "Employers (withholding agents) with employees.",
+    frequency: "annual",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1604c",
+    needs_verification: true,
+  },
+  {
+    code: "1604E",
+    name: "Annual Information Return of Creditable Income Taxes Withheld (Expanded)",
+    description: "Annual summary of expanded withholding, with the alphalist of payees.",
+    who_files: "Withholding agents for expanded withholding tax.",
+    frequency: "annual",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: "1604e",
+    needs_verification: true,
+  },
+  {
+    code: "1702Q",
+    name: "Quarterly Income Tax Return for Corporations, Partnerships and Other Non-Individual Taxpayers",
+    description: "Quarterly corporate income tax return.",
+    who_files: "Corporations, partnerships, OPCs and other non-individual taxpayers.",
+    frequency: "quarterly",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: null,
+    needs_verification: true,
+  },
+  {
+    code: "1702-RT",
+    name: "Annual Income Tax Return for Corporations, Partnerships and Other Non-Individual Taxpayers Subject Only to the Regular Income Tax Rate",
+    description: "Annual corporate income tax return at the regular rate.",
+    who_files: "Corporations and partnerships subject to the regular rate.",
+    frequency: "annual",
+    filing_channels: ["eBIRForms", "eFPS"],
+    guide_slug: null,
+    needs_verification: true,
+  },
+  {
+    code: "1901",
+    name: "Application for Registration for Self-Employed (Single Proprietor/Professional), Mixed-Income Individuals, Non-Resident Alien Engaged in Trade/Business, Estate and Trust",
+    description: "BIR registration form for individuals with business income.",
+    who_files: "Sole proprietors, professionals and mixed-income earners registering with BIR.",
+    frequency: "one_time",
+    filing_channels: ["ORUS", "manual"],
+    guide_slug: null,
+    needs_verification: true,
+  },
+  {
+    code: "1903",
+    name: "Application for Registration for Corporations/Partnerships (Taxable/Non-Taxable)",
+    description: "BIR registration form for juridical entities.",
+    who_files: "Corporations, partnerships, OPCs, cooperatives.",
+    frequency: "one_time",
+    filing_channels: ["ORUS", "manual"],
+    guide_slug: null,
+    needs_verification: true,
+  },
+];
+
+export function getForm(code: string): BirForm | undefined {
+  return forms.find((f) => f.code.toLowerCase() === code.toLowerCase());
+}

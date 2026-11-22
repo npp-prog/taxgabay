@@ -1,0 +1,10 @@
+{
+  "description": "Quarterly percentage tax (Sec. 116) either side of the CREATE 1% window (1 Jul 2020 – 30 Jun 2023).",
+  "cases": [
+    { "period_end": "2020-06-30", "gross": "500000", "expected_rate": "0.03", "expected_tax": "15000.00" },
+    { "period_end": "2020-09-30", "gross": "500000", "expected_rate": "0.01", "expected_tax": "5000.00" },
+    { "period_end": "2023-06-30", "gross": "500000", "expected_rate": "0.01", "expected_tax": "5000.00" },
+    { "period_end": "2023-09-30", "gross": "500000", "expected_rate": "0.03", "expected_tax": "15000.00" },
+    { "period_end": "2026-03-31", "gross": "123456.78", "expected_rate": "0.03", "expected_tax": "3703.70" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "description": "Late filing/payment penalties. Interest = basic tax × annual rate × days / 365, split where the rate changes. Compromise from the (LOW CONFIDENCE) RMO 7-2015 schedule.",
+  "cases": [
+    {
+      "name": "Pre-EOPT, medium taxpayer, 30 days late",
+      "input": { "due_date": "2023-05-15", "payment_date": "2023-06-14", "basic_tax_due": "10000", "taxpayer_size": "medium", "late_filing": true, "late_payment": true, "willful": false },
+      "expected": { "days_late": 30, "surcharge": "2500.00", "interest": "98.63", "compromise": "1500.00", "total_amount_due": "14098.63" }
+    },
+    {
+      "name": "Post-EOPT, micro taxpayer, 30 days late — reduced surcharge and interest",
+      "input": { "due_date": "2025-04-15", "payment_date": "2025-05-15", "basic_tax_due": "10000", "taxpayer_size": "micro", "late_filing": true, "late_payment": true, "willful": false },
+      "expected": { "days_late": 30, "surcharge": "1000.00", "interest": "49.32", "compromise": "1500.00", "total_amount_due": "12549.32" }
+    },
+    {
+      "name": "Spans EOPT effectivity (22 Jan 2024), micro taxpayer — interest split 11 days @12% + 19 days @6%",
+      "input": { "due_date": "2024-01-10", "payment_date": "2024-02-09", "basic_tax_due": "100000", "taxpayer_size": "micro", "late_filing": true, "late_payment": true, "willful": false },
+      "expected": { "days_late": 30, "surcharge": "25000.00", "interest": "673.97", "compromise": "10000.00", "total_amount_due": "135673.97", "segments": [ { "days": 11, "amount": "361.64" }, { "days": 19, "amount": "312.33" } ] }
+    },
+    {
+      "name": "Willful, medium taxpayer, 10 days late",
+      "input": { "due_date": "2025-04-15", "payment_date": "2025-04-25", "basic_tax_due": "1000", "taxpayer_size": "medium", "late_filing": true, "late_payment": true, "willful": true },
+      "expected": { "days_late": 10, "surcharge": "500.00", "interest": "3.29", "compromise": "400.00", "total_amount_due": "1903.29" }
+    },
+    {
+      "name": "Late filing only (tax paid on time) — no interest",
+      "input": { "due_date": "2025-04-15", "payment_date": "2025-04-20", "basic_tax_due": "2000", "taxpayer_size": "large", "late_filing": true, "late_payment": false, "willful": false },
+      "expected": { "days_late": 5, "surcharge": "500.00", "interest": "0.00", "compromise": "700.00", "total_amount_due": "3200.00" }
+    },
+    {
+      "name": "Without compromise",
+      "input": { "due_date": "2025-04-15", "payment_date": "2025-05-15", "basic_tax_due": "10000", "taxpayer_size": "small", "late_filing": true, "late_payment": true, "willful": false, "include_compromise": false },
+      "expected": { "days_late": 30, "surcharge": "1000.00", "interest": "49.32", "compromise": "0.00", "total_amount_due": "11049.32" }
+    },
+    {
+      "name": "Paid on the due date — no penalty",
+      "input": { "due_date": "2025-04-15", "payment_date": "2025-04-15", "basic_tax_due": "10000", "taxpayer_size": "medium", "late_filing": false, "late_payment": false, "willful": false },
+      "expected": { "days_late": 0, "surcharge": "0.00", "interest": "0.00", "compromise": "0.00", "total_amount_due": "10000.00" }
+    }
+  ]
+}

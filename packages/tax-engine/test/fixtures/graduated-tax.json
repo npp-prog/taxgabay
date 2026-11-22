@@ -1,0 +1,22 @@
+{
+  "description": "Graduated income tax at bracket boundaries and across the 2022/2023 TRAIN schedule change. 'year' picks the table in force on 31 Dec of that year.",
+  "cases": [
+    { "year": 2024, "taxable_income": "0", "expected_tax": "0.00" },
+    { "year": 2024, "taxable_income": "250000", "expected_tax": "0.00" },
+    { "year": 2024, "taxable_income": "250000.01", "expected_tax": "0.00" },
+    { "year": 2024, "taxable_income": "300000", "expected_tax": "7500.00" },
+    { "year": 2024, "taxable_income": "400000", "expected_tax": "22500.00" },
+    { "year": 2024, "taxable_income": "600000", "expected_tax": "62500.00" },
+    { "year": 2024, "taxable_income": "800000", "expected_tax": "102500.00" },
+    { "year": 2024, "taxable_income": "2000000", "expected_tax": "402500.00" },
+    { "year": 2024, "taxable_income": "8000000", "expected_tax": "2202500.00" },
+    { "year": 2024, "taxable_income": "10000000", "expected_tax": "2902500.00" },
+    { "year": 2022, "taxable_income": "250000", "expected_tax": "0.00" },
+    { "year": 2022, "taxable_income": "400000", "expected_tax": "30000.00" },
+    { "year": 2022, "taxable_income": "600000", "expected_tax": "80000.00" },
+    { "year": 2022, "taxable_income": "800000", "expected_tax": "130000.00" },
+    { "year": 2022, "taxable_income": "2000000", "expected_tax": "490000.00" },
+    { "year": 2022, "taxable_income": "8000000", "expected_tax": "2410000.00" },
+    { "year": 2023, "taxable_income": "600000", "expected_tax": "62500.00" }
+  ]
+}

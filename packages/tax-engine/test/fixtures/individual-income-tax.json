@@ -1,0 +1,88 @@
+{
+  "description": "Annual individual income tax: graduated (OSD / itemized) vs 8%. Totals include percentage tax for non-VAT taxpayers on graduated rates.",
+  "cases": [
+    {
+      "name": "Purely self-employed, ₱1M gross, 2024 — 8% wins",
+      "input": { "taxable_year": 2024, "gross_sales_receipts": "1000000", "vat_registered": false },
+      "expected": {
+        "kind": "purely_self_employed",
+        "recommended": "eight_percent",
+        "options": {
+          "graduated_osd": { "income_tax": "62500.00", "percentage_tax": "30000.00", "total_tax": "92500.00", "eligible": true },
+          "eight_percent": { "income_tax": "60000.00", "percentage_tax": "0.00", "total_tax": "60000.00", "eligible": true }
+        }
+      }
+    },
+    {
+      "name": "Mixed income: ₱500k compensation + ₱600k business, 2024",
+      "input": { "taxable_year": 2024, "compensation_income": "500000", "gross_sales_receipts": "600000", "vat_registered": false },
+      "expected": {
+        "kind": "mixed_income",
+        "recommended": "eight_percent",
+        "options": {
+          "graduated_osd": { "income_tax": "117500.00", "percentage_tax": "18000.00", "total_tax": "135500.00", "eligible": true },
+          "eight_percent": { "income_tax": "90500.00", "percentage_tax": "0.00", "total_tax": "90500.00", "eligible": true }
+        }
+      }
+    },
+    {
+      "name": "Exactly at the ₱3M threshold — 8% still allowed",
+      "input": { "taxable_year": 2024, "gross_sales_receipts": "3000000", "vat_registered": false },
+      "expected": {
+        "kind": "purely_self_employed",
+        "recommended": "eight_percent",
+        "options": {
+          "graduated_osd": { "income_tax": "352500.00", "percentage_tax": "90000.00", "total_tax": "442500.00", "eligible": true },
+          "eight_percent": { "income_tax": "220000.00", "percentage_tax": "0.00", "total_tax": "220000.00", "eligible": true }
+        }
+      }
+    },
+    {
+      "name": "One centavo over ₱3M — 8% not allowed",
+      "input": { "taxable_year": 2024, "gross_sales_receipts": "3000000.01", "vat_registered": false },
+      "expected": {
+        "kind": "purely_self_employed",
+        "recommended": "graduated_osd",
+        "options": {
+          "eight_percent": { "eligible": false }
+        }
+      }
+    },
+    {
+      "name": "VAT-registered, ₱5M gross, ₱3M itemized deductions — itemized wins",
+      "input": { "taxable_year": 2024, "gross_sales_receipts": "5000000", "itemized_deductions": "3000000", "vat_registered": true },
+      "expected": {
+        "kind": "purely_self_employed",
+        "recommended": "graduated_itemized",
+        "options": {
+          "graduated_osd": { "income_tax": "702500.00", "percentage_tax": "0.00", "total_tax": "702500.00", "eligible": true },
+          "graduated_itemized": { "income_tax": "402500.00", "percentage_tax": "0.00", "total_tax": "402500.00", "eligible": true },
+          "eight_percent": { "eligible": false }
+        }
+      }
+    },
+    {
+      "name": "Same ₱600k taxable, 2022 vs 2023 schedules (OSD on ₱1M gross)",
+      "input": { "taxable_year": 2022, "gross_sales_receipts": "1000000", "vat_registered": false },
+      "expected": {
+        "kind": "purely_self_employed",
+        "recommended": "eight_percent",
+        "options": {
+          "graduated_osd": { "income_tax": "80000.00", "percentage_tax": "10000.00", "total_tax": "90000.00", "eligible": true },
+          "eight_percent": { "income_tax": "60000.00", "total_tax": "60000.00", "eligible": true }
+        }
+      }
+    },
+    {
+      "name": "Compensation only, ₱300k, 2024",
+      "input": { "taxable_year": 2024, "compensation_income": "300000", "vat_registered": false },
+      "expected": {
+        "kind": "compensation_only",
+        "recommended": "graduated_osd",
+        "options": {
+          "graduated_osd": { "income_tax": "7500.00", "total_tax": "7500.00", "eligible": true }
+        }
+      }
+    }
+  ]
+}
