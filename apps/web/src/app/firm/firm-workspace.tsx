@@ -13,8 +13,13 @@ import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { supabaseEnabled } from "@/lib/supabase";
 import { useUserData } from "@/lib/user-data";
 import { cn, formatDatePH, todayPH } from "@/lib/utils";
+import { nextRecordRequests, quarterOf } from "@/lib/prep-schedule";
 import {
   createClient,
+  deleteClientCompletely,
+  loadAllQuarterPeriods,
+  loadAttachments,
+  openReceipt,
   createPacket,
   firmMemberName,
   listClients,
@@ -73,10 +78,18 @@ function Workspace({ role }: { role: NonNullable<Membership["firmRole"]> }) {
   const [clients, setClients] = React.useState<PrepClient[] | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [periods, setPeriods] = React.useState<PeriodRow[]>([]);
   const [nonce, setNonce] = React.useState(0);
   React.useEffect(() => {
     let live = true;
-    listClients().then((c) => live && setClients(c), (e: Error) => live && setError(e.message));
+    Promise.all([listClients(), loadAllQuarterPeriods()]).then(
+      ([c, p]) => {
+        if (!live) return;
+        setClients(c);
+        setPeriods(p);
+      },
+      (e: Error) => live && setError(e.message),
+    );
     return () => {
       live = false;
     };
@@ -87,6 +100,7 @@ function Workspace({ role }: { role: NonNullable<Membership["firmRole"]> }) {
     <div className="space-y-8">
       <PageHeader eyebrow={`Firm workspace · ${role}`} title="Clients and filing packets" description="Create clients and give them their invite code. When a client marks a quarter complete, prepare the packet, review it, and release it to the client." />
       {error && <p role="alert" className="text-destructive">{error}</p>}
+      {clients && clients.length > 0 && <Overview clients={clients} periods={periods} onOpen={setSelected} />}
       <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="space-y-4">
           <NewClient
@@ -106,9 +120,76 @@ function Workspace({ role }: { role: NonNullable<Membership["firmRole"]> }) {
             ))}
           </ul>
         </aside>
-        <div>{current ? <ClientDetail key={current.id} client={current} role={role} onChanged={() => setNonce((n) => n + 1)} /> : <p className="form-box p-6 text-muted-foreground">Choose a client, or create one.</p>}</div>
+        <div>
+          {current ? (
+            <ClientDetail
+              key={current.id}
+              client={current}
+              role={role}
+              onChanged={() => setNonce((n) => n + 1)}
+              onDeleted={() => {
+                setSelected(null);
+                setNonce((n) => n + 1);
+              }}
+            />
+          ) : (
+            <p className="form-box p-6 text-muted-foreground">Choose a client, or create one.</p>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function Overview({ clients, periods, onOpen }: { clients: PrepClient[]; periods: PeriodRow[]; onOpen: (id: string) => void }) {
+  const today = todayPH();
+  const rows = clients
+    .map((c) => {
+      const next = nextRecordRequests(c.profile, today, { limit: 1 })[0] ?? null;
+      const qStart = next ? `${next.period_end.slice(0, 4)}-${String((quarterOf(next.period_end) - 1) * 3 + 1).padStart(2, "0")}-01` : null;
+      const status = periods.find((p) => p.prep_client_id === c.id && p.start_date === qStart)?.status ?? "records_incomplete";
+      return { c, next, status };
+    })
+    .sort((a, b) => (a.next?.due_date ?? "9999").localeCompare(b.next?.due_date ?? "9999"));
+  return (
+    <section className="form-box overflow-x-auto" aria-labelledby="overview-h">
+      <h2 id="overview-h" className="px-5 pt-4 font-semibold">
+        By next deadline
+      </h2>
+      <table className="mt-2 w-full min-w-[40rem] text-sm" data-testid="firm-overview">
+        <thead>
+          <tr className="form-label border-b border-border text-left">
+            <th className="px-5 py-2">Client</th>
+            <th className="py-2 pr-3">Next filing</th>
+            <th className="py-2 pr-3">Due</th>
+            <th className="py-2 pr-3">Records by</th>
+            <th className="py-2 pr-5">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ c, next, status }) => {
+            const late = next && status === "records_incomplete" && next.records_by < today;
+            return (
+              <tr key={c.id} className="border-b border-border/70 last:border-0">
+                <td className="px-5 py-2">
+                  <button type="button" className="font-medium text-primary hover:underline" onClick={() => onOpen(c.id)}>
+                    {c.name}
+                  </button>
+                </td>
+                <td className="py-2 pr-3">{next ? `${next.form} · ${next.period_label}` : "—"}</td>
+                <td className="py-2 pr-3 font-mono text-xs">{next ? formatDatePH(next.due_date) : "—"}</td>
+                <td className={cn("py-2 pr-3 font-mono text-xs", late && "font-semibold text-destructive")}>{next ? formatDatePH(next.records_by) : "—"}</td>
+                <td className="py-2 pr-5">
+                  <Badge variant={late ? "outline" : status === "ready" ? "warning" : status === "records_incomplete" ? "muted" : "success"} className={late ? "border-destructive/50 text-destructive" : ""}>
+                    {late ? "Records late" : PERIOD_STATUS_LABEL[status] ?? status}
+                  </Badge>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -142,12 +223,13 @@ function NewClient({ onCreated }: { onCreated: (c: PrepClient) => void }) {
 }
 
 interface Detail {
+  attachments: Map<string, string>;
   records: ClientRecord[];
   periods: PeriodRow[];
   packets: PacketRow[];
 }
 
-function ClientDetail({ client, role, onChanged }: { client: PrepClient; role: NonNullable<Membership["firmRole"]>; onChanged: () => void }) {
+function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClient; role: NonNullable<Membership["firmRole"]>; onChanged: () => void; onDeleted: () => void }) {
   const [d, setD] = React.useState<Detail | null>(null);
   const [profile, setProfile] = React.useState<Profile>(client.profile);
   const [code, setCode] = React.useState(client.invite_code);
@@ -158,8 +240,8 @@ function ClientDetail({ client, role, onChanged }: { client: PrepClient; role: N
   const [nonce, setNonce] = React.useState(0);
   React.useEffect(() => {
     let live = true;
-    Promise.all([loadRecords(client.id), loadPeriods(client.id), loadPackets(client.id)]).then(
-      ([records, periods, packets]) => live && setD({ records, periods, packets }),
+    Promise.all([loadRecords(client.id), loadPeriods(client.id), loadPackets(client.id), loadAttachments(client.id)]).then(
+      ([records, periods, packets, attachments]) => live && setD({ records, periods, packets, attachments }),
       (e: Error) => live && setError(e.message),
     );
     return () => {
@@ -236,7 +318,7 @@ function ClientDetail({ client, role, onChanged }: { client: PrepClient; role: N
           <section className="form-box space-y-4 p-6">
             <h3 className="font-semibold">Records ({d.records.length})</h3>
             <RecordTabs records={d.records} tab={tab} onTab={setTab} />
-            <RecordsTable records={d.records} kind={tab} />
+            <RecordsTable records={d.records} kind={tab} receipts={{ attachments: d.attachments, onOpen: (path) => run(async () => window.open(await openReceipt(path), "_blank", "noopener")) }} />
           </section>
 
           <section className="form-box space-y-4 p-6">
@@ -274,6 +356,27 @@ function ClientDetail({ client, role, onChanged }: { client: PrepClient; role: N
               <PacketCard key={p.id} client={{ ...client, profile }} packet={p} canReview={canReview} busy={busy} onStatus={(s) => run(() => setPacketStatus(p, s))} />
             ))}
           </section>
+          {role === "admin" && (
+            <section className="rounded-lg border border-destructive/40 p-5" aria-label="Delete client">
+              <h3 className="font-semibold text-destructive">Delete this client</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Removes the business with all its records, receipts, TINs, periods and packets. This cannot be undone — download the client&apos;s data first if you need to keep it.</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3 border-destructive/50 text-destructive"
+                disabled={busy}
+                onClick={() => {
+                  if (window.prompt(`Type the client's name to delete it permanently:\n${client.name}`) !== client.name) return;
+                  void run(async () => {
+                    await deleteClientCompletely(client.id);
+                    onDeleted();
+                  });
+                }}
+              >
+                Delete client and all data
+              </Button>
+            </section>
+          )}
         </>
       )}
     </div>
