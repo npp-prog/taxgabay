@@ -1,5 +1,6 @@
 import {
   addMonths,
+  computeCorporateIncomeTax,
   computeEwt,
   computeIndividualIncomeTax,
   computePercentageTax,
@@ -754,6 +755,110 @@ function prepare1701A(ctx: Ctx, year: number, option: ItOption): PreparedDocumen
   });
 }
 
+// ---------- Corporate income tax: 1702Q (cumulative) and 1702-RT ----------
+
+const CORPORATE_TYPES = new Set(["corporation", "opc", "partnership"]);
+
+interface CitComputation {
+  sales: Dec;
+  cos: Dec;
+  gross: Dec;
+  deductions: Dec;
+  taxable: Dec;
+  rcit: Dec;
+  mcit: Dec;
+  tax: Dec;
+  steps: Step[];
+  rules_used: string[];
+  warnings: string[];
+}
+
+function corporateTaxTo(ctx: Ctx, year: number, end: ISODate): CitComputation | null {
+  const corp = ctx.input.client.corporate ?? {};
+  if (!corp.year_commenced) {
+    if (!ctx.issues.some((i) => i.code === "year_commenced")) ctx.issues.push({ code: "year_commenced", severity: "error", message: "Enter the year the business started operations (needed for the minimum corporate income tax) before income tax returns can be prepared." });
+    return null;
+  }
+  const r: Range = { start: `${year}-01-01`, end };
+  const sales = sum(salesIn(ctx.input.records, r).map((s) => saleNet(ctx, s)));
+  const exps = expensesIn(ctx.input.records, r);
+  const cos = sum(exps.filter((e) => e.category === "cost_of_sales").map((e) => expenseSplit(ctx, e).net));
+  const { lines } = payrollYear(ctx.input.records, year, ctx.rules);
+  const payroll = sum(lines.filter((l) => l.record.date <= end).map((l) => l.basic.plus(l.benefits).plus(l.de_minimis).plus(l.sss_er).plus(l.ph_er).plus(l.hdmf_er)));
+  const deductions = sum(exps.filter((e) => e.category !== "cost_of_sales").map((e) => expenseSplit(ctx, e).net)).plus(payroll);
+  const assetsKnown = !!corp.total_assets_excl_land;
+  const c = computeCorporateIncomeTax(
+    { taxable_year_end: `${year}-12-31`, year_commenced: corp.year_commenced, gross_sales: money(sales), cost_of_sales: money(cos), deductions: money(deductions), total_assets_excl_land: assetsKnown ? corp.total_assets_excl_land! : "999999999999" },
+    ctx.rules,
+  );
+  const warnings = [...c.warnings];
+  if (!assetsKnown) warnings.push("Total assets (excluding land) were not entered, so the regular rate is used. Enter them to check whether the reduced rate applies.");
+  return {
+    sales,
+    cos,
+    gross: dec(c.result.gross_income),
+    deductions,
+    taxable: dec(c.result.taxable_income),
+    rcit: dec(c.result.rcit),
+    mcit: dec(c.result.mcit),
+    tax: dec(c.result.tax_due),
+    steps: [step("Sales, net of VAT where applicable", "Total of sales records", sales), step("Less: cost of sales", "Expenses marked as goods for resale / cost of sales", cos), step("Allowable deductions", "Other expenses (net of input VAT) and payroll costs with employer contributions", deductions, "NIRC Sec. 34"), ...c.steps],
+    rules_used: c.rules_used,
+    warnings,
+  };
+}
+
+function priorCorporatePayments(ctx: Ctx, year: number, upTo: number): Dec {
+  let paid = dec(0);
+  for (let k = 1; k < upTo; k++) {
+    const end = quarterRange({ year, quarter: k as 1 | 2 | 3 }).end;
+    const c = corporateTaxTo(ctx, year, end);
+    if (!c) return paid;
+    paid = paid.plus(max0(c.tax.minus(cwtTo(ctx, year, end)).minus(paid)));
+  }
+  return paid;
+}
+
+function prepareCorporate(ctx: Ctx, q: QuarterRef, annual: boolean): PreparedDocument | null {
+  const end = annual ? `${q.year}-12-31` : quarterRange(q).end;
+  const c = corporateTaxTo(ctx, q.year, end);
+  if (!c) return null;
+  const prior = priorCorporatePayments(ctx, q.year, annual ? 4 : q.quarter);
+  const cwt = cwtTo(ctx, q.year, end);
+  const payable = round2(c.tax.minus(prior).minus(cwt));
+  const form = annual ? "1702-RT" : "1702Q";
+  return doc(ctx, {
+    id: `${form}-${end}`,
+    form,
+    title: annual ? "Annual income tax return (corporations and partnerships, regular rate)" : "Quarterly income tax return (corporations and partnerships)",
+    period_label: annual ? `Taxable year ${q.year}` : `${quarterLabel(q)} (cumulative from 1 January)`,
+    period_start: `${q.year}-01-01`,
+    period_end: end,
+    values: {
+      sales: money(c.sales),
+      cost_of_sales: money(c.cos),
+      gross_income: money(c.gross),
+      deductions: money(c.deductions),
+      taxable_income: money(c.taxable),
+      rcit: money(c.rcit),
+      mcit: money(c.mcit),
+      tax_due: money(c.tax),
+      prior_payments: money(prior),
+      cwt: money(cwt),
+      payable: money(payable),
+    },
+    steps: [
+      ...c.steps,
+      step(annual ? "Less: tax paid with the 1702Q returns" : "Less: tax paid with earlier 1702Q returns this year", "As prepared by TaxGabay for earlier quarters", prior, "NIRC Sec. 75"),
+      step("Less: creditable tax withheld (Forms 2307)", "Total of Forms 2307 received", cwt, "NIRC Sec. 58; RR 2-98"),
+      step(payable.isNegative() ? (annual ? "Overpayment (choose refund, tax credit certificate or carry-over on the return)" : "Overpayment, carried to the next quarter") : "Income tax payable", `${peso(c.tax)} − ${peso(prior)} − ${peso(cwt)}`, payable.abs()),
+    ],
+    amount_payable: money(max0(payable)),
+    warnings: [...c.warnings, "Excess MCIT from earlier years, net operating loss carry-over (NOLCO) and income subject to final tax are not modeled; Neil Priolo, CPA adds them if they apply.", ...(annual ? ["Attach audited financial statements where required."] : [])],
+    rules_used: c.rules_used,
+  });
+}
+
 // ---------- Packet ----------
 
 /**
@@ -787,15 +892,22 @@ export function preparePacket(input: PrepareInput): Packet {
   const notSupported: Packet["not_supported"] = [];
 
   const individual = profile.taxpayer_type === "self_employed" || profile.taxpayer_type === "sole_proprietorship";
-  if (!individual) notSupported.push({ form: "—", reason: "Only self-employed individuals and sole proprietors are supported in this first batch." });
+  const corporate = CORPORATE_TYPES.has(profile.taxpayer_type) && profile.fiscal_year_end_month === 12;
+  if (!individual && !corporate) {
+    notSupported.push({
+      form: "—",
+      reason: CORPORATE_TYPES.has(profile.taxpayer_type) ? "Corporations with a fiscal year (not ending in December) are planned for a later batch." : "Supported: self-employed individuals, sole proprietors, and corporations, OPCs and partnerships on a calendar year.",
+    });
+  }
+  if (corporate && profile.taxpayer_type === "partnership") issues.push({ code: "partnership_type", severity: "warning", message: "General professional partnerships are not subject to income tax (partners are taxed instead). These returns assume a taxable partnership — confirm with Neil Priolo, CPA." });
 
   const option = profile.income_tax_option;
   const itOption: ItOption | null = option === "eight_percent" || option === "graduated_osd" || option === "graduated_itemized" ? option : null;
   if (individual && !itOption) issues.push({ code: "income_tax_option", severity: "error", message: "Choose the income tax option (8%, graduated with OSD, or graduated with itemized deductions) in the client's profile before income tax returns can be prepared." });
 
-  if (individual) {
+  if (individual || corporate) {
     if (profile.vat_status === "vat") documents.push(prepare2550Q(ctx, q, range), prepareSalesList(ctx, q, range), preparePurchaseList(ctx, q, range));
-    else if (itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, quarterLabel(q)));
+    else if (corporate || itOption !== "eight_percent") documents.push(prepare2551Q(ctx, range, quarterLabel(q)));
     if (profile.withholds_expanded) {
       const [m1, m2] = quarterMonths(q) as [Range, Range, Range];
       documents.push(prepare0619E(ctx, m1), prepare0619E(ctx, m2), prepare1601EQ(ctx, q, range), prepareQap(ctx, q, range), ...prepare2307s(ctx, q, range));
@@ -805,7 +917,10 @@ export function preparePacket(input: PrepareInput): Packet {
       if (q.quarter === 4) documents.push(prepare1604C(ctx, q.year), ...prepare2316s(ctx, q.year));
     }
     if (certsIn(input.records, range).length) documents.push(prepareSawt(ctx, q, range));
-    if (itOption) {
+    if (corporate) {
+      const d = prepareCorporate(ctx, q, q.quarter === 4);
+      if (d) documents.push(d);
+    } else if (itOption) {
       if (q.quarter < 4) {
         const d = prepare1701Q(ctx, q, range, itOption);
         if (d) documents.push(d);

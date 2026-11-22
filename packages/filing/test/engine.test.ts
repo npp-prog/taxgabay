@@ -77,9 +77,11 @@ describe("preparePacket", () => {
   });
 
   it("reports what it cannot prepare yet", () => {
-    const p = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", vat_status: "vat", has_employees: true }) }, records: [], period: { year: 2026, quarter: 1 } });
-    expect(p.documents).toEqual([]);
-    expect(p.not_supported.map((n) => n.form)).toEqual(["—"]);
+    const fy = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "corporation", fiscal_year_end_month: 6 }) }, records: [], period: { year: 2026, quarter: 1 } });
+    expect(fy.documents).toEqual([]);
+    expect(fy.not_supported[0]!.reason).toContain("fiscal year");
+    const coop = preparePacket({ client: { name: "C", profile: profile({ taxpayer_type: "cooperative" }) }, records: [], period: { year: 2026, quarter: 1 } });
+    expect(coop.not_supported[0]!.reason).toContain("Supported:");
   });
 
   it("asks for the income tax option and blocks an ineligible 8%", () => {
@@ -213,5 +215,30 @@ describe("payroll", () => {
     expect(p.not_supported.map((n) => n.form)).toContain("1701");
     const q1 = preparePacket({ client: { name: "S", profile: emp({ income_tax_option: "graduated_itemized" }) }, records: [...recs, { kind: "sale", id: "s", date: "2026-01-02", document_no: "1", customer: { name: "X" }, amount: "1000000.00" }], period: { year: 2026, quarter: 1 } });
     expect(Number(q1.documents.find((d) => d.form === "1701Q")!.fields.find((f) => f.key === "deductions")!.value)).toBeGreaterThan(200000);
+  });
+});
+
+describe("corporations", () => {
+  const corp = (p: Partial<Profile> = {}) => profile({ taxpayer_type: "corporation", income_tax_option: "not_applicable", ...p });
+  const sales: ClientRecord[] = [1, 2, 3].map((m) => ({ kind: "sale", id: `s${m}`, date: `2026-0${m}-15`, document_no: String(m), customer: { name: "X" }, amount: "1000000.00" }));
+
+  it("asks for the start year and skips MCIT in the first years", () => {
+    const none = preparePacket({ client: { name: "C", profile: corp() }, records: sales, period: { year: 2026, quarter: 1 } });
+    expect(none.issues.map((i) => i.code)).toContain("year_commenced");
+    expect(none.documents.map((d) => d.form)).toEqual(["2551Q"]);
+    const young = preparePacket({ client: { name: "C", profile: corp(), corporate: { year_commenced: 2025 } }, records: sales, period: { year: 2026, quarter: 1 } });
+    const q = young.documents.find((d) => d.form === "1702Q")!;
+    expect(q.fields.find((f) => f.key === "mcit")!.value).toBe("0.00");
+    // Assets unknown: regular 25% on ₱3,000,000.
+    expect(q.fields.find((f) => f.key === "rcit")!.value).toBe("750000.00");
+    expect(q.warnings.some((w) => w.includes("Total assets"))).toBe(true);
+  });
+
+  it("prepares the annual 1702-RT in Q4 and flags taxable partnerships", () => {
+    const p = preparePacket({ client: { name: "P", profile: corp({ taxpayer_type: "partnership", vat_status: "vat" }), corporate: { year_commenced: 2015, total_assets_excl_land: "1000000" } }, records: sales, period: { year: 2026, quarter: 4 } });
+    expect(p.documents.map((d) => d.form)).toEqual(["2550Q", "SLS", "SLP", "1702-RT"]);
+    const rt = p.documents.find((d) => d.form === "1702-RT")!;
+    expect(rt.due_date).toBe("2027-04-15");
+    expect(p.issues.map((i) => i.code)).toContain("partnership_type");
   });
 });

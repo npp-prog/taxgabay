@@ -96,6 +96,13 @@ export interface ClientInfo {
   address?: string | null;
   rdo_code?: string | null;
   profile: Profile;
+  /** Corporations, OPCs and partnerships only. */
+  corporate?: {
+    /** Year business operations began (MCIT starts in the 4th taxable year after). */
+    year_commenced?: number | null;
+    /** Total assets excluding the land the office, plant and equipment stand on (for the reduced rate). */
+    total_assets_excl_land?: string | null;
+  };
 }
 
 export interface QuarterRef {

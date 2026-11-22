@@ -34,6 +34,7 @@ const line = (form: string, field_key: string, label: string, legal_basis: strin
 const PT = "NIRC Sec. 116, as amended; RR 7-2024 (to confirm form version)";
 const EWT = "NIRC Sec. 57(B); RR 2-98, as amended";
 const IT = "NIRC Secs. 24(A), 74; RR 8-2018";
+const CIT = "NIRC Secs. 27(A), 27(E), 75–77, as amended by RA 11534 (CREATE)";
 const WC = "NIRC Secs. 79–83, as amended; RR 2-98 Secs. 2.78–2.83, as amended by RR 11-2018";
 const VAT = "NIRC Secs. 106, 108, 110 and 114, as amended; RR 16-2005, as amended";
 
@@ -80,6 +81,30 @@ export const formLines: FormLine[] = [
   line("1701A", "quarterly_payments", "Less: tax paid in the 1701Q returns for the year", IT),
   line("1701A", "cwt", "Less: creditable tax withheld per BIR Form 2307 for the year", IT),
   line("1701A", "payable", "Tax payable / (overpayment)", IT),
+
+  line("1702Q", "sales", "Sales/revenues/receipts to date (cumulative from the start of the taxable year)", CIT),
+  line("1702Q", "cost_of_sales", "Less: cost of sales/services", CIT),
+  line("1702Q", "gross_income", "Gross income", CIT),
+  line("1702Q", "deductions", "Less: allowable deductions (itemized)", CIT),
+  line("1702Q", "taxable_income", "Taxable income", CIT),
+  line("1702Q", "rcit", "Income tax due at the regular rate", CIT),
+  line("1702Q", "mcit", "Minimum corporate income tax (MCIT)", CIT),
+  line("1702Q", "tax_due", "Tax due (higher of regular income tax and MCIT)", CIT),
+  line("1702Q", "prior_payments", "Less: tax paid in previous quarter(s) of the same year", CIT),
+  line("1702Q", "cwt", "Less: creditable tax withheld per BIR Form 2307", CIT),
+  line("1702Q", "payable", "Tax payable / (overpayment)", CIT),
+
+  line("1702-RT", "sales", "Sales/revenues/receipts for the year", CIT),
+  line("1702-RT", "cost_of_sales", "Less: cost of sales/services", CIT),
+  line("1702-RT", "gross_income", "Gross income", CIT),
+  line("1702-RT", "deductions", "Less: allowable deductions (itemized)", CIT),
+  line("1702-RT", "taxable_income", "Taxable income", CIT),
+  line("1702-RT", "rcit", "Income tax due at the regular rate", CIT),
+  line("1702-RT", "mcit", "Minimum corporate income tax (MCIT)", CIT),
+  line("1702-RT", "tax_due", "Tax due (higher of regular income tax and MCIT)", CIT),
+  line("1702-RT", "prior_payments", "Less: tax paid in previous quarter(s) of the same year", CIT),
+  line("1702-RT", "cwt", "Less: creditable tax withheld per BIR Form 2307", CIT),
+  line("1702-RT", "payable", "Tax payable / (overpayment)", CIT),
 
   line("1601C", "total_compensation", "Total amount of compensation (basic pay, benefits and de minimis)", WC),
   line("1601C", "non_taxable", "Less: non-taxable compensation (mandatory contributions, de minimis, 13th month and other benefits up to the ceiling, minimum wage)", WC),

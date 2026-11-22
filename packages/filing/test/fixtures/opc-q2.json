@@ -1,0 +1,34 @@
+{
+  "description": "One-person corporation (non-VAT) that started operations in 2021, with total assets of ₱5,000,000 excluding land, Q2 2026. Gross income ₱950,000 to date (sales ₱1,200,000 less cost of sales ₱250,000), rent ₱120,000 deducted, taxable income ₱830,000 at the reduced 20% rate (₱166,000) against MCIT of 2% of gross income (₱19,000); ₱88,000 paid with the Q1 1702Q. Percentage tax at 3% on the quarter's ₱600,000 sales.",
+  "client": {
+    "name": "Bayanihan Kitchen OPC",
+    "profile": { "taxpayer_type": "opc", "vat_status": "non_vat", "income_tax_option": "not_applicable", "has_employees": false, "withholds_expanded": false, "filing_channel": "ebirforms", "efps_group": null, "fiscal_year_end_month": 12, "rdo_code": null, "taxpayer_size": "small", "line_of_business": "Catering" },
+    "corporate": { "year_commenced": 2021, "total_assets_excl_land": "5000000.00" }
+  },
+  "period": { "year": 2026, "quarter": 2 },
+  "records": [
+    { "kind": "sale", "id": "s1", "date": "2026-01-31", "document_no": "1", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "sale", "id": "s2", "date": "2026-02-28", "document_no": "2", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "sale", "id": "s3", "date": "2026-03-31", "document_no": "3", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "sale", "id": "s4", "date": "2026-04-30", "document_no": "4", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "sale", "id": "s5", "date": "2026-05-31", "document_no": "5", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "sale", "id": "s6", "date": "2026-06-30", "document_no": "6", "customer": { "name": "Various" }, "amount": "200000.00" },
+    { "kind": "expense", "id": "c1", "date": "2026-01-10", "supplier": { "name": "Supplier" }, "category": "cost_of_sales", "amount": "100000.00" },
+    { "kind": "expense", "id": "c2", "date": "2026-04-10", "supplier": { "name": "Supplier" }, "category": "cost_of_sales", "amount": "150000.00" },
+    { "kind": "expense", "id": "r1", "date": "2026-01-31", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" },
+    { "kind": "expense", "id": "r2", "date": "2026-02-28", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" },
+    { "kind": "expense", "id": "r3", "date": "2026-03-31", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" },
+    { "kind": "expense", "id": "r4", "date": "2026-04-30", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" },
+    { "kind": "expense", "id": "r5", "date": "2026-05-31", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" },
+    { "kind": "expense", "id": "r6", "date": "2026-06-30", "supplier": { "name": "Landlord" }, "category": "rent", "amount": "20000.00" }
+  ],
+  "expected": {
+    "forms": ["2551Q", "1702Q"],
+    "issue_codes": [],
+    "values": {
+      "2551Q-2026-06-30": { "gross_sales": "600000.00", "tax_due": "18000.00" },
+      "1702Q-2026-06-30": { "sales": "1200000.00", "cost_of_sales": "250000.00", "gross_income": "950000.00", "deductions": "120000.00", "taxable_income": "830000.00", "rcit": "166000.00", "mcit": "19000.00", "tax_due": "166000.00", "prior_payments": "88000.00", "cwt": "0.00", "payable": "78000.00" }
+    },
+    "total_payable": "96000.00"
+  }
+}
