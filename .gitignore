@@ -11,3 +11,4 @@ test-results
 next-env.d.ts
 apps/web/public/pdfjs
 apps/web/.next-admin
+apps/web/.next-dev
