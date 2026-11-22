@@ -31,7 +31,8 @@
   --color-success: #1e7b45;
   --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* Amounts and form codes use Poppins with tabular (equal-width) digits: plain zeros, aligned columns. */
+  --font-mono: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -90,8 +91,9 @@ h1 { letter-spacing: -0.035em; }
 }
 
 /* Form codes and amounts */
-.code { font-family: var(--font-mono); font-weight: 600; letter-spacing: -0.01em; }
+.code { font-family: var(--font-mono); font-weight: 600; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.font-mono { font-variant-numeric: tabular-nums; letter-spacing: 0; }
 
 /* Rounded white card with a soft, long shadow */
 .form-box {

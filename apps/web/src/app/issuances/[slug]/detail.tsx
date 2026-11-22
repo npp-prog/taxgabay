@@ -28,7 +28,7 @@ function RelationGraph({ center, related }: { center: string; related: RelatedIs
   const node = (x: number, yy: number, text: string, strong = false, key?: string) => (
     <g key={key}>
       <rect x={x - nodeW / 2} y={yy - 16} width={nodeW} height={32} rx={8} fill={strong ? "var(--color-primary)" : "var(--color-card)"} stroke="var(--color-border)" />
-      <text x={x} y={yy + 5} textAnchor="middle" fontSize={13} fill={strong ? "var(--color-primary-foreground)" : "var(--color-foreground)"} fontFamily="ui-monospace, monospace">
+      <text x={x} y={yy + 5} textAnchor="middle" fontSize={13} fill={strong ? "var(--color-primary-foreground)" : "var(--color-foreground)"} fontFamily="Poppins, ui-sans-serif, sans-serif">
         {text}
       </text>
     </g>

@@ -81,9 +81,6 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 1.12.0
         version: 1.12.0(zod@4.6.7)
-      '@fontsource-variable/jetbrains-mono':
-        specifier: 5.3.0
-        version: 5.3.0
       '@fontsource/poppins':
         specifier: 5.2.6
         version: 5.2.6
@@ -1096,9 +1093,6 @@ packages:
   '@expo/xcpretty@4.4.7':
     resolution: {integrity: sha512-EbxYllZ7/ozONVZd425cm4XnolfW+AmSFT5aP7Jdno6oc3WrYQcHz2CO20z/2rwWwYgztmV2PXvYH+BQ8YFjqg==}
     hasBin: true
-
-  '@fontsource-variable/jetbrains-mono@5.3.0':
-    resolution: {integrity: sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw==}
 
   '@fontsource/poppins@5.2.6':
     resolution: {integrity: sha512-NFr0121+vWCfzLDVvSZOzwAjRUaNj6QHA9gtUh/KHHoWf1Qn23EkwVFs63XZ6UtF5K1b3UNmCx77YEMGgV7BOQ==}
@@ -5714,8 +5708,6 @@ snapshots:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
       js-yaml: 4.3.2
-
-  '@fontsource-variable/jetbrains-mono@5.3.0': {}
 
   '@fontsource/poppins@5.2.6': {}
 
