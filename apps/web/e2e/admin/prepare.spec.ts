@@ -91,3 +91,59 @@ test("non-members are kept out of the firm workspace", async ({ page }) => {
   await page.goto("/firm");
   await expect(page.getByTestId("firm-gate")).toContainText("not on Neil Priolo, CPA's firm team");
 });
+
+test("client: next records needed, receipt upload and data download", async ({ page }) => {
+  const db = await installMockSupabase(page, {
+    role: null,
+    tables: {
+      prep_clients: [{ id: "pc1", name: "Ligaya Reyes", profile, invite_code: "ABCDE23456", archived: false }],
+      client_users: [{ prep_client_id: "pc1", user_id: MOCK_USER_ID }],
+      client_consents: [{ id: "k1", prep_client_id: "pc1", user_id: MOCK_USER_ID, consent_type: "records_storage", version: "2026-11", withdrawn_at: null }],
+      records: RECORDS,
+    },
+  });
+  await page.goto("/prepare");
+  await expect(page.getByTestId("next-needed")).toContainText("Records by");
+
+  await page.getByLabel("Attach receipt for 2026-01-10").setInputFiles({ name: "OR 123.jpg", mimeType: "image/jpeg", buffer: Buffer.from("fake-jpeg") });
+  await expect(page.getByTestId("records-table").getByRole("button", { name: "View" })).toBeVisible();
+  const key = [...db.storage.keys()][0]!;
+  expect(key).toMatch(/^receipts\/pc1\/r1\/\d+-or-123\.jpg$/);
+  expect(db.tables.records!.find((r) => r.id === "r1")!.attachment_path).toBe(key.slice("receipts/".length));
+
+  // Wrong file type is refused before upload.
+  await page.getByLabel("Attach receipt for 2026-02-10").setInputFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("x") });
+  await expect(page.getByRole("alert").filter({ hasText: "Upload a photo" })).toBeVisible();
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download my data" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("taxgabay-my-business-data.json");
+  const json = JSON.parse(await (await file.createReadStream()).toArray().then((b) => Buffer.concat(b).toString("utf8")));
+  expect(json.business.name).toBe("Ligaya Reyes");
+  expect(json.records).toHaveLength(4);
+});
+
+test("firm: overview by deadline and deleting a client", async ({ page }) => {
+  const db = await installMockSupabase(page, {
+    role: null,
+    tables: {
+      firm_members: [{ user_id: MOCK_USER_ID, role: "admin", display_name: "Neil Priolo, CPA" }],
+      prep_clients: [
+        { id: "pc1", name: "Ligaya Reyes", profile, invite_code: "ABCDE23456", archived: false },
+        { id: "pc2", name: "Nena Santos", profile: { ...profile, withholds_expanded: false }, invite_code: "ZXCVB23456", archived: false },
+      ],
+      records: RECORDS,
+    },
+  });
+  await page.goto("/firm");
+  const overview = page.getByTestId("firm-overview");
+  await expect(overview).toContainText("Ligaya Reyes");
+  await expect(overview).toContainText("Nena Santos");
+  await overview.getByRole("button", { name: "Nena Santos" }).click();
+  await expect(page.getByTestId("client-detail")).toContainText("Nena Santos");
+  page.once("dialog", (d) => d.accept("Nena Santos"));
+  await page.getByRole("button", { name: "Delete client and all data" }).click();
+  await expect(page.getByTestId("client-list")).not.toContainText("Nena Santos");
+  expect(db.tables.prep_clients!.map((c) => c.id)).toEqual(["pc1"]);
+});

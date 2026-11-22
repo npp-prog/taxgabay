@@ -208,7 +208,8 @@ Requested by the product owner on 2026-11-22: clients put in all their records, 
 ## Progress
 
 - Done: schema + RLS (tasks 1), invite codes, records intake with CSV import (2), record checks (3), `packages/filing` for the first batch (4), flagged form line maps (5), packet PDF (6), firm workspace `/firm` with prepare → review → release and the client portal at `/prepare` (7), docs (8).
-- Still open in Phase 6: receipt photo uploads to the `receipts` bucket, client reminders for missing records, a firm dashboard sorted by deadline, account data export/deletion for prep clients.
+- Done after that: receipt uploads (photos/PDF, 10 MB, private bucket, signed links), "what the firm needs next" for clients with records due 10 days before each deadline (`RECORDS_LEAD_DAYS`, a firm rule, not a BIR rule), email reminders 5, 1 and 0 days before the records date (daily cron), firm overview sorted by next deadline with late records flagged, client data download (JSON) and firm-admin deletion of a client with all data.
+- Known limitation: packets are quarterly, but 0619E is monthly and falls due before the quarter ends. The firm can prepare a quarter's packet early (e.g. in February for January's 0619E); later batches should add monthly packets.
 
 ## Out of scope for Phase 6
 

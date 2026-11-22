@@ -13,6 +13,8 @@ export interface MockDb {
   requests: { method: string; table: string; body: unknown }[];
   /** TINs as the encrypted store would return them, keyed "client|subject|ref". */
   tins: Map<string, string>;
+  /** Uploaded storage objects by "bucket/path". */
+  storage: Map<string, number>;
 }
 
 export const MOCK_USER_ID = "00000000-0000-0000-0000-00000000a001";
@@ -113,6 +115,7 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
     tables: { issuances: [], issuance_links: [], deadline_extensions: [], holidays: [], admin_audit_log: [], profiles: [], user_obligations: [], user_roadmap_progress: [], user_checklist_progress: [], reminder_settings: [], ...(opts.tables ?? {}) },
     requests: [],
     tins: new Map(),
+    storage: new Map(),
   };
   const session = sessionFor(opts.role === undefined ? "admin" : opts.role);
   await page.addInitScript((s) => localStorage.setItem("sb-supabase-auth-token", JSON.stringify(s)), session);
@@ -122,6 +125,21 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
     if (url.pathname.endsWith("/user")) return route.fulfill({ json: session.user });
     if (url.pathname.endsWith("/token")) return route.fulfill({ json: session });
     return route.fulfill({ json: {} });
+  });
+
+  await page.route("http://supabase.test/storage/v1/**", async (route) => {
+    const req = route.request();
+    const path = decodeURIComponent(new URL(req.url()).pathname.replace(/^\/storage\/v1\//, ""));
+    db.requests.push({ method: `STORAGE ${req.method()}`, table: path, body: null });
+    if (path.startsWith("object/sign/")) return route.fulfill({ json: { signedURL: `/object/sign/${path.slice(12)}?token=t` } });
+    if (path.startsWith("object/list/")) return route.fulfill({ json: [] });
+    if (req.method() === "POST" && path.startsWith("object/")) {
+      const key = path.slice(7);
+      db.storage.set(key, req.postDataBuffer()?.length ?? 0);
+      return route.fulfill({ json: { Key: key, Id: uuid() } });
+    }
+    if (req.method() === "DELETE") return route.fulfill({ json: [] });
+    return route.fulfill({ status: 404, json: { message: "no storage mock" } });
   });
 
   await page.route("http://supabase.test/rest/v1/**", async (route: Route) => {
