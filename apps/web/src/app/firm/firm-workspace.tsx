@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/page-header";
 import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { type TemplateKind } from "@/lib/prepare-csv";
 import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { supabaseEnabled } from "@/lib/supabase";
 import { useUserData } from "@/lib/user-data";
@@ -38,7 +37,7 @@ import {
 } from "@/lib/workspace";
 import { PERIOD_STATUS_LABEL } from "@/lib/workspace-core";
 import { BooksSection } from "../prepare/books-section";
-import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs } from "../prepare/parts";
+import { CorporateFields, input, label, PacketResults, RecordsTable, RecordTabs, MONTH_NAMES, type RecordKind } from "../prepare/parts";
 
 const PACKET_STATUS: Record<PacketRow["status"], string> = { prepared: "Prepared — not reviewed", reviewed: "Reviewed", released: "Released to client" };
 const defaultProfile = (): Profile => ({ taxpayer_type: "self_employed", vat_status: "non_vat", income_tax_option: "eight_percent", has_employees: false, withholds_expanded: false, filing_channel: "ebirforms", efps_group: null, fiscal_year_end_month: 12, rdo_code: null, taxpayer_size: "micro", line_of_business: null });
@@ -236,8 +235,10 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
   const [corporate, setCorporate] = React.useState(client.corporate);
   const isCorp = ["corporation", "opc", "partnership"].includes(profile.taxpayer_type);
   const [code, setCode] = React.useState(client.invite_code);
-  const [tab, setTab] = React.useState<TemplateKind>("sale");
+  const [tab, setTab] = React.useState<RecordKind>("sale");
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
+  const [monthPick, setMonthPick] = React.useState(0);
+  const month = monthPick ? (period.quarter - 1) * 3 + monthPick : undefined;
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [nonce, setNonce] = React.useState(0);
@@ -361,8 +362,15 @@ function ClientDetail({ client, role, onChanged, onDeleted }: { client: PrepClie
                   </option>
                 ))}
               </select>
-              <Button disabled={busy} onClick={() => run(() => createPacket({ ...client, profile, corporate }, period))}>
-                Prepare {quarterLabel(period)} packet
+              <select aria-label="Packet" className={cn(input, "w-44")} value={monthPick} onChange={(e) => setMonthPick(Number(e.target.value))}>
+                {[0, 1, 2, 3].map((k) => (
+                <option key={k} value={k}>
+                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[(period.quarter - 1) * 3 + k - 1]} only`}
+                </option>
+              ))}
+              </select>
+              <Button disabled={busy} onClick={() => run(() => createPacket({ ...client, profile, corporate }, period, month))}>
+                Prepare {month ? `${MONTH_NAMES[month - 1]} ${period.year}` : quarterLabel(period)} packet
               </Button>
             </div>
             <ul className="space-y-1 text-sm">
@@ -431,7 +439,7 @@ function PacketCard({ client, packet, canReview, busy, onStatus }: { client: Pre
           </Button>
         )}
         <PdfButton
-          filename={`${client.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${p.period.year}-q${p.period.quarter}.pdf`}
+          filename={`${client.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${p.period.year}-${p.month ? String(p.month).padStart(2, "0") : `q${p.period.quarter}`}.pdf`}
           label="PDF"
           build={async () => {
             const pr = await printablePacket(client.id, client, p);

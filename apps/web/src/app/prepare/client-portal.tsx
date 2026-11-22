@@ -6,7 +6,6 @@ import * as React from "react";
 import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { type TemplateKind } from "@/lib/prepare-csv";
 import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
 import { formatDatePH, todayPH } from "@/lib/utils";
 import { nextRecordRequests } from "@/lib/prep-schedule";
@@ -35,7 +34,7 @@ import {
 } from "@/lib/workspace";
 import { PERIOD_STATUS_LABEL, quarterPeriod } from "@/lib/workspace-core";
 import { BooksSection } from "./books-section";
-import { CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
+import { CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs, type RecordKind } from "./parts";
 
 interface Data {
   client: PrepClient;
@@ -58,7 +57,7 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
   const [data, setData] = React.useState<Data | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [nonce, setNonce] = React.useState(0);
-  const [tab, setTab] = React.useState<TemplateKind>("sale");
+  const [tab, setTab] = React.useState<RecordKind>("sale");
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
   const reload = () => setNonce((n) => n + 1);
 
@@ -119,7 +118,7 @@ export function ClientPortal({ clientId, userId }: { clientId: string; userId: s
           Your records
         </h2>
         <RecordTabs records={data.records} tab={tab} onTab={setTab} />
-        <RecordForm kind={tab} tinConsent={data.consents.tin} vat={data.client.profile.vat_status === "vat"} onAdd={(r) => run(() => addRecords(clientId, [r], data.consents.tin))} />
+        <RecordForm kind={tab} tinConsent={data.consents.tin} vat={data.client.profile.vat_status === "vat"} corporate={["corporation", "opc", "partnership"].includes(data.client.profile.taxpayer_type)} onAdd={(r) => run(() => addRecords(clientId, [r], data.consents.tin))} />
         <CsvImport kind={tab} onRecords={(rs) => run(() => addRecords(clientId, rs, data.consents.tin))} />
         <RecordsTable
           records={data.records}
@@ -315,7 +314,7 @@ function ReleasedPackets({ client, packets }: { client: PrepClient; packets: Pac
           </div>
           <Badge variant="success">Reviewed by {REVIEWER}</Badge>
           <PdfButton
-            filename={`taxgabay-packet-${p.payload.period.year}-q${p.payload.period.quarter}.pdf`}
+            filename={p.payload.month ? `taxgabay-packet-${p.payload.period.year}-${String(p.payload.month).padStart(2, "0")}.pdf` : `taxgabay-packet-${p.payload.period.year}-q${p.payload.period.quarter}.pdf`}
             label="Download packet (PDF)"
             build={async () => {
               const pr = await printablePacket(client.id, client, p.payload);

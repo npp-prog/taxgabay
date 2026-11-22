@@ -7,11 +7,11 @@ import { PdfButton } from "@/components/pdf-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { packetPdf, REVIEWER } from "@/lib/prepare-pdf";
-import { type TemplateKind } from "@/lib/prepare-csv";
 import { usePrepare } from "@/lib/prepare-store";
 import { todayPH } from "@/lib/utils";
 import { BooksSection } from "./books-section";
-import { CorporateFields, CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs } from "./parts";
+import { MONTH_NAMES } from "./parts";
+import { CorporateFields, CsvImport, input, label, PacketResults, RecordForm, RecordsTable, RecordTabs, type RecordKind } from "./parts";
 
 const EXAMPLE: ClientRecord[] = [
   { kind: "sale", id: "x1", date: "2026-01-10", document_no: "SI-0001", customer: { name: "Kape Co., Inc." }, amount: "30000.00" },
@@ -28,9 +28,11 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
   const { state, update, reset } = usePrepare();
   const { client, records, tinConsent } = state;
   const [period, setPeriod] = React.useState<QuarterRef>({ year: 2026, quarter: 1 });
-  const [tab, setTab] = React.useState<TemplateKind>("sale");
+  const [tab, setTab] = React.useState<RecordKind>("sale");
   const isCorp = ["corporation", "opc", "partnership"].includes(client.profile.taxpayer_type);
-  const packet = React.useMemo(() => preparePacket({ client, records, period }), [client, records, period]);
+  const [monthPick, setMonthPick] = React.useState(0);
+  const month = monthPick ? (period.quarter - 1) * 3 + monthPick : undefined;
+  const packet = React.useMemo(() => preparePacket({ client, records, period, month }), [client, records, period, month]);
   const setProfile = (patch: Partial<typeof client.profile>) => update((s) => ({ ...s, client: { ...s.client, profile: { ...s.client.profile, ...patch } } }));
   const addRecord = (r: ClientRecord) => update((s) => ({ ...s, records: [...s.records, r] }));
   const removeRecord = (id: string) => update((s) => ({ ...s, records: s.records.filter((r) => r.id !== id) }));
@@ -134,7 +136,7 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
         </div>
         <RecordTabs records={records} tab={tab} onTab={setTab} />
 
-        <RecordForm kind={tab} tinConsent={tinConsent} onAdd={addRecord} vat={client.profile.vat_status === "vat"} />
+        <RecordForm kind={tab} tinConsent={tinConsent} onAdd={addRecord} vat={client.profile.vat_status === "vat"} corporate={isCorp} />
 
         <CsvImport kind={tab} onRecords={(rs) => update((s) => ({ ...s, records: [...s.records, ...rs] }))} />
         <RecordsTable records={records} kind={tab} onDelete={removeRecord} />
@@ -167,8 +169,20 @@ export function LocalPrepare({ banner }: { banner?: React.ReactNode }) {
               <option value={4}>Q4 (Oct–Dec) + annual</option>
             </select>
           </div>
+          <div>
+            <label className={label} htmlFor="q-month">
+              Packet
+            </label>
+            <select id="q-month" className={input} value={monthPick} onChange={(e) => setMonthPick(Number(e.target.value))}>
+              {[0, 1, 2, 3].map((k) => (
+                <option key={k} value={k}>
+                  {k === 0 ? "Whole quarter" : `${MONTH_NAMES[(period.quarter - 1) * 3 + k - 1]} only`}
+                </option>
+              ))}
+            </select>
+          </div>
           <PdfButton
-            filename={`taxgabay-packet-${period.year}-q${period.quarter}.pdf`}
+            filename={month ? `taxgabay-packet-${period.year}-${String(month).padStart(2, "0")}.pdf` : `taxgabay-packet-${period.year}-q${period.quarter}.pdf`}
             label="Download packet (PDF)"
             build={() => packetPdf({ ...client, name: client.name || "Taxpayer" }, packet, todayPH(), null)}
           />

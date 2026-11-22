@@ -1,7 +1,7 @@
 "use client";
 
-import type { ClientRecord, ExpenseCategory, Packet, PreparedDocument } from "@taxgabay/filing";
-import { peso } from "@taxgabay/tax-engine";
+import { clientChart, journalProblem, type ClientRecord, type ExpenseCategory, type JournalRecord, type Packet, type PreparedDocument } from "@taxgabay/filing";
+import { dec, money, peso } from "@taxgabay/tax-engine";
 import * as React from "react";
 import { StepsTable } from "@/components/steps-table";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,17 @@ export const newId = () => (typeof crypto !== "undefined" && "randomUUID" in cry
 export const input = "h-10 w-full rounded-sm border border-input bg-card px-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
 export const label = "mb-1 block text-sm font-medium";
 
-const TABS: { kind: TemplateKind; label: string }[] = [
+export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** Record tabs: the CSV-importable kinds plus manual journal entries. */
+export type RecordKind = TemplateKind | "journal";
+
+const TABS: { kind: RecordKind; label: string }[] = [
   { kind: "sale", label: "Sales" },
   { kind: "expense", label: "Expenses" },
   { kind: "form_2307_received", label: "2307s received" },
   { kind: "payroll", label: "Payroll" },
+  { kind: "journal", label: "Journal entries" },
 ];
 
 function download(name: string, text: string) {
@@ -53,7 +59,7 @@ export function CorporateFields({ value, onChange, idPrefix }: { value: Corporat
   );
 }
 
-export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRecord[]; tab: TemplateKind; onTab: (t: TemplateKind) => void }) {
+export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRecord[]; tab: RecordKind; onTab: (t: RecordKind) => void }) {
   return (
         <div role="tablist" className="flex gap-1 border-b border-border">
           {TABS.map((t) => (
@@ -65,9 +71,10 @@ export function RecordTabs({ records, tab, onTab }: { records: readonly ClientRe
   );
 }
 
-export function CsvImport({ kind, onRecords }: { kind: TemplateKind; onRecords: (r: ClientRecord[]) => void | Promise<void> }) {
-  const tab = kind;
+export function CsvImport({ kind, onRecords }: { kind: RecordKind; onRecords: (r: ClientRecord[]) => void | Promise<void> }) {
   const [importMsg, setImportMsg] = React.useState<{ ok: number; errors: string[] } | null>(null);
+  if (kind === "journal") return null;
+  const tab = kind;
   async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -114,7 +121,7 @@ export interface ReceiptActions {
   onOpen: (path: string) => void;
 }
 
-export function RecordsTable({ records, kind, onDelete, receipts }: { records: readonly ClientRecord[]; kind: TemplateKind; onDelete?: (id: string) => void; receipts?: ReceiptActions }) {
+export function RecordsTable({ records, kind, onDelete, receipts }: { records: readonly ClientRecord[]; kind: RecordKind; onDelete?: (id: string) => void; receipts?: ReceiptActions }) {
   const tab = kind;
   const shown = records.filter((r) => r.kind === kind).sort((a, b) => a.date.localeCompare(b.date));
   return (
@@ -123,8 +130,8 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
             <thead className="border-b border-border text-left">
               <tr className="form-label">
                 <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : tab === "payroll" ? "Employee" : "Customer who withheld"}</th>
-                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : tab === "payroll" ? "Basic pay" : "Amount"}</th>
+                <th className="py-2 pr-3">{tab === "sale" ? "Invoice · customer" : tab === "expense" ? "Supplier · category" : tab === "payroll" ? "Employee" : tab === "journal" ? "Entry" : "Customer who withheld"}</th>
+                <th className="py-2 pr-3 text-right">{tab === "form_2307_received" ? "Income · tax withheld" : tab === "payroll" ? "Basic pay" : tab === "journal" ? "Total debits" : "Amount"}</th>
                 {receipts && <th className="py-2 pr-3">Receipt</th>}
                 <th className="w-10" />
               </tr>
@@ -153,6 +160,11 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                         {r.withholding && <Badge variant="muted" className="ml-2">{r.withholding.atc}</Badge>}
                       </>
                     )}
+                    {r.kind === "journal" && (
+                      <>
+                        {r.memo} <Badge variant="muted" className="ml-2">{JOURNAL_TYPES[r.entry_type]}</Badge>
+                      </>
+                    )}
                     {r.kind === "payroll" && (
                       <>
                         {r.employee.name}
@@ -166,7 +178,7 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
                       </>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : r.kind === "payroll" ? peso(r.basic_pay) : peso(r.amount)}</td>
+                  <td className="py-2 pr-3 text-right font-mono">{r.kind === "form_2307_received" ? `${peso(r.income_payment)} · ${peso(r.tax_withheld)}` : r.kind === "payroll" ? peso(r.basic_pay) : r.kind === "journal" ? peso(money(r.lines.reduce((a, l) => (l.debit ? a.plus(l.debit) : a), dec(0)))) : peso(r.amount)}</td>
                   {receipts && (
                     <td className="py-2 pr-3 text-sm">
                       {receipts.attachments.get(r.id) ? (
@@ -337,13 +349,14 @@ export function DocumentCard({ d }: { d: PreparedDocument }) {
   );
 }
 
-export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: TemplateKind; tinConsent: boolean; onAdd: (r: ClientRecord) => void; vat?: boolean }) {
+export function RecordForm({ kind, tinConsent, onAdd, vat = false, corporate = false }: { kind: RecordKind; tinConsent: boolean; onAdd: (r: ClientRecord) => void; vat?: boolean; corporate?: boolean }) {
   const [f, setF] = React.useState<Record<string, string>>({});
   const [error, setError] = React.useState<string | null>(null);
   const v = (k: string) => f[k] ?? "";
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   const amt = (s: string) => s.replace(/[₱,\s]/g, "");
   const ok = (s: string) => /^\d+(\.\d{1,2})?$/.test(amt(s)) && Number(amt(s)) > 0;
+  if (kind === "journal") return <JournalForm onAdd={onAdd} corporate={corporate} />;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -473,6 +486,153 @@ export function RecordForm({ kind, tinConsent, onAdd, vat = false }: { kind: Tem
       <div className="flex items-end gap-3 sm:col-span-2 lg:col-span-4">
         <Button type="submit" size="sm">
           Add {kind === "sale" ? "sale" : kind === "expense" ? "expense" : kind === "payroll" ? "payroll" : "certificate"}
+        </Button>
+        {error && (
+          <span role="alert" className="text-sm text-destructive">
+            {error}
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
+export const JOURNAL_TYPES: Record<JournalRecord["entry_type"], string> = {
+  opening: "Opening balances",
+  remittance: "Tax or contribution paid",
+  depreciation: "Depreciation",
+  withdrawal: "Withdrawal / dividend",
+  other: "Other entry",
+};
+
+const LIABILITIES = [
+  ["201", "Output VAT (2550Q)"],
+  ["202", "Expanded withholding tax (0619E / 1601EQ)"],
+  ["203", "Withholding tax on compensation (1601C)"],
+  ["204", "SSS contributions"],
+  ["205", "PhilHealth contributions"],
+  ["206", "Pag-IBIG contributions"],
+] as const;
+
+/** Manual journal entries: quick forms for common items and a line-by-line form for the rest. */
+function JournalForm({ onAdd, corporate }: { onAdd: (r: ClientRecord) => void; corporate: boolean }) {
+  const chart = clientChart(corporate);
+  const [type, setType] = React.useState<JournalRecord["entry_type"]>("remittance");
+  const [date, setDate] = React.useState("");
+  const [memo, setMemo] = React.useState("");
+  const [amount, setAmount] = React.useState("");
+  const [liability, setLiability] = React.useState("202");
+  const [lines, setLines] = React.useState<JournalRecord["lines"]>([{ account: "101" }, { account: "301" }]);
+  const [error, setError] = React.useState<string | null>(null);
+  const multi = type === "opening" || type === "other";
+  const amt = amount.replace(/[₱,\s]/g, "");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setError("Enter the date.");
+    let entryLines: JournalRecord["lines"];
+    if (multi) entryLines = lines.map((l) => ({ account: l.account, ...(l.debit ? { debit: l.debit.replace(/[₱,\s]/g, "") } : {}), ...(l.credit ? { credit: l.credit.replace(/[₱,\s]/g, "") } : {}) }));
+    else {
+      if (!/^\d+(\.\d{1,2})?$/.test(amt) || Number(amt) <= 0) return setError("Enter the amount.");
+      entryLines = type === "remittance" ? [{ account: liability, debit: amt }, { account: "101", credit: amt }] : type === "depreciation" ? [{ account: "612", debit: amt }, { account: "152", credit: amt }] : [{ account: "302", debit: amt }, { account: "101", credit: amt }];
+    }
+    const defaultMemo = type === "remittance" ? `Paid ${LIABILITIES.find((x) => x[0] === liability)![1]}` : JOURNAL_TYPES[type];
+    const rec: JournalRecord = { kind: "journal", id: newId(), date, entry_type: type, memo: memo.trim() || defaultMemo, lines: entryLines };
+    const problem = journalProblem(rec);
+    if (problem) return setError(`This entry ${problem.replace(/^it /, "")}`);
+    onAdd(rec);
+    setError(null);
+    setAmount("");
+    setMemo("");
+    setLines([{ account: "101" }, { account: "301" }]);
+  }
+
+  const totals = lines.reduce((a, l) => ({ d: a.d + Number((l.debit || "0").replace(/[₱,\s]/g, "")) || a.d, c: a.c + Number((l.credit || "0").replace(/[₱,\s]/g, "")) || a.c }), { d: 0, c: 0 });
+  return (
+    <form onSubmit={submit} className="space-y-3 rounded-md bg-lavender p-4" aria-label="Add a journal entry">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label className={label} htmlFor="j-type">
+            Kind of entry
+          </label>
+          <select id="j-type" className={input} value={type} onChange={(e) => setType(e.target.value as JournalRecord["entry_type"])}>
+            {Object.entries(JOURNAL_TYPES).map(([k, t]) => (
+              <option key={k} value={k}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={label} htmlFor="j-date">
+            Date
+          </label>
+          <input id="j-date" type="date" className={input} value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        {type === "remittance" && (
+          <div>
+            <label className={label} htmlFor="j-liab">
+              What was paid
+            </label>
+            <select id="j-liab" className={input} value={liability} onChange={(e) => setLiability(e.target.value)}>
+              {LIABILITIES.map(([c, t]) => (
+                <option key={c} value={c}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {!multi && (
+          <div>
+            <label className={label} htmlFor="j-amount">
+              Amount (₱)
+            </label>
+            <input id="j-amount" className={input} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+        )}
+        <div className={multi ? "lg:col-span-2" : ""}>
+          <label className={label} htmlFor="j-memo">
+            Explanation (optional)
+          </label>
+          <input id="j-memo" className={input} value={memo} onChange={(e) => setMemo(e.target.value)} />
+        </div>
+      </div>
+      {multi && (
+        <div className="space-y-2">
+          {lines.map((l, i) => (
+            <div key={i} className="grid grid-cols-[minmax(0,1fr)_7rem_7rem_2rem] gap-2">
+              <select aria-label={`Line ${i + 1} account`} className={input} value={l.account} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, account: e.target.value } : x)))}>
+                {chart.map((a) => (
+                  <option key={a.code} value={a.code}>
+                    {a.code} · {a.name}
+                  </option>
+                ))}
+              </select>
+              <input aria-label={`Line ${i + 1} debit`} className={input} inputMode="decimal" placeholder="Debit" value={l.debit ?? ""} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, debit: e.target.value, credit: e.target.value ? "" : x.credit } : x)))} />
+              <input aria-label={`Line ${i + 1} credit`} className={input} inputMode="decimal" placeholder="Credit" value={l.credit ?? ""} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, credit: e.target.value, debit: e.target.value ? "" : x.debit } : x)))} />
+              {lines.length > 2 ? (
+                <button type="button" aria-label={`Remove line ${i + 1}`} className="text-muted-foreground hover:text-destructive" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
+                  ×
+                </button>
+              ) : (
+                <span />
+              )}
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <Button type="button" size="sm" variant="outline" onClick={() => setLines((ls) => [...ls, { account: "101" }])}>
+              Add line
+            </Button>
+            <span className={cn("font-mono", Math.abs(totals.d - totals.c) < 0.005 ? "text-success" : "text-muted-foreground")}>
+              Debits {peso(totals.d.toFixed(2))} · Credits {peso(totals.c.toFixed(2))}
+            </span>
+          </div>
+        </div>
+      )}
+      <div className="flex items-center gap-3">
+        <Button type="submit" size="sm">
+          Add entry
         </Button>
         {error && (
           <span role="alert" className="text-sm text-destructive">

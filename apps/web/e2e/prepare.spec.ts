@@ -107,3 +107,38 @@ test("records are posted to books, trial balance and statements", async ({ page 
   await books.getByRole("button", { name: "Books (PDF)" }).click();
   expect((await download).suggestedFilename()).toBe("taxgabay-books-2026-01-01-2026-03-31.pdf");
 });
+
+test("journal entries complete the books, and a monthly packet holds the month's returns", async ({ page }) => {
+  await page.goto("/prepare");
+  await page.getByRole("button", { name: "Load an example" }).click();
+  await page.getByRole("tab", { name: /Journal entries/ }).click();
+
+  // Paid January's expanded withholding (₱500).
+  await page.getByLabel("Kind of entry").selectOption("remittance");
+  await page.locator("#j-date").fill("2026-02-10");
+  await page.getByLabel("What was paid").selectOption("202");
+  await page.getByLabel("Amount (₱)").fill("500");
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.getByTestId("records-table")).toContainText("Paid Expanded withholding tax");
+
+  // An unbalanced opening entry is refused.
+  await page.getByLabel("Kind of entry").selectOption("opening");
+  await page.locator("#j-date").fill("2026-01-01");
+  await page.getByLabel("Line 1 debit").fill("50000");
+  await page.getByLabel("Line 2 credit").fill("40000");
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "not equal" })).toBeVisible();
+  await page.getByLabel("Line 2 credit").fill("50000");
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.getByTestId("records-table")).toContainText("Opening balances");
+
+  const books = page.getByTestId("books-section");
+  await books.getByRole("tab", { name: "Trial balance" }).click();
+  // Before: ₱121,500. Opening cash/capital adds ₱50,000; the ₱500 payment clears EWT payable against cash.
+  await expect(page.getByTestId("trial-balance")).toContainText("₱171,000.00");
+
+  await page.getByLabel("Packet", { exact: true }).selectOption("1");
+  const docs = page.getByTestId("prepared-doc");
+  await expect(docs).toHaveCount(1);
+  await expect(docs.first()).toContainText("January 2026");
+});
