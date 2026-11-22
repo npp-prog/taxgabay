@@ -71,3 +71,33 @@ Approved by the product owner ("Go") on 2026-11-22. Phase 1 values remain unveri
 | 9 | Life-event flows | 7 flows as data; index and detail pages. |
 | 10 | Web pages + e2e | Pages for all new calculators, checklists, life events; Playwright coverage. |
 | 11 | Docs | README, VERIFY.md, seed.sql regenerated. |
+
+---
+
+# Phase 3 Plan
+
+Approved by the product owner ("Next") on 2026-11-22.
+
+## Assumptions
+
+1. **Issuances live in Supabase** (`issuances`, `issuance_links`). Only `published` rows are public. Without Supabase, the library falls back to a small bundled seed list (all `needs_verification`), so the pages work in local mode. Seed issuance numbers are limited to ones the existing rule data already cites; titles/dates I'm unsure of are left blank for the admin.
+2. **Workflow is enforced in the database**: `draft → reviewed → published` (or back to `draft`), publishing requires a review, and every change is audited. There is no automatic publishing — the ingestion helper only creates drafts.
+3. **Ingestion helper** (admin only): paste text, upload a PDF (text extracted in the browser with pdf.js), or give a URL on an allow-listed government domain (fetched by an admin-checked server route, then extracted in the browser). A pure parser drafts type, number, date, title, tax types, topics and referenced issuances; the admin edits and saves as a draft. It never writes the plain-language summary — the admin does (an AI assistant is Phase 4).
+4. **Admin** requires a Supabase user with `app_metadata.role = "admin"`. Phase 3 admin covers: issuances (CRUD, links, workflow), BIR deadline extensions and holidays (merged into the calendar at runtime), a "needs verification" dashboard over the bundled rule data, and the audit log. **Tax rules stay code-reviewed data** (edited in `packages/tax-engine/src/data` with tests), not edited in the admin UI, so every change passes the fixture tests.
+5. **Knowledge hub**: MDX articles (`packages/content/hub`), a Taglish-friendly glossary and FAQs as data. Everything is `needs_verification`.
+6. **Search** covers guides, hub articles, glossary, FAQs, life events, calculators and issuances, with a pure ranking function (no external search service yet). Published issuances from Supabase are merged in when configured.
+7. **PDF exports** are generated in the browser with pdf-lib (standard Helvetica): roadmap progress, calculator results (inputs, steps, legal basis, disclaimer) and the calendar. Characters Helvetica cannot encode are transliterated (e.g. ₱ → "PHP ", − → "-").
+
+## Tasks
+
+| # | Task | Acceptance criteria |
+|---|------|---------------------|
+| 1 | Issuance model, seed, search | Pure module with filters (type, year, tax type, topic, status) and full-text ranking; tests. |
+| 2 | DB workflow | Migration: slug, reviewed_by, transition trigger; verified against Postgres. |
+| 3 | Ingestion parser | Drafts fields from text; tests on sample texts. |
+| 4 | Library pages | `/issuances` list + filters; `/issuances/[slug]` with summary, effectivity, related-issuances graph, official source link. |
+| 5 | Admin | `/admin` gate, dashboard, issuance editor with workflow and links, ingestion, extensions/holidays, audit log; source-fetch route with admin check and domain allow-list. |
+| 6 | Knowledge hub | Articles, glossary, FAQs pages. |
+| 7 | Site search | `/search` across all content. |
+| 8 | PDF exports | Roadmap, calculator results, calendar; tests. |
+| 9 | Tests, docs | Unit + e2e; README, VERIFY.md. |
