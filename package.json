@@ -11,7 +11,8 @@
     "typecheck": "turbo run typecheck",
     "db:seed-sql": "pnpm --filter @taxgabay/tax-engine seed-sql",
     "db:verify-doc": "pnpm --filter @taxgabay/tax-engine verify-doc",
-    "db:seed-issuances": "pnpm --filter @taxgabay/content seed-issuances"
+    "db:seed-issuances": "pnpm --filter @taxgabay/content seed-issuances",
+    "db:setup-sql": "node scripts/setup-sql.mjs"
   },
   "devDependencies": {
     "turbo": "2.11.13",

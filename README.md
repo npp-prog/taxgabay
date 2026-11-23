@@ -82,6 +82,8 @@ The disclaimer on each calculator switches from "not yet verified" to the oldest
 
 ## Supabase (optional)
 
+**Step-by-step for non-developers: [docs/SETUP.md](docs/SETUP.md)** (one-paste database setup in `supabase/setup-all.sql`, regenerated with `pnpm db:setup-sql`; first admin and TIN key in `supabase/first-admin.sql`).
+
 1. Create a Supabase project. Apply `supabase/migrations/*.sql` in order, then `supabase/seed.sql` and `supabase/seed-issuances.sql` (SQL editor, or `supabase db push` with the Supabase CLI).
 2. Auth → Providers: enable Email (magic link) and Google. Add `<site>/account` to the redirect allow-list.
 3. Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL`.
