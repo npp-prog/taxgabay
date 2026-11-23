@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` styles apply only under an explicit .dark class (never set), not the system setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * TaxGabay visual system: friendly SaaS.
  * Deep navy ink on a soft blue-white ground, a vivid blue for actions,
@@ -40,34 +43,11 @@
   --shadow-pop: 0 30px 70px -30px rgb(15 31 75 / 0.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #0a1124;
-    --color-foreground: #e7edf8;
-    --color-card: #111b33;
-    --color-card-foreground: #e7edf8;
-    --color-muted: #18243f;
-    --color-muted-foreground: #9fadc8;
-    --color-border: #26355a;
-    --color-input: #3a4d7a;
-    --color-ring: #7aa7ff;
-    --color-primary: #7aa7ff;
-    --color-primary-foreground: #0a1533;
-    --color-secondary: #1a2a52;
-    --color-secondary-foreground: #c9d9ff;
-    --color-lavender: #142140;
-    --color-sun: #f5c542;
-    --color-sun-foreground: #2a1f00;
-    --color-sun-soft: #3a2f0d;
-    --color-ink: #e7edf8;
-    --color-warning: #f2b14a;
-    --color-warning-foreground: #f8d38f;
-    --color-success: #5ccf8a;
-    --shadow-card: 0 2px 4px rgb(0 0 0 / 0.3), 0 40px 80px -46px rgb(0 0 0 / 0.8);
-    --shadow-pop: 0 30px 70px -30px rgb(0 0 0 / 0.8);
-    color-scheme: dark;
-  }
+/* Light only: the site keeps its light colours even when the device or browser is in dark mode. */
+:root {
+  color-scheme: only light;
 }
+
 
 body {
   background: linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 9%, var(--color-background)) 0, var(--color-background) 560px) no-repeat, var(--color-background);
