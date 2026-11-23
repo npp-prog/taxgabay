@@ -44,6 +44,10 @@ describe("prepare CSV import", () => {
     const csv = scheduleCsv({ columns: [{ key: "name", label: "Payee" }, { key: "ewt", label: "Tax withheld" }], rows: [{ name: "Cruz, Jose", ewt: "1500.00" }, { name: 'A "B"', ewt: "" }] });
     expect(parseCsv(csv)).toEqual([["Payee", "Tax withheld"], ["Cruz, Jose", "1500.00"], ['A "B"', ""]]);
   });
+  it("neutralizes spreadsheet formulas but keeps negative amounts", () => {
+    const csv = scheduleCsv({ columns: [{ key: "a", label: "A" }], rows: [{ a: "=HYPERLINK(\"http://x\")" }, { a: "+1+1" }, { a: "@SUM(A1)" }, { a: "-6000.00" }, { a: "5%" }, { a: "-cmd" }] });
+    expect(parseCsv(csv).slice(1).map((r) => r[0])).toEqual(["'=HYPERLINK(\"http://x\")", "'+1+1", "'@SUM(A1)", "-6000.00", "5%", "'-cmd"]);
+  });
   it("rejects empty files and missing columns", () => {
     expect(importCsv("sale", "", id).errors[0]).toMatch(/empty/);
     expect(importCsv("sale", "date,amount\n2026-01-01,1\n", id).errors[0]).toMatch(/Missing column/);

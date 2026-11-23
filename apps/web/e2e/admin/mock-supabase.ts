@@ -153,7 +153,7 @@ export async function installMockSupabase(page: Page, opts: { role?: "admin" | n
       switch (table) {
         case "claim_client": {
           const c = (db.tables.prep_clients ?? []).find((r) => r.invite_code === String(args.code).toUpperCase().replace(/[^A-Z0-9]/g, ""));
-          if (!c) return route.fulfill({ status: 400, json: { message: "That invite code is not valid. Check it with your CPA.", code: "P0001" } });
+          if (!c) return route.fulfill({ json: null });
           (db.tables.client_users ??= []).push({ prep_client_id: c.id, user_id: ADMIN_USER.id });
           return route.fulfill({ json: c.id });
         }

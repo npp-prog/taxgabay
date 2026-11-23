@@ -43,7 +43,15 @@ export function templateCsv(kind: TemplateKind): string {
   return [t.columns.join(","), t.example.map(csvCell).join(",")].join("\n") + "\n";
 }
 
-const csvCell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+/**
+ * One CSV cell. Text that a spreadsheet would run as a formula (starting with = + - @ or a tab or
+ * carriage return) is prefixed with an apostrophe ("CSV injection"); plain numbers, including
+ * negative amounts, are left alone.
+ */
+const csvCell = (raw: string) => {
+  const v = /^[=+\-@\t\r]/.test(raw) && !/^-?\d+(\.\d+)?%?$/.test(raw) ? `'${raw}` : raw;
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+};
 
 /** RFC 4180-style parser: quoted fields, escaped quotes, CRLF. */
 export function parseCsv(text: string): string[][] {

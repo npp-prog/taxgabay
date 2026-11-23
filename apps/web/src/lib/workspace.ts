@@ -78,7 +78,9 @@ export async function loadMembership(userId: string): Promise<Membership> {
 }
 
 export async function claimClient(code: string): Promise<string> {
-  return check(await sb().rpc("claim_client", { code })) as string;
+  const id = check(await sb().rpc("claim_client", { code })) as string | null;
+  if (!id) throw new Error("That invite code is not valid. Check it with your CPA.");
+  return id;
 }
 
 export async function getClient(id: string): Promise<PrepClient> {

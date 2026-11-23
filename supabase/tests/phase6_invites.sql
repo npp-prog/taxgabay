@@ -14,13 +14,7 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c3
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3"}', false);
 set role authenticated;
 select pg_temp.check2((select count(*) from public.prep_clients) = 0, 'an unlinked user sees no clients');
-do $$ begin
-  perform public.claim_client('nope');
-  raise exception 'FAILED: bad code accepted';
-exception when others then
-  if sqlerrm like 'FAILED%' then raise; end if;
-  raise notice 'ok: a wrong invite code is refused';
-end $$;
+select pg_temp.check2(public.claim_client('nope') is null, 'a wrong invite code is refused');
 reset role;
 select set_config('app.code1', (select lower(substr(invite_code, 1, 5) || ' ' || substr(invite_code, 6)) from public.prep_clients where id = '11111111-1111-1111-1111-111111111111'), false);
 set role authenticated;
@@ -45,12 +39,6 @@ reset role;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c3', false);
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3"}', false);
 set role authenticated;
-do $$ begin
-  perform public.claim_client(current_setting('app.old'));
-  raise exception 'FAILED: old code still works';
-exception when others then
-  if sqlerrm like 'FAILED%' then raise; end if;
-  raise notice 'ok: the old code no longer works';
-end $$;
+select pg_temp.check2(public.claim_client(current_setting('app.old')) is null, 'the old code no longer works');
 reset role;
 \echo 'PHASE 6 INVITES: ALL CHECKS PASSED'

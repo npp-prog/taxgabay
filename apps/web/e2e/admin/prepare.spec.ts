@@ -59,6 +59,9 @@ test("client: link with an invite code, consent, add records, send to the firm, 
     },
   });
   await page.goto("/prepare");
+  await page.getByLabel("Invite code").fill("WRONG-CODE");
+  await page.getByRole("button", { name: "Link my account" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "not valid" })).toBeVisible();
   await page.getByLabel("Invite code").fill("abcde-23456");
   await page.getByRole("button", { name: "Link my account" }).click();
 
