@@ -69,7 +69,7 @@ export function BooksSection({ client, records, period }: { client: ClientInfo; 
               return (
                 <div key={code} className="form-box overflow-hidden">
                   <h3 className="border-b border-border px-4 py-2.5 font-semibold">{BOOK_NAMES[code]}</h3>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
                     <JournalTable entries={es} chart={books.chart} />
                   </div>
                 </div>

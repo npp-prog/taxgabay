@@ -33,6 +33,7 @@
     "web-push": "4.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@eslint/js": "^10.0.0",
     "@next/eslint-plugin-next": "16.4.6",
     "@playwright/test": "1.63.0",

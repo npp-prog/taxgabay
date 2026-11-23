@@ -114,7 +114,7 @@ function MonthGrid({ month, obligations, holidays, showClient }: { month: string
   for (const o of obligations) byDate.set(o.due_date, [...(byDate.get(o.due_date) ?? []), o]);
   const holidayByDate = new Map(holidays.map((h) => [h.date, h.name]));
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
       <table className="w-full table-fixed border-collapse text-xs sm:text-sm" aria-label={fmtDate(first, loc, { month: "long", year: "numeric" })}>
         <thead>
           <tr>

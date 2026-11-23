@@ -10,7 +10,7 @@ const RESULT_LABEL = /total|due|payable|balance|refund|carry forward|net taxable
  */
 export function StepsTable({ steps, caption = "How this was computed" }: { steps: readonly Step[]; caption?: string }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-card">
+    <div className="overflow-x-auto rounded-md border border-border bg-card" tabIndex={0} role="region" aria-label="Scrollable table">
       <table className="w-full text-sm" data-testid="steps-table">
         <caption className="border-b border-border px-4 py-2.5 text-left">
           <span className="form-label">{caption}</span>

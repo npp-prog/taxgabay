@@ -145,7 +145,7 @@ export function RecordsTable({ records, kind, onDelete, receipts }: { records: r
   const tab = kind;
   const shown = records.filter((r) => r.kind === kind).sort((a, b) => a.date.localeCompare(b.date));
   return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
           <table className="w-full min-w-[34rem] text-sm" data-testid="records-table">
             <thead className="border-b border-border text-left">
               <tr className="form-label">
@@ -331,7 +331,7 @@ export function DocumentCard({ d, csvSchedule }: { d: PreparedDocument; csvSched
           </table>
         )}
         {d.schedule && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
             <table className="w-full min-w-[30rem] text-sm">
               <thead>
                 <tr className="form-label text-left">

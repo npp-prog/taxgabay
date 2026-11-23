@@ -26,7 +26,7 @@ function Panel({ title, children, note }: { title: string; children: React.React
         <h3 className="font-display text-base font-bold">{title}</h3>
         {note && <span className="form-label">{note}</span>}
       </header>
-      <div className="overflow-x-auto">{children}</div>
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">{children}</div>
     </section>
   );
 }

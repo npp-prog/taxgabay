@@ -113,7 +113,7 @@ export function TransactionCard({
         <div className="min-w-0 space-y-3">
           {!showAnswer && (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
                 <table className="w-full min-w-[26rem] text-sm">
                   <thead>
                     <tr className="form-label text-left">

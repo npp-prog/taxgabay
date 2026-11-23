@@ -152,7 +152,7 @@ function Overview({ clients, periods, onOpen }: { clients: PrepClient[]; periods
     })
     .sort((a, b) => (a.next?.due_date ?? "9999").localeCompare(b.next?.due_date ?? "9999"));
   return (
-    <section className="form-box overflow-x-auto" aria-labelledby="overview-h">
+    <section className="form-box overflow-x-auto" aria-labelledby="overview-h" tabIndex={0} role="region" aria-label="Scrollable table">
       <h2 id="overview-h" className="px-5 pt-4 font-semibold">
         By next deadline
       </h2>

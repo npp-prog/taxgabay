@@ -202,8 +202,8 @@ export function SiteHeader() {
                   onClick={() => setOpenMenu(open ? null : m.key)}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[0.94rem] font-medium transition-colors",
-                    open ? "bg-secondary text-primary" : "hover:bg-secondary hover:text-primary",
-                    active && !open && "text-primary",
+                    open ? "bg-secondary text-secondary-foreground" : "hover:bg-secondary hover:text-secondary-foreground",
+                    active && !open && "text-secondary-foreground",
                   )}
                 >
                   {t.menu[m.key]}
@@ -252,7 +252,7 @@ export function SiteHeader() {
             href="/assistant"
             onClick={closeAll}
             aria-current={pathname.startsWith("/assistant") ? "page" : undefined}
-            className="rounded-full px-3.5 py-2 text-[0.94rem] font-medium transition-colors hover:bg-secondary hover:text-primary aria-[current=page]:text-primary"
+            className="rounded-full px-3.5 py-2 text-[0.94rem] font-medium transition-colors hover:bg-secondary hover:text-secondary-foreground aria-[current=page]:text-secondary-foreground"
           >
             {t.menu.ask}
           </Link>
@@ -308,7 +308,7 @@ export function SiteHeader() {
                   type="button"
                   aria-expanded={open}
                   onClick={() => setMobileSection(open ? null : m.key)}
-                  className={cn("flex w-full items-center justify-between py-4 text-left text-lg font-semibold", open && "text-primary")}
+                  className={cn("flex w-full items-center justify-between py-4 text-left text-lg font-semibold", open && "text-secondary-foreground")}
                 >
                   {t.menu[m.key]}
                   <Chevron open={open} />

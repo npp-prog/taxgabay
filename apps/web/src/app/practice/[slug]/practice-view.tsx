@@ -182,7 +182,7 @@ export function PracticeView({ slug }: { slug: string }) {
               </section>
               <section className="form-box p-5">
                 <p className="form-label">Opening balances · {formatDatePH(set.opening.date)}</p>
-                <div className="-mx-5 mt-2 overflow-x-auto">
+                <div className="-mx-5 mt-2 overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
                   <JournalTable entries={ctx.entries.filter((e) => e.kind === "opening")} chart={ctx.chart} />
                 </div>
               </section>
@@ -279,7 +279,7 @@ export function PracticeView({ slug }: { slug: string }) {
               <header className="border-b border-border px-4 py-2.5">
                 <h3 className="font-display text-base font-bold">Complete journal — answer key</h3>
               </header>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable table">
                 <JournalTable entries={ctx.entries} chart={ctx.chart} />
               </div>
             </section>
